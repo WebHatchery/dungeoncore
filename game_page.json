@@ -1,18 +1,36 @@
 {
   "title": "Dungeon Core",
-  "status": { "text": "Playable", "class": "playable" },
+  "status": {
+    "text": "Playable",
+    "class": "playable"
+  },
   "canvas_rendering": "pixelated",
   "about": [
-    "Design and manage your dungeon! Place monsters strategically, defend against adventuring parties, and grow your power. Collect mana, gold, and souls to expand your dungeon empire."
+    "Become the dungeon itself. Grow your rooms, station your monsters, and harvest mana, gold, and souls from every adventuring party that dares descend."
   ],
   "controls": [
-    { "key": "Mouse", "desc": "Select rooms and monsters" },
-    { "key": "Click", "desc": "Place monsters, add rooms" }
+    {
+      "key": "Mouse",
+      "desc": "Select rooms and monsters"
+    },
+    {
+      "key": "Click",
+      "desc": "Place monsters, add rooms"
+    }
   ],
   "details": [
-    { "label": "Genre", "value": "Strategy/Management" },
-    { "label": "Engine", "value": "Macroquad" },
-    { "label": "Platform", "value": "Browser, Windows" }
+    {
+      "label": "Genre",
+      "value": "Strategy/Management"
+    },
+    {
+      "label": "Engine",
+      "value": "Macroquad"
+    },
+    {
+      "label": "Platform",
+      "value": "Browser, Windows"
+    }
   ],
   "download": {
     "href": "dungeon_core_windows.zip",
