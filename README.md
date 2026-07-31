@@ -23,11 +23,7 @@ Protect the dungeon core while expanding into a stronger and more dangerous lair
 
 ## Current Scope
 
-Playable dungeon-building and wave-defense loop with rooms, monsters, adventurer parties, resources, unlocks, and upgrades.
-# Practical Future Improvements
+Playable dungeon-building and wave-defense loop with rooms, monsters, adventurer parties, resources, unlocks, and upgrades. Stat-driven combat with an elemental matchup matrix, 47 monsters across 8 species, behaviour-typed traps, a persistent hero roster, and a threat → siege → prestige endgame are all in; balance data lives in `assets/*.json`.
 
-- Add input-state tests for pause, focus, tooltip blocking, resource panel updates, and log message ordering.
-- Move resource panel calculations into pure helpers with fixtures for edge cases such as zero income and capped resources.
-- Add small dungeon-run scenarios that verify controls, game-log output, and theme-driven UI states together.
-- Extract repeated drawing constants into toolkit-backed theme helpers shared by controls, logs, and resource panels.
+Remaining work is tracked in `TODO.md`.
 
