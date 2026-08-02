@@ -98,21 +98,35 @@ pub(super) fn draw_room_tile(
                 draw_rect.h,
                 Color::new(0.0, 0.0, 0.0, 0.36),
             );
-            // A combat room that is merely out of slots reads as "no room
-            // left", not as the wrong kind of room.
-            if (room.room_type == RoomType::Normal || room.room_type == RoomType::Boss)
-                && crate::data::constants::room_is_full(room)
-            {
-                draw_pill(
-                    Rect::new(
-                        draw_rect.x + draw_rect.w - 44.0,
-                        draw_rect.y + draw_rect.h * 0.46,
-                        39.0,
-                        16.0,
-                    ),
-                    "Full",
-                    WARNING,
-                );
+            // A combat room refusing the armed thing says which kind of "no"
+            // it is: out of slots, or already carrying one of these.
+            if room.room_type == RoomType::Normal || room.room_type == RoomType::Boss {
+                let refusal = if state.selected_monster.is_some()
+                    && crate::data::constants::room_is_full(room)
+                {
+                    Some("Full")
+                } else if state
+                    .selected_upgrade
+                    .as_deref()
+                    .map(|upgrade| super::room_holds_upgrade_kind(room, upgrade))
+                    .unwrap_or(false)
+                {
+                    Some("Has one")
+                } else {
+                    None
+                };
+                if let Some(label) = refusal {
+                    draw_pill(
+                        Rect::new(
+                            draw_rect.x + draw_rect.w - 60.0,
+                            draw_rect.y + draw_rect.h * 0.46,
+                            55.0,
+                            16.0,
+                        ),
+                        label,
+                        WARNING,
+                    );
+                }
             }
         }
         PlacementState::Idle => {}

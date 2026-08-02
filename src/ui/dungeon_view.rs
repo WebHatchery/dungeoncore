@@ -245,16 +245,39 @@ fn draw_placement_badge(_state: &GameState, monster: &str, rect: Rect) {
 }
 
 fn placement_state(state: &GameState, room: &Room) -> PlacementState {
-    if state.selected_monster.is_none() {
-        return PlacementState::Idle;
+    let combat_room = room.room_type == RoomType::Normal || room.room_type == RoomType::Boss;
+
+    // A monster wants an empty slot; an upgrade wants a room that does not
+    // already hold one of its kind. Both light up the same way.
+    if state.selected_monster.is_some() {
+        return if combat_room && !crate::data::constants::room_is_full(room) {
+            PlacementState::Valid
+        } else {
+            PlacementState::Invalid
+        };
     }
 
-    let combat_room = room.room_type == RoomType::Normal || room.room_type == RoomType::Boss;
-    if combat_room && !crate::data::constants::room_is_full(room) {
-        PlacementState::Valid
-    } else {
-        PlacementState::Invalid
+    if let Some(upgrade) = &state.selected_upgrade {
+        return if combat_room && !room_holds_upgrade_kind(room, upgrade) {
+            PlacementState::Valid
+        } else {
+            PlacementState::Invalid
+        };
     }
+
+    PlacementState::Idle
+}
+
+/// Whether the room already holds an upgrade of the armed upgrade's type — a
+/// room can carry a trap *and* a treasure, but never two traps.
+pub(super) fn room_holds_upgrade_kind(room: &Room, upgrade_name: &str) -> bool {
+    crate::data::upgrades::get_upgrade_template(upgrade_name)
+        .map(|template| {
+            room.has_upgrade_type(crate::data::upgrades::parse_upgrade_type(
+                &template.upgrade_type,
+            ))
+        })
+        .unwrap_or(false)
 }
 
 fn adventurer_count_in_room(state: &GameState, room: &Room) -> usize {
@@ -303,6 +326,10 @@ fn party_transit_progress(state: &GameState, floor_number: i32, from_pos: usize)
 fn current_objective(state: &GameState) -> String {
     if let Some(monster) = &state.selected_monster {
         return format!("Place {monster} in a combat room.");
+    }
+
+    if let Some(upgrade) = &state.selected_upgrade {
+        return format!("Install {upgrade} in a combat room.");
     }
 
     if !state.adventurer_parties.is_empty() {

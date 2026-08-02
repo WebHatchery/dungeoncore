@@ -80,7 +80,7 @@ pub(super) fn draw_traps_tab(
             TEXT,
         );
         draw_text_fit(
-            "Click rooms to place; reclick entry to stop.",
+            "Click a highlighted room; reclick entry to stop.",
             hint.x + 10.0,
             hint.y + 39.0,
             hint.w - 20.0,
@@ -97,7 +97,11 @@ fn draw_upgrade_option(
     template: &crate::data::upgrades::UpgradeTemplate,
     rect: Rect,
 ) -> bool {
-    let can_afford = state.mana >= template.mana_cost && state.souls >= template.souls_cost;
+    // Rooms cannot be outfitted mid-raid (`apply_upgrade` refuses), so the
+    // list says so up front rather than letting the click fail.
+    let peacetime = state.adventurer_parties.is_empty();
+    let can_afford =
+        peacetime && state.mana >= template.mana_cost && state.souls >= template.souls_cost;
     let selected = state.selected_upgrade.as_ref() == Some(&template.name);
     let hovered = can_afford && is_hovered_rect(rect);
     let fill = if selected {
@@ -122,22 +126,10 @@ fn draw_upgrade_option(
         13.0,
         if can_afford { TEXT } else { TEXT_DIM },
     );
-    // Traps show their behavior kind; other upgrades show their family.
-    let kind_label = if template.upgrade_type == "trap" && !template.effect_kind.is_empty() {
-        template.effect_kind.as_str()
-    } else {
-        template.upgrade_type.as_str()
-    };
+    // What it actually does, in words — this used to live in the inspector's
+    // catalog, which the drawer has now replaced as the one build path.
     draw_text_fit(
-        &format!(
-            "{}{}",
-            kind_label,
-            template
-                .element
-                .as_deref()
-                .map(|e| format!(" • {}", e))
-                .unwrap_or_default()
-        ),
+        &crate::ui::upgrade_panel::previews::upgrade_preview(template),
         rect.x + 12.0,
         rect.y + rect.h * 0.72,
         rect.w - 76.0,

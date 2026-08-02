@@ -83,11 +83,11 @@ async fn main() {
         let mut drawer_tab = match config.scene.as_str() {
             "build" => DrawerTab::Build,
             "variants" => DrawerTab::Evolution,
+            "traps" => DrawerTab::Traps,
             _ => DrawerTab::Monsters,
         };
         let mut upgrade_section = UpgradeSection::Traps;
         let mut drawer_open = true;
-        let mut upgrade_scroll = 0.0;
         let mut species_scroll = 0.0;
         let mut defender_scroll = 0.0;
         let mut heroes_scroll = 0.0;
@@ -107,7 +107,6 @@ async fn main() {
                 &mut drawer_tab,
                 &mut upgrade_section,
                 &mut drawer_open,
-                &mut upgrade_scroll,
                 &mut species_scroll,
                 &mut defender_scroll,
                 &mut heroes_scroll,
@@ -139,7 +138,6 @@ async fn main() {
     let mut drawer_tab = DrawerTab::Monsters;
     let mut upgrade_section = UpgradeSection::Traps;
     let mut drawer_open = true;
-    let mut upgrade_scroll = 0.0;
     let mut species_scroll = 0.0;
     let mut defender_scroll = 0.0;
     let mut heroes_scroll = 0.0;
@@ -245,7 +243,6 @@ async fn main() {
             &mut drawer_tab,
             &mut upgrade_section,
             &mut drawer_open,
-            &mut upgrade_scroll,
             &mut species_scroll,
             &mut defender_scroll,
             &mut heroes_scroll,
@@ -274,7 +271,6 @@ fn render_playing_frame(
     drawer_tab: &mut DrawerTab,
     upgrade_section: &mut UpgradeSection,
     drawer_open: &mut bool,
-    upgrade_scroll: &mut f32,
     species_scroll: &mut f32,
     defender_scroll: &mut f32,
     heroes_scroll: &mut f32,
@@ -482,11 +478,9 @@ fn render_playing_frame(
                 }
             } else if state.selected_room == Some((floor_num, room_pos)) {
                 state.selected_room = None;
-                *upgrade_scroll = 0.0;
                 *defender_scroll = 0.0;
             } else {
                 state.selected_room = Some((floor_num, room_pos));
-                *upgrade_scroll = 0.0;
                 *defender_scroll = 0.0;
             }
         }
@@ -511,7 +505,6 @@ fn render_playing_frame(
             upgrade_panel_y,
             upgrade_panel_w,
             upgrade_panel_h,
-            upgrade_scroll,
             defender_scroll,
         );
         match upgrade_action {
@@ -536,6 +529,12 @@ fn render_playing_frame(
                     }
                 }
             }
+            UpgradeAction::ArmUpgrades => {
+                // Same flow as placing a monster: pick from the drawer, then
+                // click the rooms that light up.
+                *drawer_tab = DrawerTab::Traps;
+                *drawer_open = true;
+            }
             UpgradeAction::SwapMonster(monster_id) => {
                 // The armed monster goes onto an occupied slot: its own line
                 // grows, anything else evicts. Selection clears either way —
@@ -553,7 +552,6 @@ fn render_playing_frame(
             UpgradeAction::Close => {
                 state.selected_room = None;
                 state.selected_monster = None;
-                *upgrade_scroll = 0.0;
                 *defender_scroll = 0.0;
             }
             UpgradeAction::None => {}

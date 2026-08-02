@@ -24,7 +24,7 @@ fn trap_preview(effect_kind: &str, value: f32) -> String {
     }
 }
 
-pub(super) fn upgrade_preview(upgrade: &UpgradeTemplate) -> String {
+pub(crate) fn upgrade_preview(upgrade: &UpgradeTemplate) -> String {
     match upgrade.upgrade_type.as_str() {
         "trap" => trap_preview(&upgrade.effect_kind, upgrade.multiplier),
         "treasure" => format!("Gold drops x{:.2}", upgrade.multiplier),

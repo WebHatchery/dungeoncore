@@ -2,19 +2,17 @@ use macroquad::prelude::*;
 use macroquad_toolkit::input::was_clicked_rect;
 
 use crate::data::monsters::{get_monster_template, get_species_display_name};
-use crate::data::upgrades::{get_all_upgrades, UpgradeTemplate};
+use crate::data::upgrades::get_all_upgrades;
 use crate::game_state::{GameState, Room, RoomType};
 
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
 
 mod defenders;
-mod previews;
+pub(crate) mod previews;
 
 use defenders::{draw_monster_progress_rows, DEFENDER_ROW_H, MAX_DEFENDER_ROWS};
-use previews::{
-    room_upgrade_preview, template_trait_summary, template_variant_hint, upgrade_preview,
-};
+use previews::{room_upgrade_preview, template_trait_summary, template_variant_hint};
 
 #[derive(Debug, Clone)]
 pub enum UpgradeAction {
@@ -22,6 +20,8 @@ pub enum UpgradeAction {
     Apply(String),
     Remove(crate::game_state::RoomUpgradeType),
     DismissMonster(u64),
+    /// Open the drawer's upgrade tab to pick something for this room.
+    ArmUpgrades,
     /// Place the armed monster onto this defender — upgrading its line or
     /// evicting it, whichever the swap plan says.
     SwapMonster(u64),
@@ -34,7 +34,6 @@ pub fn draw_upgrade_panel(
     y: f32,
     w: f32,
     h: f32,
-    upgrade_scroll: &mut f32,
     defender_scroll: &mut f32,
 ) -> UpgradeAction {
     let mut action = UpgradeAction::None;
@@ -74,14 +73,7 @@ pub fn draw_upgrade_panel(
             &mut action,
         );
         if room.room_type == RoomType::Normal || room.room_type == RoomType::Boss {
-            draw_upgrade_choices(
-                state,
-                room,
-                inner,
-                y_cursor + 12.0,
-                upgrade_scroll,
-                &mut action,
-            );
+            draw_upgrade_choices(state, room, inner, y_cursor + 12.0, &mut action);
         } else {
             draw_hint(
                 Rect::new(inner.x, y_cursor + 12.0, inner.w, 54.0),
@@ -322,7 +314,6 @@ fn draw_upgrade_choices(
     room: &Room,
     bounds: Rect,
     y: f32,
-    upgrade_scroll: &mut f32,
     action: &mut UpgradeAction,
 ) {
     let max_h = bounds.y + bounds.h - y;
@@ -332,6 +323,30 @@ fn draw_upgrade_choices(
 
     draw_section_rule(bounds.x, y + 18.0, bounds.w, "ACTIONS");
     let mut row_y = y + 36.0;
+
+    // Adding is the drawer's job now — one flow for putting things in rooms,
+    // monster or trap alike — so this is a jump, not a second catalog. It leads
+    // because it is the action; what is already installed is review below it.
+    let remaining = get_all_upgrades()
+        .into_iter()
+        .filter(|t| {
+            !room.has_upgrade_type(crate::data::upgrades::parse_upgrade_type(&t.upgrade_type))
+        })
+        .count();
+    let label = if remaining == 0 {
+        "Room fully outfitted".to_string()
+    } else {
+        format!("Add upgrade ({remaining})")
+    };
+    if draw_command_button(
+        Rect::new(bounds.x, row_y, bounds.w, 32.0),
+        &label,
+        ButtonTone::Primary,
+        remaining > 0 && state.adventurer_parties.is_empty(),
+    ) {
+        *action = UpgradeAction::ArmUpgrades;
+    }
+    row_y += 40.0;
 
     // Installed upgrades, each with its own remove control.
     for upgrade in &room.upgrades {
@@ -353,134 +368,6 @@ fn draw_upgrade_choices(
         }
         row_y += 48.0;
     }
-
-    // Catalog offers only types the room does not hold yet.
-    let installed: Vec<_> = room.upgrades.iter().map(|u| &u.upgrade_type).collect();
-    let upgrades: Vec<UpgradeTemplate> = get_all_upgrades()
-        .into_iter()
-        .filter(|t| {
-            !installed.contains(&&crate::data::upgrades::parse_upgrade_type(&t.upgrade_type))
-        })
-        .collect();
-    let list_rect = Rect::new(
-        bounds.x,
-        row_y,
-        bounds.w,
-        (bounds.y + bounds.h - row_y).max(0.0),
-    );
-    draw_upgrade_catalog(state, &upgrades, list_rect, upgrade_scroll, action);
-}
-
-fn draw_upgrade_catalog(
-    state: &GameState,
-    upgrades: &[UpgradeTemplate],
-    rect: Rect,
-    upgrade_scroll: &mut f32,
-    action: &mut UpgradeAction,
-) {
-    if rect.h < 48.0 {
-        return;
-    }
-
-    let row_h = 58.0;
-    let total_h = upgrades.len() as f32 * row_h;
-    let max_scroll = (total_h - rect.h).max(0.0);
-    let mouse = vec2(mouse_position().0, mouse_position().1);
-    if rect.contains(mouse) {
-        let (_, wheel_y) = mouse_wheel();
-        if wheel_y.abs() > 0.0 {
-            *upgrade_scroll = (*upgrade_scroll - wheel_y * row_h).clamp(0.0, max_scroll);
-        }
-    }
-    *upgrade_scroll = (*upgrade_scroll).clamp(0.0, max_scroll);
-
-    draw_card(
-        rect,
-        Color::new(0.0, 0.0, 0.0, 0.10),
-        with_alpha(BORDER, 0.18),
-    );
-
-    for (idx, upgrade) in upgrades.iter().enumerate() {
-        let row_y = rect.y + idx as f32 * row_h - *upgrade_scroll + 5.0;
-        if row_y < rect.y + 4.0 || row_y + row_h - 8.0 > rect.y + rect.h - 12.0 {
-            continue;
-        }
-
-        let row = Rect::new(rect.x + 6.0, row_y, rect.w - 12.0, row_h - 8.0);
-        if draw_upgrade_row(state, upgrade, row) {
-            *action = UpgradeAction::Apply(upgrade.name.clone());
-        }
-    }
-
-    if max_scroll > 0.0 {
-        draw_text_fit_right(
-            &format!(
-                "{} / {}",
-                ((*upgrade_scroll / row_h).floor() as usize + 1).min(upgrades.len()),
-                upgrades.len()
-            ),
-            rect.x + rect.w - 8.0,
-            rect.y + rect.h - 8.0,
-            72.0,
-            10.0,
-            TEXT_DIM,
-        );
-    }
-}
-
-fn draw_upgrade_row(state: &GameState, upgrade: &UpgradeTemplate, rect: Rect) -> bool {
-    let can_afford = state.mana >= upgrade.mana_cost && state.souls >= upgrade.souls_cost;
-    let enabled = can_afford && state.adventurer_parties.is_empty();
-    let color = upgrade_color(&upgrade.upgrade_type);
-    let hovered = enabled && rect.contains(vec2(mouse_position().0, mouse_position().1));
-    draw_card(
-        rect,
-        if hovered {
-            with_alpha(color, 0.13)
-        } else {
-            with_alpha(color, 0.075)
-        },
-        with_alpha(color, if enabled { 0.30 } else { 0.12 }),
-    );
-    draw_text_fit(
-        &upgrade.name,
-        rect.x + 10.0,
-        rect.y + 17.0,
-        rect.w - 92.0,
-        13.0,
-        if enabled { TEXT } else { TEXT_DIM },
-    );
-    draw_text_fit(
-        &upgrade_preview(upgrade),
-        rect.x + 10.0,
-        rect.y + 34.0,
-        rect.w - 92.0,
-        10.0,
-        TEXT_MUTED,
-    );
-    let cost_text = if upgrade.souls_cost > 0 {
-        format!("{}M {}S", upgrade.mana_cost, upgrade.souls_cost)
-    } else {
-        format!("{}M", upgrade.mana_cost)
-    };
-    draw_text_fit_right(
-        &cost_text,
-        rect.x + rect.w - 10.0,
-        rect.y + 16.0,
-        78.0,
-        10.0,
-        if can_afford { MANA } else { TEXT_DIM },
-    );
-    draw_text_fit_right(
-        if enabled { "Apply" } else { "Locked" },
-        rect.x + rect.w - 10.0,
-        rect.y + 37.0,
-        64.0,
-        11.0,
-        if enabled { EMERALD } else { TEXT_DIM },
-    );
-
-    enabled && was_clicked_rect(rect)
 }
 
 fn draw_hint(rect: Rect, text: &str, color: Color) {

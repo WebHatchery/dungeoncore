@@ -252,6 +252,23 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.add_type_experience("Goblin", 50);
             state.selected_monster = Some("Orc".to_string());
         }
+        "traps" => {
+            // One room already trapped, one not, with a trap armed: the empty
+            // room lights up to receive it and the trapped one says it already
+            // has one of these.
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.mana = 400;
+            let _ = simulation::add_room(state, None);
+            let _ = simulation::add_room(state, None);
+            if let Some((floor, pos)) = find_combat_room(state) {
+                let _ = simulation::apply_upgrade(state, floor, pos, "Spike Trap");
+                state.selected_room = Some((floor, pos));
+            }
+            state.selected_upgrade = Some("Poison Dart".to_string());
+        }
         "rival" => {
             use crate::game_state::{Equipment, HeroRecord, HeroStatus};
             if let Some(species) = first_starter_species() {

@@ -79,27 +79,36 @@ but rows are not clickable, so an individual adventurer has no page.
   explicitly out of scope for the first pass; the journal is a ledger, not a
   minimap. Revisit once the page exists.
 
-### Traps and upgrades use the monster placement flow
+### Traps and upgrades use the monster placement flow — *done*
 
-Monsters are placed by selecting from the drawer and clicking a room. Traps and
-the other room upgrades have that flow half-built — the TRAPS & LOOT tab already
-sets `selected_upgrade` and `main.rs` already applies it on a room click — but
-the board never highlights anything, because `placement_state`
-(`src/ui/dungeon_view.rs:247`) only reacts to `selected_monster`. So the
-discoverable path is still the inspector's `draw_upgrade_choices` catalog, which
-is a different interaction for the same job.
+Traps had the flow half-built: the TRAPS & LOOT tab set `selected_upgrade` and
+`main.rs` applied it on a room click, but the board never reacted, so the
+discoverable path stayed the inspector's own catalog — a second, different
+interaction for the same job.
 
-- Teach `placement_state` and `current_objective` about `selected_upgrade`, so
-  arming a trap highlights valid rooms and states the objective exactly as
-  monster placement does. Validity differs from monsters: a room can hold only
-  one of each `RoomUpgradeType` (see the `installed` filter in
-  `draw_upgrade_choices`), so rooms that already hold that type read as invalid.
-- The inspector keeps its catalog as **review + jump**, not a second build path:
-  list what is installed with remove controls, and an "Add upgrade" control that
-  arms the drawer tab pre-filtered to what this room can still take.
-- The `state.adventurer_parties.is_empty()` gate on applying and removing
-  upgrades must survive the move — the drawer path currently enforces cost but
-  not the no-raid-in-progress rule that the inspector rows do.
+Shipped:
+
+- `placement_state` and `current_objective` know about `selected_upgrade`.
+  Arming a trap lights the rooms that can take it and states the objective
+  ("Install Poison Dart in a combat room"), exactly as arming a monster does.
+  Validity differs by kind: a monster wants a free slot, an upgrade wants a room
+  not already holding one of its type, and the board says which refusal it is —
+  "Full" against "Has one".
+- The inspector's catalog is gone. ACTIONS now leads with **Add upgrade (N)**,
+  which arms the drawer tab, and lists what is installed with its Remove control
+  underneath. One build path, reviewed from the room.
+- The catalog's description text moved to the drawer rows, which now say what
+  each upgrade actually does rather than just naming its family — the drawer is
+  the only place to choose from now, so it carries the information.
+- Drawer entries grey out during a raid, matching `apply_upgrade`'s existing
+  refusal instead of letting the click fail. (The earlier note here was wrong:
+  the gate was always enforced in the simulation; only the affordance was
+  missing.)
+- `upgrade_scroll` went with the catalog — the panel no longer has anything to
+  scroll.
+
+Verified against a `traps` capture scene: one trapped room, one empty, a trap
+armed, both refusals and the highlight visible at once.
 
 ### Variants: pooled per line — *done, thresholds need rebalancing*
 
