@@ -8,25 +8,26 @@ work is shipped. What follows is what is still genuinely open.
 Six items from playtesting, in the order they were raised. Directions below are
 decided; the code references are where the work lands.
 
-### Monster status in the room inspector
+### Monster status in the room inspector — *done*
 
-A room's defenders are effectively opaque. `draw_monster_progress_rows`
-(`src/ui/upgrade_panel.rs`) prints only the type name and a variant-progress
-string — no HP, no element, no traits, no stats — so there is no way to tell a
-healthy defender from one crawling back at half HP.
+A room's defenders were opaque: `draw_monster_progress_rows` printed a type name
+and a progress string, nothing else.
 
-- Extend the existing rows in place (decided: richer rows, not a new page or a
-  board hover card). Each row wants: an HP bar (`monster.hp`/`max_hp` — respawn
-  already returns living defenders at half HP when mana ran short), element,
-  trait names, and floor-scaled attack/defense as numbers rather than a phrase.
-  No per-creature level or XP — that model is dropped (see the variants item
-  below); the row instead shows the *type's* variant progress, and it is also
-  where the swap control lands, so design the two together.
-- `DEFENDER_ROW_H` and `MAX_DEFENDER_ROWS` both need a pass — the taller rows
-  change how many fit, and the card height math in `draw_selected_room` is
-  hardcoded around the current row size.
-- Dead-but-not-yet-respawned defenders should read as dead in the list, not just
-  dimmed text.
+Shipped: each defender now gets a card (`draw_defender_row`) carrying a health
+bar coloured by how hurt it is, `hp/max_hp`, floor-scaled ATK/DEF, its element
+and traits, and its line's variant progress — with the card tinted by element
+while alive. A fallen defender takes the danger tone and says "Fallen" rather
+than merely dimming, so it reads as a state to act on. `DEFENDER_ROW_H` went
+24 → 46 and `MAX_DEFENDER_ROWS` 6 → 4; the card height math follows both.
+Verified against a `defenders` capture scene holding one whole, one wounded and
+one fallen creature in an over-capacity room.
+
+The `*_preview` / summary text builders moved to `ui/upgrade_panel/previews.rs`
+to make room, which is the extraction the code-health list called for.
+
+Still open:
+
+- The swap control lands on these rows — see the variants item below.
 
 ### Adventurer visits should be mana-positive — *mechanism done, tuning open*
 
@@ -281,9 +282,7 @@ The dungeon is still a linear room queue. The edge model (`Room::exits`,
 - Extract repeated drawing constants into toolkit-backed theme helpers shared by
   controls, logs, and resource panels.
 - Keep the JSON-integrity suite growing with content, and every file under the
-  800-line limit as UI work lands. `src/ui/upgrade_panel.rs` is the next one at
-  the edge (794); the `*_preview` text builders are the natural extraction into
-  `ui/upgrade_panel/previews.rs`.
+  800-line limit as UI work lands.
 - `src/ui/controls.rs::draw_controls` appears fully superseded by `ui/shell.rs`,
   which reuses only `ControlAction`'s `ToggleSpeed` / `ToggleDungeon`. The rest
   of that module looks dead — confirm and delete it.

@@ -186,6 +186,50 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.add_type_experience("Goblin", 32);
             state.add_type_experience("Goblin Archer", 11);
         }
+        "defenders" => {
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.mana = 400;
+            let _ = simulation::add_room(state, None);
+            if let Some((floor, pos)) = find_combat_room(state) {
+                let _ = simulation::place_monster(state, floor, pos, "Goblin");
+                let _ = simulation::place_monster(state, floor, pos, "Goblin Archer");
+                // A third body puts the room over its two-slot budget, which is
+                // exactly what a save written before the limit looks like: the
+                // rows must render it rather than hide it.
+                let _ = simulation::place_monster(state, floor, pos, "Goblin Shaman");
+                if let Some(f) = state.floors.iter_mut().find(|f| f.number == floor) {
+                    if let Some(r) = f.rooms.iter_mut().find(|r| r.position == pos) {
+                        r.monsters.push(game_state::Monster {
+                            id: 940,
+                            type_name: "Goblin Shaman".to_string(),
+                            hp: 6,
+                            max_hp: 22,
+                            alive: true,
+                            is_boss: false,
+                            scaled_stats: game_state::Stats {
+                                hp: 22,
+                                attack: 5,
+                                defense: 1,
+                            },
+                            active_traits: Vec::new(),
+                        });
+                        // One wounded, one fallen, one whole.
+                        if let Some(m) = r.monsters.get_mut(1) {
+                            m.hp = m.max_hp / 2;
+                        }
+                        if let Some(m) = r.monsters.first_mut() {
+                            m.alive = false;
+                            m.hp = 0;
+                        }
+                    }
+                }
+                state.selected_room = Some((floor, pos));
+            }
+            state.add_type_experience("Goblin", 32);
+        }
         "rival" => {
             use crate::game_state::{Equipment, HeroRecord, HeroStatus};
             if let Some(species) = first_starter_species() {

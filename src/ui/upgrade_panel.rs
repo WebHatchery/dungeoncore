@@ -1,14 +1,18 @@
 use macroquad::prelude::*;
 use macroquad_toolkit::input::was_clicked_rect;
 
-use crate::data::evolutions::get_evolution_for_monster;
 use crate::data::monsters::{get_monster_template, get_species_display_name};
-use crate::data::traits::get_trait;
 use crate::data::upgrades::{get_all_upgrades, UpgradeTemplate};
 use crate::game_state::{GameState, Monster, Room, RoomType};
 
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
+
+mod previews;
+use previews::{
+    monster_variant_status, room_upgrade_preview, template_trait_summary, template_variant_hint,
+    upgrade_preview,
+};
 
 #[derive(Debug, Clone)]
 pub enum UpgradeAction {
@@ -278,12 +282,7 @@ fn draw_selected_room(
         if adventurers > 0 { WARNING } else { EMERALD },
     );
 
-    draw_section_rule(
-        rect.x + 12.0,
-        rect.y + 202.0,
-        rect.w - 24.0,
-        "DEFENDER PROGRESSION",
-    );
+    draw_section_rule(rect.x + 12.0, rect.y + 202.0, rect.w - 24.0, "DEFENDERS");
     if let Some(monster_id) = draw_monster_progress_rows(
         state,
         room,
@@ -412,12 +411,13 @@ fn draw_upgrade_catalog(
     }
 }
 
-const DEFENDER_ROW_H: f32 = 24.0;
-const MAX_DEFENDER_ROWS: usize = 6;
+const DEFENDER_ROW_H: f32 = 46.0;
+const MAX_DEFENDER_ROWS: usize = 4;
 
-/// Vertical list of every defender in the room — one row each with name,
-/// evolution status, and a dismiss control. Wheel-scrolls past
-/// MAX_DEFENDER_ROWS.
+/// Vertical list of every defender in the room — one card each carrying the
+/// creature's condition (health, whether it has fallen), what it hits for, its
+/// element and traits, its line's variant progress, and a dismiss control.
+/// Wheel-scrolls past MAX_DEFENDER_ROWS.
 fn draw_monster_progress_rows(
     state: &GameState,
     room: &Room,
@@ -455,42 +455,9 @@ fn draw_monster_progress_rows(
             rect.x,
             rect.y + slot as f32 * DEFENDER_ROW_H,
             rect.w,
-            DEFENDER_ROW_H - 3.0,
+            DEFENDER_ROW_H - 4.0,
         );
-        let (status, color) = monster_variant_status(state, room, monster);
-        draw_text_fit(
-            &monster.type_name,
-            row.x,
-            row.y + 14.0,
-            row.w * 0.42,
-            10.0,
-            if monster.alive { TEXT } else { TEXT_DIM },
-        );
-        draw_text_fit(
-            &status,
-            row.x + row.w * 0.44,
-            row.y + 14.0,
-            row.w * 0.56 - 20.0,
-            9.0,
-            color,
-        );
-
-        // Dismiss control: refunds half the summon cost.
-        let x_rect = Rect::new(row.x + row.w - 16.0, row.y + 3.0, 16.0, 16.0);
-        let hovered = can_dismiss && x_rect.contains(vec2(mouse_position().0, mouse_position().1));
-        draw_centered_text(
-            "x",
-            x_rect,
-            12.0,
-            if hovered {
-                DANGER
-            } else if can_dismiss {
-                TEXT_MUTED
-            } else {
-                TEXT_DIM
-            },
-        );
-        if can_dismiss && was_clicked_rect(x_rect) {
+        if draw_defender_row(state, room, monster, row, can_dismiss) {
             dismissed = Some(monster.id);
         }
     }
@@ -507,6 +474,120 @@ fn draw_monster_progress_rows(
     }
 
     dismissed
+}
+
+/// One defender's card. Returns true when its dismiss control was clicked.
+fn draw_defender_row(
+    state: &GameState,
+    room: &Room,
+    monster: &Monster,
+    row: Rect,
+    can_dismiss: bool,
+) -> bool {
+    let element = crate::data::monsters::monster_element_id(&monster.type_name);
+    let accent = match &element {
+        Some(id) => element_color(id),
+        None => EMERALD,
+    };
+    // A fallen defender is a state the player must be able to act on, not a
+    // greyer shade of the same row — it gets the danger tone and says so.
+    let tone = if monster.alive { accent } else { DANGER };
+    draw_card(row, with_alpha(tone, 0.06), with_alpha(tone, 0.22));
+
+    let name_color = if monster.alive { TEXT } else { TEXT_DIM };
+    draw_text_fit(
+        &monster.type_name,
+        row.x + 8.0,
+        row.y + 15.0,
+        row.w * 0.50,
+        12.0,
+        name_color,
+    );
+
+    // Offense, right-aligned and clear of the dismiss control.
+    draw_text_fit_right(
+        &format!(
+            "ATK {}  DEF {}",
+            monster.scaled_stats.attack, monster.scaled_stats.defense
+        ),
+        row.x + row.w - 22.0,
+        row.y + 15.0,
+        row.w * 0.42,
+        10.0,
+        if monster.alive { TEXT_MUTED } else { TEXT_DIM },
+    );
+
+    // Condition: a bar the width of the name column, so a defender crawling
+    // back at half health after a respawn is visible at a glance.
+    let bar = Rect::new(row.x + 8.0, row.y + 21.0, row.w * 0.50, 5.0);
+    draw_rectangle(bar.x, bar.y, bar.w, bar.h, Color::new(0.0, 0.0, 0.0, 0.45));
+    if monster.alive && monster.max_hp > 0 {
+        let fraction = (monster.hp as f32 / monster.max_hp as f32).clamp(0.0, 1.0);
+        let health_tone = if fraction > 0.6 {
+            EMERALD
+        } else if fraction > 0.3 {
+            WARNING
+        } else {
+            DANGER
+        };
+        draw_rectangle(bar.x, bar.y, bar.w * fraction, bar.h, health_tone);
+    }
+    draw_text_fit(
+        &if monster.alive {
+            format!("{}/{} HP", monster.hp, monster.max_hp)
+        } else {
+            "Fallen".to_string()
+        },
+        row.x + 8.0,
+        row.y + 38.0,
+        row.w * 0.50,
+        9.0,
+        if monster.alive { TEXT_MUTED } else { DANGER },
+    );
+
+    // Element and traits on the right, over the line's variant progress.
+    let traits = template_trait_summary(
+        &monster
+            .active_traits
+            .iter()
+            .map(|t| t.id.clone())
+            .collect::<Vec<_>>(),
+    );
+    draw_text_fit_right(
+        &format!("{} · {}", element.as_deref().unwrap_or("Neutral"), traits),
+        row.x + row.w - 8.0,
+        row.y + 28.0,
+        row.w * 0.48,
+        9.0,
+        if monster.alive { accent } else { TEXT_DIM },
+    );
+    let (status, status_color) = monster_variant_status(state, room, monster);
+    draw_text_fit_right(
+        &status,
+        row.x + row.w - 8.0,
+        row.y + 40.0,
+        row.w * 0.48,
+        9.0,
+        status_color,
+    );
+
+    // Dismiss control: refunds half the summon cost.
+    let x_rect = Rect::new(row.x + row.w - 18.0, row.y + 4.0, 16.0, 16.0);
+    let hovered = can_dismiss && x_rect.contains(vec2(mouse_position().0, mouse_position().1));
+    draw_centered_text(
+        "x",
+        x_rect,
+        12.0,
+        if hovered {
+            DANGER
+        } else if can_dismiss {
+            TEXT_MUTED
+        } else {
+            TEXT_DIM
+        },
+    );
+
+    can_dismiss && was_clicked_rect(x_rect)
 }
 
 fn draw_upgrade_row(state: &GameState, upgrade: &UpgradeTemplate, rect: Rect) -> bool {
@@ -562,126 +643,6 @@ fn draw_upgrade_row(state: &GameState, upgrade: &UpgradeTemplate, rect: Rect) ->
     );
 
     enabled && was_clicked_rect(rect)
-}
-
-/// Human description of a trap's behavior from its effect kind and value.
-fn trap_preview(effect_kind: &str, value: f32) -> String {
-    match effect_kind {
-        "Damage" => format!("{:.0} damage on trigger", value),
-        "Poison" => format!("Poison: {:.0} dmg/tick", value),
-        "Burn" => format!("Burn: {:.0} dmg/tick", value),
-        "Snare" => format!("Holds party {:.0} ticks", value),
-        "Alarm" => "Alerts defenders: +25% attack".to_string(),
-        "ManaSiphon" => format!("Siphons {:.0} mana per trigger", value),
-        "GoldSteal" => format!("Steals {:.0} gold per trigger", value),
-        _ => format!("Trap damage x{:.2}", value),
-    }
-}
-
-fn upgrade_preview(upgrade: &UpgradeTemplate) -> String {
-    match upgrade.upgrade_type.as_str() {
-        "trap" => trap_preview(&upgrade.effect_kind, upgrade.multiplier),
-        "treasure" => format!("Gold drops x{:.2}", upgrade.multiplier),
-        "reinforcement" => format!("Monster survival x{:.2}", upgrade.multiplier),
-        "evolution" => format!("Monster XP x{:.2}", upgrade.multiplier),
-        "attunement" => format!(
-            "{} monsters x{:.2}",
-            upgrade.element.as_deref().unwrap_or("Attuned"),
-            upgrade.multiplier
-        ),
-        _ => upgrade.effect.clone(),
-    }
-}
-
-fn room_upgrade_preview(upgrade: &crate::game_state::RoomUpgrade) -> String {
-    match &upgrade.upgrade_type {
-        crate::game_state::RoomUpgradeType::Trap => {
-            let mut text = trap_preview(&upgrade.effect_kind, upgrade.multiplier);
-            if upgrade.disarmed {
-                text.push_str(" (disarmed)");
-            }
-            text
-        }
-        crate::game_state::RoomUpgradeType::Treasure => {
-            format!("{} Gold drops x{:.2}", upgrade.effect, upgrade.multiplier)
-        }
-        crate::game_state::RoomUpgradeType::Reinforcement => {
-            format!(
-                "{} Monster survival x{:.2}",
-                upgrade.effect, upgrade.multiplier
-            )
-        }
-        crate::game_state::RoomUpgradeType::Evolution => {
-            format!("{} Monster XP x{:.2}", upgrade.effect, upgrade.multiplier)
-        }
-        crate::game_state::RoomUpgradeType::Attunement => {
-            format!(
-                "{} {} monsters x{:.2}",
-                upgrade.effect,
-                upgrade.element.as_deref().unwrap_or("Attuned"),
-                upgrade.multiplier
-            )
-        }
-    }
-}
-
-/// What this defender's *line* is learning. Identical for every creature of the
-/// same type — progress pools across the line, not the individual.
-fn monster_variant_status(state: &GameState, room: &Room, monster: &Monster) -> (String, Color) {
-    let Some(path) = get_evolution_for_monster(&monster.type_name) else {
-        return ("Final".to_string(), TEXT_DIM);
-    };
-
-    if state.unlocked_monsters.contains(&path.to_monster) {
-        return (format!("{} unlocked", path.to_monster), EMERALD);
-    }
-    let pooled = state.type_experience(&monster.type_name);
-    if pooled < path.experience_required {
-        return (
-            format!(
-                "{}/{} XP -> {}",
-                pooled, path.experience_required, path.to_monster
-            ),
-            MANA,
-        );
-    }
-    if room.floor_number < path.conditions.min_floor {
-        return (format!("floor {}", path.conditions.min_floor), WARNING);
-    }
-    (format!("Ready -> {}", path.to_monster), EMERALD)
-}
-
-fn template_trait_summary(trait_ids: &[String]) -> String {
-    if trait_ids.is_empty() {
-        return "None".to_string();
-    }
-
-    trait_ids
-        .iter()
-        .take(3)
-        .map(|trait_id| {
-            get_trait(trait_id)
-                .map(|trait_def| trait_def.name)
-                .unwrap_or_else(|| trait_id.clone())
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
-/// What this line unlocks next, and what it takes. The cost is paid in pooled
-/// experience across every creature of the type, not by any one of them.
-fn template_variant_hint(state: &GameState, monster_name: &str) -> String {
-    get_evolution_for_monster(monster_name)
-        .map(|path| {
-            format!(
-                "Variant: {}/{} XP pooled, fielded on floor {} -> {}",
-                state.type_experience(monster_name),
-                path.experience_required,
-                path.conditions.min_floor,
-                path.to_monster
-            )
-        })
-        .unwrap_or_else(|| "Variant: final form".to_string())
 }
 
 fn draw_hint(rect: Rect, text: &str, color: Color) {
