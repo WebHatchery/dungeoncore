@@ -1,4 +1,5 @@
-//! EVOLVE tab: current defenders, their next forms, and species unlocks.
+//! VARIANTS tab: what each monster line has pooled, the variant it is
+//! about to unlock, and the next species available to buy.
 
 use macroquad::prelude::*;
 
@@ -6,23 +7,27 @@ use crate::data::evolutions::get_evolution_for_monster;
 use crate::data::monsters::{get_all_species, get_species_display_name};
 use crate::game_state::GameState;
 use crate::ui::theme::*;
+use std::collections::BTreeMap;
 
 use super::{draw_section_title, DrawerAction};
 use macroquad_toolkit::colors::with_alpha;
 
 pub(super) fn draw_evolution_tab(state: &GameState, rect: Rect) -> DrawerAction {
-    draw_section_title(rect, "EVOLUTION", "Advance unlocked species.");
+    draw_section_title(rect, "VARIANTS", "What your lines are learning.");
     let mut action = DrawerAction::None;
 
-    let rows = collect_evolution_rows(state);
-    let ready_count = rows.iter().filter(|row| row.ready).count();
-    let waiting_count = rows.iter().filter(|row| !row.ready && row.has_path).count();
+    let rows = collect_variant_rows(state);
+    let unlocked_count = rows.iter().filter(|row| row.unlocked).count();
+    let waiting_count = rows
+        .iter()
+        .filter(|row| !row.unlocked && row.has_path)
+        .count();
     let final_count = rows.iter().filter(|row| !row.has_path).count();
 
     let card = Rect::new(rect.x, rect.y + 70.0, rect.w, 126.0);
     draw_card(card, CARD, BORDER_MUTED);
     draw_text_fit(
-        &format!("Ready: {}  Waiting: {}", ready_count, waiting_count),
+        &format!("Unlocked: {}  Learning: {}", unlocked_count, waiting_count),
         card.x + 12.0,
         card.y + 28.0,
         card.w - 24.0,
@@ -50,7 +55,7 @@ pub(super) fn draw_evolution_tab(state: &GameState, rect: Rect) -> DrawerAction 
         SOUL,
     );
     draw_text_fit(
-        "Current defenders and their next forms.",
+        "Experience pools per line, not per creature.",
         card.x + 12.0,
         card.y + 108.0,
         card.w - 24.0,
@@ -64,7 +69,7 @@ pub(super) fn draw_evolution_tab(state: &GameState, rect: Rect) -> DrawerAction 
         .iter()
         .take(((rect.y + rect.h - row_y - 106.0) / row_h).max(0.0) as usize)
     {
-        draw_evolution_row(row, Rect::new(rect.x, row_y, rect.w, row_h - 6.0));
+        draw_variant_row(row, Rect::new(rect.x, row_y, rect.w, row_h - 6.0));
         row_y += row_h;
     }
 
@@ -109,100 +114,109 @@ pub(super) fn draw_evolution_tab(state: &GameState, rect: Rect) -> DrawerAction 
         }
     }
 
-    if draw_command_button(
-        Rect::new(rect.x, rect.y + rect.h - 46.0, rect.w, 42.0),
-        "Evolve",
-        ButtonTone::Arcane,
-        ready_count > 0,
-    ) {
-        action = DrawerAction::ProcessEvolutions;
-    }
-
     action
 }
 
 #[derive(Debug)]
-struct EvolutionUiRow {
-    monster: String,
-    location: String,
+struct VariantUiRow {
+    /// The line that is learning — a monster type, not one creature.
+    line: String,
+    /// Where that line is fielded, and how deep.
+    fielded: String,
     xp_label: String,
     status: String,
     color: Color,
-    ready: bool,
+    unlocked: bool,
     has_path: bool,
 }
 
-fn collect_evolution_rows(state: &GameState) -> Vec<EvolutionUiRow> {
-    let mut rows = Vec::new();
-
+/// One row per monster *type* the dungeon fields, showing the pooled experience
+/// of that whole line and what it is about to unlock. Several goblins in
+/// several rooms are one row, because they share one pool.
+fn collect_variant_rows(state: &GameState) -> Vec<VariantUiRow> {
+    // Where each line stands: how many creatures, and the deepest floor —
+    // the depth gate on a variant is checked against where the line is fielded.
+    let mut fielded: BTreeMap<&str, (usize, i32)> = BTreeMap::new();
     for floor in &state.floors {
         for room in &floor.rooms {
             for monster in &room.monsters {
-                let location = format!("F{} R{}", room.floor_number, room.position);
-                if let Some(path) = get_evolution_for_monster(&monster.type_name) {
-                    let ready_xp = monster.experience >= path.experience_required;
-                    let ready_floor = room.floor_number >= path.conditions.min_floor;
-                    let ready_gold = state.gold >= path.conditions.gold_cost;
-                    let ready = ready_xp && ready_floor && ready_gold;
-                    let (status, color) = if ready {
-                        (format!("Ready -> {}", path.to_monster), EMERALD)
-                    } else if !ready_xp {
-                        (
-                            format!("Needs {} XP", path.experience_required - monster.experience),
-                            MANA,
-                        )
-                    } else if !ready_floor {
-                        (
-                            format!("Needs floor {}", path.conditions.min_floor),
-                            WARNING,
-                        )
-                    } else {
-                        (
-                            format!("Needs {} gold", path.conditions.gold_cost),
-                            TREASURE,
-                        )
-                    };
-
-                    rows.push(EvolutionUiRow {
-                        monster: monster.type_name.clone(),
-                        location,
-                        xp_label: format!("{}/{} XP", monster.experience, path.experience_required),
-                        status,
-                        color,
-                        ready,
-                        has_path: true,
-                    });
-                } else {
-                    rows.push(EvolutionUiRow {
-                        monster: monster.type_name.clone(),
-                        location,
-                        xp_label: format!("{} XP", monster.experience),
-                        status: "Final form".to_string(),
-                        color: TEXT_DIM,
-                        ready: false,
-                        has_path: false,
-                    });
-                }
+                let entry = fielded.entry(&monster.type_name).or_insert((0, 0));
+                entry.0 += 1;
+                entry.1 = entry.1.max(room.floor_number);
             }
         }
     }
 
+    let mut rows = Vec::new();
+    for (line, (count, deepest)) in fielded {
+        let pooled = state.type_experience(line);
+        let fielded_label = format!("{} placed · F{}", count, deepest);
+
+        let Some(path) = get_evolution_for_monster(line) else {
+            rows.push(VariantUiRow {
+                line: line.to_string(),
+                fielded: fielded_label,
+                xp_label: format!("{} XP", pooled),
+                status: "Final form".to_string(),
+                color: TEXT_DIM,
+                unlocked: false,
+                has_path: false,
+            });
+            continue;
+        };
+
+        let unlocked = state.unlocked_monsters.contains(&path.to_monster);
+        let enough_xp = pooled >= path.experience_required;
+        let deep_enough = deepest >= path.conditions.min_floor;
+        let (status, color) = if unlocked {
+            (format!("{} unlocked", path.to_monster), EMERALD)
+        } else if !enough_xp {
+            (
+                format!(
+                    "{} XP to {}",
+                    path.experience_required - pooled,
+                    path.to_monster
+                ),
+                MANA,
+            )
+        } else if !deep_enough {
+            (
+                format!("Field it on floor {}", path.conditions.min_floor),
+                WARNING,
+            )
+        } else {
+            ("Unlocking...".to_string(), EMERALD)
+        };
+
+        rows.push(VariantUiRow {
+            line: line.to_string(),
+            fielded: fielded_label,
+            xp_label: format!("{}/{} XP", pooled, path.experience_required),
+            status,
+            color,
+            unlocked,
+            has_path: true,
+        });
+    }
+
+    // Lines still learning first — those are the ones the player can act on.
     rows.sort_by(|a, b| {
-        b.ready
-            .cmp(&a.ready)
-            .then_with(|| a.monster.cmp(&b.monster))
+        a.unlocked
+            .cmp(&b.unlocked)
+            .then_with(|| b.has_path.cmp(&a.has_path))
+            .then_with(|| a.line.cmp(&b.line))
     });
     rows
 }
 
-fn draw_evolution_row(row: &EvolutionUiRow, rect: Rect) {
+fn draw_variant_row(row: &VariantUiRow, rect: Rect) {
     draw_card(
         rect,
         with_alpha(row.color, 0.075),
         with_alpha(row.color, 0.26),
     );
     draw_text_fit(
-        &row.monster,
+        &row.line,
         rect.x + 9.0,
         rect.y + 16.0,
         rect.w - 82.0,
@@ -210,7 +224,7 @@ fn draw_evolution_row(row: &EvolutionUiRow, rect: Rect) {
         TEXT,
     );
     draw_text_fit(
-        &format!("{}  {}", row.location, row.xp_label),
+        &format!("{} · {}", row.fielded, row.xp_label),
         rect.x + 9.0,
         rect.y + 32.0,
         rect.w - 82.0,

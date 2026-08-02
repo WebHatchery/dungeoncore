@@ -1,14 +1,17 @@
 use macroquad_toolkit::timing::Cooldown;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 mod effects;
 mod floor;
+mod heroes;
 pub use effects::{EffectAnchor, EffectKind, RoomEffect};
 pub use floor::Floor;
+pub use heroes::{Adventurer, AdventurerParty, Condition, Equipment, HeroRecord, HeroStatus};
 
 /// A ready (zero-duration) cooldown, used as the `#[serde(skip)]` default for
 /// transient fields — `Cooldown` has no `Default` impl of its own.
-fn ready_cooldown() -> Cooldown {
+pub(crate) fn ready_cooldown() -> Cooldown {
     Cooldown::new(0.0)
 }
 
@@ -87,8 +90,6 @@ pub struct Monster {
     pub scaled_stats: Stats,
     #[serde(default)]
     pub active_traits: Vec<ActiveTrait>,
-    #[serde(default)]
-    pub experience: i32,
 }
 
 /// Room in a dungeon floor
@@ -181,142 +182,9 @@ impl Room {
     }
 }
 
-/// Adventurer equipment
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Equipment {
-    pub weapon: String,
-    pub armor: String,
-    pub accessory: String,
-}
-
-impl Default for Equipment {
-    fn default() -> Self {
-        Self {
-            weapon: "Rusty Sword".into(),
-            armor: "Cloth Robe".into(),
-            accessory: "Worn Ring".into(),
-        }
-    }
-}
-
-/// A lingering status effect on an adventurer (poison, burn, …)
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Condition {
-    pub kind: String,
-    /// Combat ticks remaining
-    pub ticks: i32,
-    /// Damage dealt per tick
-    pub power: i32,
-}
-
-/// Individual adventurer in a party
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Adventurer {
-    pub id: u64,
-    pub name: String,
-    pub class_name: String,
-    #[serde(default = "default_race")]
-    pub race: String,
-    pub level: i32,
-    pub hp: i32,
-    pub max_hp: i32,
-    pub alive: bool,
-    pub experience: i32,
-    pub gold: i32,
-    pub equipment: Equipment,
-    #[serde(default)]
-    pub conditions: Vec<Condition>,
-    pub scaled_stats: Stats,
-}
-
-fn default_race() -> String {
-    "Human".to_string()
-}
-
 fn default_core_hp() -> i32 {
     500
 }
-
-/// Standing of a hero in the persistent registry.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum HeroStatus {
-    /// Survived a previous raid; available to return.
-    Alive,
-    /// Currently raiding the dungeon.
-    Inside,
-    /// Killed within the dungeon.
-    Dead,
-}
-
-/// Persistent ledger entry for an adventurer who has entered the dungeon.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct HeroRecord {
-    pub id: u64,
-    pub name: String,
-    pub class_name: String,
-    pub race: String,
-    pub level: i32,
-    pub experience: i32,
-    /// Times this hero has entered the dungeon.
-    pub delves: i32,
-    /// Monsters this hero has slain across all delves.
-    pub kills: i32,
-    /// Total gold this hero has escaped the dungeon with.
-    pub gold_stolen: i32,
-    pub status: HeroStatus,
-    /// Floor and day of death (only meaningful when status is Dead).
-    #[serde(default)]
-    pub death_floor: i32,
-    #[serde(default)]
-    pub death_day: i32,
-}
-
-impl HeroRecord {
-    /// A "rival": a recurring survivor (three delves or more) or a prolific
-    /// defender-slayer (five kills or more). Rivals are named, marked on the
-    /// board, and carry a bounty — the dungeon's grudge made concrete.
-    pub fn is_rival(&self) -> bool {
-        self.delves >= 3 || self.kills >= 5
-    }
-
-    /// Bounty (souls, gold) for finally slaying this rival, scaled by how much
-    /// notoriety they had built raiding the dungeon.
-    pub fn bounty(&self) -> (i32, i32) {
-        (1 + self.delves / 2, 40 + self.kills * 10)
-    }
-}
-
-/// Party of adventurers exploring the dungeon
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AdventurerParty {
-    pub id: u64,
-    pub members: Vec<Adventurer>,
-    pub current_floor: i32,
-    pub current_room: usize,
-    pub retreating: bool,
-    pub casualties: i32,
-    pub loot: i32,
-    pub entry_time: i32,
-    pub target_floor: i32,
-    /// Combat ticks the party is held fast by a snare trap (can't attack)
-    #[serde(default)]
-    pub snared_ticks: i32,
-    /// An alarm trap has alerted the dungeon: monsters fight harder
-    #[serde(default)]
-    pub alarmed: bool,
-    /// Part of the tier-4 siege: marches on the core instead of looting.
-    #[serde(default)]
-    pub sieging: bool,
-    /// Room the party is currently animating out of (only meaningful while
-    /// `move_anim` is not ready). Transient — movement is a cosmetic tween.
-    #[serde(skip)]
-    pub prev_room: usize,
-    /// Corridor-travel animation; ready when the party has settled in a room,
-    /// armed to [`PARTY_MOVE_SECONDS`] while gliding to the next.
-    #[serde(skip, default = "ready_cooldown")]
-    pub move_anim: Cooldown,
-}
-
 /// Dungeon operational status
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum DungeonStatus {
@@ -471,6 +339,11 @@ pub struct GameState {
     // Monster progression
     pub unlocked_species: Vec<String>,
     pub unlocked_monsters: Vec<String>,
+    /// Experience each monster *type* has earned, pooled across every creature
+    /// of that type the dungeon has ever fielded. Individual monsters do not
+    /// progress; a line does, and crossing a threshold unlocks its next variant.
+    #[serde(default)]
+    pub monster_type_experience: HashMap<String, i32>,
 
     // UI state (not persisted)
     #[serde(skip)]
@@ -540,6 +413,7 @@ impl GameState {
             tutorial_codex_seen: false,
             unlocked_species: vec![],
             unlocked_monsters: vec![],
+            monster_type_experience: HashMap::new(),
             selected_room: None,
             selected_monster: None,
             selected_upgrade: None,
@@ -642,6 +516,22 @@ impl GameState {
 
     /// Mana-income multiplier from difficulty (applied to the presence trickle
     /// and to death income alike).
+    /// Experience the whole line of this monster type has pooled.
+    pub fn type_experience(&self, type_name: &str) -> i32 {
+        self.monster_type_experience
+            .get(type_name)
+            .copied()
+            .unwrap_or(0)
+    }
+
+    /// Credit a type's shared pool for work one of its creatures did.
+    pub fn add_type_experience(&mut self, type_name: &str, xp: i32) {
+        *self
+            .monster_type_experience
+            .entry(type_name.to_string())
+            .or_insert(0) += xp;
+    }
+
     pub fn income_mult(&self) -> f32 {
         self.difficulty.profile().income_mult
     }

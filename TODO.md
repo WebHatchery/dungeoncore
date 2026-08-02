@@ -11,10 +11,9 @@ decided; the code references are where the work lands.
 ### Monster status in the room inspector
 
 A room's defenders are effectively opaque. `draw_monster_progress_rows`
-(`src/ui/upgrade_panel.rs:442`) prints only the type name and an evolution
-status string — no HP, no element, no traits, no XP numbers — so there is no way
-to tell a healthy defender from one crawling back at half HP, or to see which
-monster is close to evolving.
+(`src/ui/upgrade_panel.rs`) prints only the type name and a variant-progress
+string — no HP, no element, no traits, no stats — so there is no way to tell a
+healthy defender from one crawling back at half HP.
 
 - Extend the existing rows in place (decided: richer rows, not a new page or a
   board hover card). Each row wants: an HP bar (`monster.hp`/`max_hp` — respawn
@@ -101,79 +100,58 @@ is a different interaction for the same job.
   upgrades must survive the move — the drawer path currently enforces cost but
   not the no-raid-in-progress rule that the inspector rows do.
 
-### Evolution becomes type-level variant unlocks
+### Variants: pooled per line — *model done, swap interaction open*
 
 **Individual monsters do not level and do not evolve.** XP accrues to a monster
-*type*: every Goblin in the dungeon feeds one shared Goblin pool, and when that
-pool crosses a threshold, Goblin Warrior unlocks — both as a new placeable unit
-in the MONSTERS tab and as an upgrade the player can apply to an already-placed
-Goblin. A given monster only gets deadlier by being placed on a deeper floor
-(`get_scaled_stats(base, floor_number, is_boss)` already does this); there is no
-per-creature progression to track.
+*type*: every Goblin feeds one shared Goblin pool, and crossing a threshold
+unlocks the next variant. A creature only gets deadlier by being placed on a
+deeper floor. Individual XP and levels belong to adventurers alone
+(`HeroRecord.experience` / `level`) — the journal item above surfaces those.
 
-Individual XP and levels belong to adventurers, not defenders — that side is
-already correct (`HeroRecord.experience` / `level`, advanced in
-`src/simulation/adventure.rs:449` with `xp_for_level`), and the journal item
-above is where it gets surfaced.
+Shipped:
 
-What contradicts the model today:
+- `Monster.experience` is gone. `GameState.monster_type_experience`
+  (`HashMap<String, i32>`, `#[serde(default)]`) holds the pools, read and
+  written through `type_experience` / `add_type_experience`. Serde drops the old
+  per-creature field silently, so no save migration was needed. Prestige never
+  resets the dungeon, so the pool simply persists — that open question was moot.
+- `reward_adventurer_kills` credits the pool of every type that survived the
+  fight, once per surviving creature, so the earn rate per body is unchanged —
+  only where it lands.
+- `process_evolution_unlocks` reads the pool, and still gates on depth: a line
+  unlocks a variant only while it is actually fielded at that variant's
+  `min_floor`. Pool alone is not enough. Iteration order is a `BTreeMap`, so
+  unlock order never depends on hashing.
+- The bulk `process_evolutions` button is deleted, along with
+  `DrawerAction::ProcessEvolutions`, the dead `ControlAction` variant, and the
+  now-unused `can_evolve` / `get_all_evolutions_for_species` helpers.
+- The EVOLVE tab is now **VARIANTS**: one row per line rather than per creature,
+  showing how many are placed, the deepest floor they hold, pooled XP against
+  the threshold, and what unlocks next. The inspector's defender status and the
+  monster hint speak of pooled variant progress. A `variants` capture scene
+  covers it.
 
-- `Monster.experience` (`src/game_state.rs:91`) is per-creature. It gets deleted.
-  Serde ignores unknown fields, so old saves drop it without a migration step.
-- `reward_adventurer_kills` (`src/simulation/combat/rewards.rs:101`) awards XP to
-  every surviving monster in the room individually. It should instead credit the
-  shared pool for each of those monsters' types.
-- `process_evolutions` (`src/simulation/monsters.rs:356`, reached from
-  `DrawerAction::ProcessEvolutions` in `src/main.rs:430`) is a bulk button that
-  transforms every eligible defender at once. It goes away.
-- `process_evolution_unlocks` (`src/simulation/monsters.rs:323`) has the right
-  shape already — it unlocks a form without transforming anything — but reads
-  per-monster XP. It rereads the type pool instead, and can stop scanning every
-  room every hour since the pool is a single lookup.
+Still open:
 
-The work:
-
-- New state: a type-keyed XP pool on `GameState` (`HashMap<String, i32>` keyed by
-  `type_name`), `#[serde(default)]` so old saves start empty. Decide whether the
-  pool survives prestige or resets with the run.
-- **Placing a monster onto an existing one is the interaction**, and what happens
-  depends on whether it is that creature's own line:
-  - *Direct upgrade* (Goblin Warrior onto a Goblin): the creature transforms in
-    place, no retirement, no refund.
-  - *Unrelated monster* (Harpy onto a Goblin): the Goblin is retired for half its
-    mana back, then the Harpy is summoned at full price. Exactly the existing
-    dismiss-then-summon pair, done in one click — reuse `remove_monster`'s refund
-    rule (`get_monster_mana_cost(base, floor, boss_surcharge) / 2`, souls stay
-    spent) rather than inventing a second refund path.
-  - The upgrade branch must be strictly cheaper than the retire-and-replace one,
-    or the whole variant line is pointless. Its price is the one number still
-    open: full variant cost, or the difference against what the base creature is
-    worth.
-- That means placement needs a **per-monster target**, which does not exist today
-  — `place_monster` only appends to `room.monsters`. With a monster armed in the
-  drawer, the inspector's defender rows become drop targets ("place on this
-  defender") while clicking an open slot still adds a new one. Board-level
-  targeting can come later; the inspector rows are the cheap version and they are
-  already being rebuilt for the status item above. The room creature limit below
-  is in, so this already bites: a full room can only be improved by replacing an
-  occupant.
-- `process_evolutions`' second pass already transforms correctly (rescales via
-  `get_scaled_stats`, rebuilds `active_traits`) — reuse it as a single-monster
-  function for the upgrade branch rather than rewriting it.
-- `evolution_trees.json` stays the source of truth for which variant follows
-  which monster; `experience_required` becomes a type-pool threshold rather than
-  a per-creature one, so the numbers need a rebalance pass — one pool filled by
-  N goblins fills far faster than any single goblin did.
-- Rename throughout the UI. The EVOLVE tab, `monster_evolution_status`, and
-  `template_evolution_hint` speak of "evolution" and "next form"; the model is
-  "variants unlocked by a type's collective experience". The tab stops *doing*
-  evolutions and becomes a progress board: pool XP per type, what unlocks next,
-  how far off it is. Note that with XP no longer per-creature, the defender row
-  in the inspector (first item above) shows the *type's* progress, identical for
-  every monster of that type in the room.
-- The player needs to see which branch a click will take *before* taking it — a
-  direct upgrade and a retire-and-replace cost very different amounts. Show the
-  outcome and price on the targeted row while a monster is armed.
+- **The swap interaction.** Placing a monster onto an existing one, where a
+  direct upgrade (Goblin Warrior onto a Goblin) transforms in place with no
+  refund, and an unrelated monster (Harpy onto a Goblin) retires the occupant
+  for half its mana back and then summons at full price — reusing
+  `remove_monster`'s refund rule rather than inventing a second one. The upgrade
+  branch must be strictly cheaper than retire-and-replace or the variant line is
+  pointless; its price is the open number. `EvolutionConditions.gold_cost` is
+  currently unreferenced by code and is the natural candidate.
+- **Per-monster placement targets**, which do not exist — `place_monster` only
+  appends. With a monster armed, the inspector's defender rows become drop
+  targets while an open slot still adds a new creature. The room limit is in, so
+  this already bites: a full room can only be improved by replacing an occupant.
+  The player must see which branch a click takes, and its price, before clicking.
+- The transform itself has to be rewritten; the old `process_evolutions` second
+  pass was deleted with the bulk button rather than left as dead code. It must
+  rescale via `get_scaled_stats(base, floor, is_boss)` and rebuild
+  `active_traits` from the new template — see commit history for the shape.
+- **Rebalance `experience_required`.** The thresholds were written for a single
+  creature's XP; a pool filled by N creatures crosses them far faster.
 
 ### Rooms get a creature limit that grows with depth — *done, balance open*
 
@@ -303,7 +281,12 @@ The dungeon is still a linear room queue. The edge model (`Room::exits`,
 - Extract repeated drawing constants into toolkit-backed theme helpers shared by
   controls, logs, and resource panels.
 - Keep the JSON-integrity suite growing with content, and every file under the
-  800-line limit as UI work lands.
+  800-line limit as UI work lands. `src/ui/upgrade_panel.rs` is the next one at
+  the edge (794); the `*_preview` text builders are the natural extraction into
+  `ui/upgrade_panel/previews.rs`.
+- `src/ui/controls.rs::draw_controls` appears fully superseded by `ui/shell.rs`,
+  which reuses only `ControlAction`'s `ToggleSpeed` / `ToggleDungeon`. The rest
+  of that module looks dead — confirm and delete it.
 
 ## Deferred on purpose
 

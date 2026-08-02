@@ -55,39 +55,3 @@ pub fn get_evolutions_for_monster(monster_name: &str) -> Vec<EvolutionPath> {
         .filter(|p| p.from_monster == monster_name)
         .collect()
 }
-
-/// Check if a monster can evolve given current conditions.
-/// With branching paths, the first satisfiable one wins.
-pub fn can_evolve(
-    monster_name: &str,
-    experience: i32,
-    current_floor: i32,
-    available_gold: i32,
-) -> Option<EvolutionPath> {
-    get_evolutions_for_monster(monster_name)
-        .into_iter()
-        .find(|path| {
-            experience >= path.experience_required
-                && current_floor >= path.conditions.min_floor
-                && available_gold >= path.conditions.gold_cost
-        })
-}
-
-/// Get all monsters that can be reached through evolution from a starting monster
-pub fn get_all_evolutions_for_species(species: &str) -> Vec<String> {
-    let trees = get_evolution_trees();
-    let mut monsters = Vec::new();
-
-    if let Some(paths) = trees.get(species) {
-        for path in paths {
-            if !monsters.contains(&path.from_monster) {
-                monsters.push(path.from_monster.clone());
-            }
-            if !monsters.contains(&path.to_monster) {
-                monsters.push(path.to_monster.clone());
-            }
-        }
-    }
-
-    monsters
-}

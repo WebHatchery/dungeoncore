@@ -71,7 +71,6 @@ pub enum DrawerAction {
     BuildRoom,
     SelectMonster(String),
     SelectUpgrade(String),
-    ProcessEvolutions,
     UnlockSpecies(String),
     OpenCorePowers,
     ChannelGold,
@@ -158,7 +157,7 @@ fn draw_tab_rail(
         (DrawerTab::Monsters, "M", "MONSTERS", SOUL),
         (DrawerTab::Traps, "T", "TRAPS", DANGER),
         (DrawerTab::Build, "B", "BUILD", TREASURE),
-        (DrawerTab::Evolution, "E", "EVOLVE", MANA),
+        (DrawerTab::Evolution, "V", "VARIANTS", MANA),
         (DrawerTab::Heroes, "H", "HEROES", WARNING),
     ] {
         let tab_rect = Rect::new(rect.x + 7.0, y, rail_w - 14.0, 54.0);

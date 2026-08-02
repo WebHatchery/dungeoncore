@@ -170,6 +170,22 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.prestige = 2;
             let _ = simulation::add_room(state, None);
         }
+        "variants" => {
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.mana = 400;
+            let _ = simulation::add_room(state, None);
+            // Two lines fielded, each partway to its next variant, so the tab
+            // shows pooled progress rather than per-creature XP.
+            if let Some((floor, pos)) = find_combat_room(state) {
+                let _ = simulation::place_monster(state, floor, pos, "Goblin");
+                let _ = simulation::place_monster(state, floor, pos, "Goblin Archer");
+            }
+            state.add_type_experience("Goblin", 32);
+            state.add_type_experience("Goblin Archer", 11);
+        }
         "rival" => {
             use crate::game_state::{Equipment, HeroRecord, HeroStatus};
             if let Some(species) = first_starter_species() {

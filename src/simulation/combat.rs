@@ -400,7 +400,6 @@ mod tests {
                 defense: 0,
             },
             active_traits: Vec::new(),
-            experience: 0,
         }
     }
 

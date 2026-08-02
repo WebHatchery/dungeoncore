@@ -152,7 +152,7 @@ fn draw_selected_monster(state: &GameState, monster_name: &str, bounds: Rect, y:
             TEXT_MUTED,
         );
         draw_text_fit(
-            &template_evolution_hint(monster_name),
+            &template_variant_hint(state, monster_name),
             rect.x + 12.0,
             rect.y + 122.0,
             rect.w - 24.0,
@@ -457,7 +457,7 @@ fn draw_monster_progress_rows(
             rect.w,
             DEFENDER_ROW_H - 3.0,
         );
-        let (status, color) = monster_evolution_status(state, room, monster);
+        let (status, color) = monster_variant_status(state, room, monster);
         draw_text_fit(
             &monster.type_name,
             row.x,
@@ -625,27 +625,30 @@ fn room_upgrade_preview(upgrade: &crate::game_state::RoomUpgrade) -> String {
     }
 }
 
-fn monster_evolution_status(state: &GameState, room: &Room, monster: &Monster) -> (String, Color) {
-    if let Some(path) = get_evolution_for_monster(&monster.type_name) {
-        if monster.experience < path.experience_required {
-            return (
-                format!(
-                    "{}/{} XP -> {}",
-                    monster.experience, path.experience_required, path.to_monster
-                ),
-                MANA,
-            );
-        }
-        if room.floor_number < path.conditions.min_floor {
-            return (format!("floor {}", path.conditions.min_floor), WARNING);
-        }
-        if state.gold < path.conditions.gold_cost {
-            return (format!("{}g", path.conditions.gold_cost), TREASURE);
-        }
-        return (format!("Ready -> {}", path.to_monster), EMERALD);
-    }
+/// What this defender's *line* is learning. Identical for every creature of the
+/// same type — progress pools across the line, not the individual.
+fn monster_variant_status(state: &GameState, room: &Room, monster: &Monster) -> (String, Color) {
+    let Some(path) = get_evolution_for_monster(&monster.type_name) else {
+        return ("Final".to_string(), TEXT_DIM);
+    };
 
-    ("Final".to_string(), TEXT_DIM)
+    if state.unlocked_monsters.contains(&path.to_monster) {
+        return (format!("{} unlocked", path.to_monster), EMERALD);
+    }
+    let pooled = state.type_experience(&monster.type_name);
+    if pooled < path.experience_required {
+        return (
+            format!(
+                "{}/{} XP -> {}",
+                pooled, path.experience_required, path.to_monster
+            ),
+            MANA,
+        );
+    }
+    if room.floor_number < path.conditions.min_floor {
+        return (format!("floor {}", path.conditions.min_floor), WARNING);
+    }
+    (format!("Ready -> {}", path.to_monster), EMERALD)
 }
 
 fn template_trait_summary(trait_ids: &[String]) -> String {
@@ -665,18 +668,20 @@ fn template_trait_summary(trait_ids: &[String]) -> String {
         .join(", ")
 }
 
-fn template_evolution_hint(monster_name: &str) -> String {
+/// What this line unlocks next, and what it takes. The cost is paid in pooled
+/// experience across every creature of the type, not by any one of them.
+fn template_variant_hint(state: &GameState, monster_name: &str) -> String {
     get_evolution_for_monster(monster_name)
         .map(|path| {
             format!(
-                "Evolution: {} XP, floor {}, {}g -> {}",
+                "Variant: {}/{} XP pooled, fielded on floor {} -> {}",
+                state.type_experience(monster_name),
                 path.experience_required,
                 path.conditions.min_floor,
-                path.conditions.gold_cost,
                 path.to_monster
             )
         })
-        .unwrap_or_else(|| "Evolution: final form".to_string())
+        .unwrap_or_else(|| "Variant: final form".to_string())
 }
 
 fn draw_hint(rect: Rect, text: &str, color: Color) {

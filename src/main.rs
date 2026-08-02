@@ -78,12 +78,12 @@ async fn main() {
     if let Some(config) = capture::CaptureConfig::from_env(CAPTURE_PREFIX) {
         let mut cap_state = create_new_game(data::difficulty::Difficulty::default());
         capture_scenes::seed_capture_scene(&mut cap_state, &config.scene);
-        // Most scenes show the Monsters tab; the `build` scene opens BUILD so
-        // the build controls / channel sink are visible.
-        let mut drawer_tab = if config.scene == "build" {
-            DrawerTab::Build
-        } else {
-            DrawerTab::Monsters
+        // Most scenes show the Monsters tab; a couple open the tab they exist
+        // to show off.
+        let mut drawer_tab = match config.scene.as_str() {
+            "build" => DrawerTab::Build,
+            "variants" => DrawerTab::Evolution,
+            _ => DrawerTab::Monsters,
         };
         let mut upgrade_section = UpgradeSection::Traps;
         let mut drawer_open = true;
@@ -427,7 +427,6 @@ fn render_playing_frame(
                 state.add_log(game_state::LogEntry::system(e));
             }
         }
-        DrawerAction::ProcessEvolutions => simulation::process_evolutions(state),
         DrawerAction::UnlockSpecies(species) => {
             if let Err(e) = simulation::unlock_species(state, &species) {
                 state.add_log(game_state::LogEntry::system(e));

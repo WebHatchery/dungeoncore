@@ -13,7 +13,6 @@ pub enum ControlAction {
     RespawnMonsters,
     AddRoom,
     ResetGame,
-    ProcessEvolutions,
 }
 
 /// Draw the controls panel
@@ -81,11 +80,6 @@ pub fn draw_controls(state: &GameState, x: f32, y: f32, w: f32) -> ControlAction
         let surface = SurfaceStyle::new(dark::PANEL);
         draw_surface(Rect::new(x + 5.0, row2_y, btn_w, btn_h), &surface);
         draw_ui_text("Respawn All", x + 15.0, row2_y + 18.0, 13.0, dark::TEXT_DIM);
-    }
-
-    // Process evolutions button
-    if button(x + 10.0 + btn_w, row2_y, btn_w, btn_h, "Evolve") {
-        action = ControlAction::ProcessEvolutions;
     }
 
     // Reset game button

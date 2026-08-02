@@ -128,7 +128,6 @@ mod tests {
                 defense: 2,
             },
             active_traits: Vec::new(),
-            experience: 0,
         });
         let core = Room::new(3, RoomType::Core, 3, 1);
         floor.rooms = vec![entrance, lure, killbox, core];

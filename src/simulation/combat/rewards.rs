@@ -91,19 +91,27 @@ pub(super) fn reward_adventurer_kills(
         state.total_deaths += 1;
         state.raid_tally().mana_gained += mana_gain;
 
-        // Award XP to all surviving monsters in the room
-        let room = &mut state.floors[floor_idx].rooms[room_idx];
+        // Credit the shared pool of every type that survived the fight. The
+        // creature that struck the blow gains nothing itself — its whole line
+        // learns from the kill, and that is what unlocks the next variant.
+        let room = &state.floors[floor_idx].rooms[room_idx];
         let room_pos = room.position;
         let evolution_mult = room.evolution_multiplier();
         let base_xp = victim_level * 5;
         let xp_gain = (base_xp as f32 * evolution_mult) as i32;
 
-        for monster in room.monsters.iter_mut().filter(|m| m.alive) {
-            monster.experience += xp_gain;
+        let earners: Vec<String> = room
+            .monsters
+            .iter()
+            .filter(|m| m.alive)
+            .map(|m| m.type_name.clone())
+            .collect();
+        for type_name in earners {
+            state.add_type_experience(&type_name, xp_gain);
         }
 
         state.add_log(LogEntry::combat(format!(
-            "{} has fallen on floor {}! +{} mana, +{} XP to monsters",
+            "{} has fallen on floor {}! +{} mana, +{} XP to the lines that fought",
             victim_name, floor_num, mana_gain, xp_gain
         )));
         state.push_effect_at(

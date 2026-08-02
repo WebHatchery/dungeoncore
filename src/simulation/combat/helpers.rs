@@ -71,7 +71,6 @@ pub(super) fn split_spawn(parent_type: &str, floor: i32) -> Option<Monster> {
                 cooldown_timer: 0,
             })
             .collect(),
-        experience: 0,
     })
 }
 
