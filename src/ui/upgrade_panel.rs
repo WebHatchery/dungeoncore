@@ -3,15 +3,17 @@ use macroquad_toolkit::input::was_clicked_rect;
 
 use crate::data::monsters::{get_monster_template, get_species_display_name};
 use crate::data::upgrades::{get_all_upgrades, UpgradeTemplate};
-use crate::game_state::{GameState, Monster, Room, RoomType};
+use crate::game_state::{GameState, Room, RoomType};
 
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
 
+mod defenders;
 mod previews;
+
+use defenders::{draw_monster_progress_rows, DEFENDER_ROW_H, MAX_DEFENDER_ROWS};
 use previews::{
-    monster_variant_status, room_upgrade_preview, template_trait_summary, template_variant_hint,
-    upgrade_preview,
+    room_upgrade_preview, template_trait_summary, template_variant_hint, upgrade_preview,
 };
 
 #[derive(Debug, Clone)]
@@ -20,6 +22,9 @@ pub enum UpgradeAction {
     Apply(String),
     Remove(crate::game_state::RoomUpgradeType),
     DismissMonster(u64),
+    /// Place the armed monster onto this defender — upgrading its line or
+    /// evicting it, whichever the swap plan says.
+    SwapMonster(u64),
     Close,
 }
 
@@ -52,7 +57,11 @@ pub fn draw_upgrade_panel(
     let mut y_cursor = inner.y + 46.0;
 
     if let Some(monster_name) = &state.selected_monster {
-        y_cursor = draw_selected_monster(state, monster_name, inner, y_cursor);
+        // With a room open too, the armed monster's full stat block would push
+        // the defender rows — the drop targets it is aimed at — off the panel.
+        // Compact it to identity and price; the rows are what matter now.
+        let compact = state.selected_room.is_some();
+        y_cursor = draw_selected_monster(state, monster_name, inner, y_cursor, compact);
     }
 
     if let Some(room) = selected_room(state) {
@@ -106,8 +115,14 @@ fn selected_room(state: &GameState) -> Option<&Room> {
         .and_then(|floor| floor.rooms.iter().find(|room| room.position == room_pos))
 }
 
-fn draw_selected_monster(state: &GameState, monster_name: &str, bounds: Rect, y: f32) -> f32 {
-    let rect = Rect::new(bounds.x, y, bounds.w, 136.0);
+fn draw_selected_monster(
+    state: &GameState,
+    monster_name: &str,
+    bounds: Rect,
+    y: f32,
+    compact: bool,
+) -> f32 {
+    let rect = Rect::new(bounds.x, y, bounds.w, if compact { 82.0 } else { 136.0 });
     draw_card(rect, with_alpha(SOUL, 0.085), with_alpha(SOUL, 0.25));
     draw_text_fit(
         monster_name,
@@ -147,22 +162,24 @@ fn draw_selected_monster(state: &GameState, monster_name: &str, bounds: Rect, y:
                 DANGER
             },
         );
-        draw_text_fit(
-            &format!("Traits: {}", template_trait_summary(&template.traits)),
-            rect.x + 12.0,
-            rect.y + 100.0,
-            rect.w - 24.0,
-            11.0,
-            TEXT_MUTED,
-        );
-        draw_text_fit(
-            &template_variant_hint(state, monster_name),
-            rect.x + 12.0,
-            rect.y + 122.0,
-            rect.w - 24.0,
-            11.0,
-            SOUL,
-        );
+        if !compact {
+            draw_text_fit(
+                &format!("Traits: {}", template_trait_summary(&template.traits)),
+                rect.x + 12.0,
+                rect.y + 100.0,
+                rect.w - 24.0,
+                11.0,
+                TEXT_MUTED,
+            );
+            draw_text_fit(
+                &template_variant_hint(state, monster_name),
+                rect.x + 12.0,
+                rect.y + 122.0,
+                rect.w - 24.0,
+                11.0,
+                SOUL,
+            );
+        }
     } else {
         draw_text_fit(
             "Monster data unavailable",
@@ -283,7 +300,7 @@ fn draw_selected_room(
     );
 
     draw_section_rule(rect.x + 12.0, rect.y + 202.0, rect.w - 24.0, "DEFENDERS");
-    if let Some(monster_id) = draw_monster_progress_rows(
+    if let Some(row_action) = draw_monster_progress_rows(
         state,
         room,
         Rect::new(
@@ -294,7 +311,7 @@ fn draw_selected_room(
         ),
         defender_scroll,
     ) {
-        *action = UpgradeAction::DismissMonster(monster_id);
+        *action = row_action;
     }
 
     y + rect.h
@@ -409,185 +426,6 @@ fn draw_upgrade_catalog(
             TEXT_DIM,
         );
     }
-}
-
-const DEFENDER_ROW_H: f32 = 46.0;
-const MAX_DEFENDER_ROWS: usize = 4;
-
-/// Vertical list of every defender in the room — one card each carrying the
-/// creature's condition (health, whether it has fallen), what it hits for, its
-/// element and traits, its line's variant progress, and a dismiss control.
-/// Wheel-scrolls past MAX_DEFENDER_ROWS.
-fn draw_monster_progress_rows(
-    state: &GameState,
-    room: &Room,
-    rect: Rect,
-    defender_scroll: &mut f32,
-) -> Option<u64> {
-    if room.monsters.is_empty() {
-        draw_text_fit(
-            "No defenders placed.",
-            rect.x,
-            rect.y + 14.0,
-            rect.w,
-            11.0,
-            TEXT_DIM,
-        );
-        return None;
-    }
-
-    let total = room.monsters.len();
-    let visible = total.min(MAX_DEFENDER_ROWS);
-    let max_scroll = (total - visible) as f32;
-    if total > visible && rect.contains(vec2(mouse_position().0, mouse_position().1)) {
-        let (_, wheel_y) = mouse_wheel();
-        if wheel_y.abs() > 0.0 {
-            *defender_scroll -= wheel_y.signum();
-        }
-    }
-    *defender_scroll = defender_scroll.clamp(0.0, max_scroll);
-    let first = *defender_scroll as usize;
-
-    let mut dismissed = None;
-    let can_dismiss = state.adventurer_parties.is_empty();
-    for (slot, monster) in room.monsters.iter().skip(first).take(visible).enumerate() {
-        let row = Rect::new(
-            rect.x,
-            rect.y + slot as f32 * DEFENDER_ROW_H,
-            rect.w,
-            DEFENDER_ROW_H - 4.0,
-        );
-        if draw_defender_row(state, room, monster, row, can_dismiss) {
-            dismissed = Some(monster.id);
-        }
-    }
-
-    if total > visible {
-        draw_text_fit_right(
-            &format!("{}-{} of {} (scroll)", first + 1, first + visible, total),
-            rect.x + rect.w,
-            rect.y + rect.h + 10.0,
-            rect.w,
-            9.0,
-            TEXT_DIM,
-        );
-    }
-
-    dismissed
-}
-
-/// One defender's card. Returns true when its dismiss control was clicked.
-fn draw_defender_row(
-    state: &GameState,
-    room: &Room,
-    monster: &Monster,
-    row: Rect,
-    can_dismiss: bool,
-) -> bool {
-    let element = crate::data::monsters::monster_element_id(&monster.type_name);
-    let accent = match &element {
-        Some(id) => element_color(id),
-        None => EMERALD,
-    };
-    // A fallen defender is a state the player must be able to act on, not a
-    // greyer shade of the same row — it gets the danger tone and says so.
-    let tone = if monster.alive { accent } else { DANGER };
-    draw_card(row, with_alpha(tone, 0.06), with_alpha(tone, 0.22));
-
-    let name_color = if monster.alive { TEXT } else { TEXT_DIM };
-    draw_text_fit(
-        &monster.type_name,
-        row.x + 8.0,
-        row.y + 15.0,
-        row.w * 0.50,
-        12.0,
-        name_color,
-    );
-
-    // Offense, right-aligned and clear of the dismiss control.
-    draw_text_fit_right(
-        &format!(
-            "ATK {}  DEF {}",
-            monster.scaled_stats.attack, monster.scaled_stats.defense
-        ),
-        row.x + row.w - 22.0,
-        row.y + 15.0,
-        row.w * 0.42,
-        10.0,
-        if monster.alive { TEXT_MUTED } else { TEXT_DIM },
-    );
-
-    // Condition: a bar the width of the name column, so a defender crawling
-    // back at half health after a respawn is visible at a glance.
-    let bar = Rect::new(row.x + 8.0, row.y + 21.0, row.w * 0.50, 5.0);
-    draw_rectangle(bar.x, bar.y, bar.w, bar.h, Color::new(0.0, 0.0, 0.0, 0.45));
-    if monster.alive && monster.max_hp > 0 {
-        let fraction = (monster.hp as f32 / monster.max_hp as f32).clamp(0.0, 1.0);
-        let health_tone = if fraction > 0.6 {
-            EMERALD
-        } else if fraction > 0.3 {
-            WARNING
-        } else {
-            DANGER
-        };
-        draw_rectangle(bar.x, bar.y, bar.w * fraction, bar.h, health_tone);
-    }
-    draw_text_fit(
-        &if monster.alive {
-            format!("{}/{} HP", monster.hp, monster.max_hp)
-        } else {
-            "Fallen".to_string()
-        },
-        row.x + 8.0,
-        row.y + 38.0,
-        row.w * 0.50,
-        9.0,
-        if monster.alive { TEXT_MUTED } else { DANGER },
-    );
-
-    // Element and traits on the right, over the line's variant progress.
-    let traits = template_trait_summary(
-        &monster
-            .active_traits
-            .iter()
-            .map(|t| t.id.clone())
-            .collect::<Vec<_>>(),
-    );
-    draw_text_fit_right(
-        &format!("{} · {}", element.as_deref().unwrap_or("Neutral"), traits),
-        row.x + row.w - 8.0,
-        row.y + 28.0,
-        row.w * 0.48,
-        9.0,
-        if monster.alive { accent } else { TEXT_DIM },
-    );
-    let (status, status_color) = monster_variant_status(state, room, monster);
-    draw_text_fit_right(
-        &status,
-        row.x + row.w - 8.0,
-        row.y + 40.0,
-        row.w * 0.48,
-        9.0,
-        status_color,
-    );
-
-    // Dismiss control: refunds half the summon cost.
-    let x_rect = Rect::new(row.x + row.w - 18.0, row.y + 4.0, 16.0, 16.0);
-    let hovered = can_dismiss && x_rect.contains(vec2(mouse_position().0, mouse_position().1));
-    draw_centered_text(
-        "x",
-        x_rect,
-        12.0,
-        if hovered {
-            DANGER
-        } else if can_dismiss {
-            TEXT_MUTED
-        } else {
-            TEXT_DIM
-        },
-    );
-
-    can_dismiss && was_clicked_rect(x_rect)
 }
 
 fn draw_upgrade_row(state: &GameState, upgrade: &UpgradeTemplate, rect: Rect) -> bool {

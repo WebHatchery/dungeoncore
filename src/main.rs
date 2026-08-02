@@ -536,6 +536,20 @@ fn render_playing_frame(
                     }
                 }
             }
+            UpgradeAction::SwapMonster(monster_id) => {
+                // The armed monster goes onto an occupied slot: its own line
+                // grows, anything else evicts. Selection clears either way —
+                // the slot it was aimed at is no longer what it was.
+                if let (Some((floor, pos)), Some(armed)) =
+                    (state.selected_room, state.selected_monster.clone())
+                {
+                    if let Err(e) = simulation::swap_monster(state, floor, pos, monster_id, &armed)
+                    {
+                        state.add_log(game_state::LogEntry::system(e));
+                    }
+                    state.selected_monster = None;
+                }
+            }
             UpgradeAction::Close => {
                 state.selected_room = None;
                 state.selected_monster = None;

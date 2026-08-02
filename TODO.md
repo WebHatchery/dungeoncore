@@ -101,7 +101,7 @@ is a different interaction for the same job.
   upgrades must survive the move — the drawer path currently enforces cost but
   not the no-raid-in-progress rule that the inspector rows do.
 
-### Variants: pooled per line — *model done, swap interaction open*
+### Variants: pooled per line — *done, thresholds need rebalancing*
 
 **Individual monsters do not level and do not evolve.** XP accrues to a monster
 *type*: every Goblin feeds one shared Goblin pool, and crossing a threshold
@@ -109,50 +109,55 @@ unlocks the next variant. A creature only gets deadlier by being placed on a
 deeper floor. Individual XP and levels belong to adventurers alone
 (`HeroRecord.experience` / `level`) — the journal item above surfaces those.
 
-Shipped:
+Shipped (the pooled model):
 
 - `Monster.experience` is gone. `GameState.monster_type_experience`
   (`HashMap<String, i32>`, `#[serde(default)]`) holds the pools, read and
   written through `type_experience` / `add_type_experience`. Serde drops the old
   per-creature field silently, so no save migration was needed. Prestige never
-  resets the dungeon, so the pool simply persists — that open question was moot.
+  resets the dungeon, so the pool simply persists.
 - `reward_adventurer_kills` credits the pool of every type that survived the
-  fight, once per surviving creature, so the earn rate per body is unchanged —
-  only where it lands.
-- `process_evolution_unlocks` reads the pool, and still gates on depth: a line
-  unlocks a variant only while it is actually fielded at that variant's
-  `min_floor`. Pool alone is not enough. Iteration order is a `BTreeMap`, so
-  unlock order never depends on hashing.
+  fight, once per surviving creature.
+- `process_evolution_unlocks` reads the pool and still gates on depth: a line
+  unlocks a variant only while fielded at that variant's `min_floor`.
 - The bulk `process_evolutions` button is deleted, along with
-  `DrawerAction::ProcessEvolutions`, the dead `ControlAction` variant, and the
-  now-unused `can_evolve` / `get_all_evolutions_for_species` helpers.
-- The EVOLVE tab is now **VARIANTS**: one row per line rather than per creature,
-  showing how many are placed, the deepest floor they hold, pooled XP against
-  the threshold, and what unlocks next. The inspector's defender status and the
-  monster hint speak of pooled variant progress. A `variants` capture scene
-  covers it.
+  `DrawerAction::ProcessEvolutions` and the dead `ControlAction` variant.
+- The EVOLVE tab is now **VARIANTS**: one row per line, with pooled XP against
+  the threshold and what unlocks next.
+
+Shipped (the swap):
+
+- `simulation/monsters/swap.rs`. `plan_swap` says what placing a monster onto an
+  occupied slot would do and what it costs; `swap_monster` does it. A newcomer
+  one step along the occupant's evolution path is an **upgrade** — same slot,
+  same creature id, new form scaled for the floor, paying only the mana
+  *difference* plus that path's `gold_cost` (which is what finally put
+  `EvolutionConditions.gold_cost` back to work). Anything else is a **replace**:
+  the occupant is retired at `remove_monster`'s half-refund and the newcomer
+  summoned at full price.
+- The upgrade branch is arithmetically guaranteed cheaper than replacing — it
+  pays `new - old` where replacing pays `new - old/2` — which is what makes
+  growing a line worth more than swapping in the best affordable thing. A test
+  pins that relationship rather than trusting the numbers.
+- Every check runs before anything is destroyed, so a swap the dungeon cannot
+  afford leaves the occupant untouched. Swapping is barred mid-raid: upgrading
+  rebuilds the creature at full HP, which would otherwise be a free heal for a
+  defender being hit.
+- The inspector's defender rows are the drop targets. With a monster armed each
+  card states its own verdict and price ("Upgrade · 15M", "Replace · 20M"),
+  tinted by branch, and unaffordable ones read in danger colour and refuse the
+  click. The armed monster's own card compacts to identity and price while a
+  room is open so the rows stay on screen. A `swap` capture scene covers both
+  branches side by side.
 
 Still open:
 
-- **The swap interaction.** Placing a monster onto an existing one, where a
-  direct upgrade (Goblin Warrior onto a Goblin) transforms in place with no
-  refund, and an unrelated monster (Harpy onto a Goblin) retires the occupant
-  for half its mana back and then summons at full price — reusing
-  `remove_monster`'s refund rule rather than inventing a second one. The upgrade
-  branch must be strictly cheaper than retire-and-replace or the variant line is
-  pointless; its price is the open number. `EvolutionConditions.gold_cost` is
-  currently unreferenced by code and is the natural candidate.
-- **Per-monster placement targets**, which do not exist — `place_monster` only
-  appends. With a monster armed, the inspector's defender rows become drop
-  targets while an open slot still adds a new creature. The room limit is in, so
-  this already bites: a full room can only be improved by replacing an occupant.
-  The player must see which branch a click takes, and its price, before clicking.
-- The transform itself has to be rewritten; the old `process_evolutions` second
-  pass was deleted with the bulk button rather than left as dead code. It must
-  rescale via `get_scaled_stats(base, floor, is_boss)` and rebuild
-  `active_traits` from the new template — see commit history for the shape.
 - **Rebalance `experience_required`.** The thresholds were written for a single
-  creature's XP; a pool filled by N creatures crosses them far faster.
+  creature's XP; a pool filled by N creatures crosses them far faster. This is
+  the last real gap in the variants work.
+- A two-step reach (placing a Troll onto a Goblin) counts as a replace, not an
+  upgrade — only one step along the line is an upgrade. That is deliberate for
+  now; revisit if it feels punitive in play.
 
 ### Rooms get a creature limit that grows with depth — *done, balance open*
 

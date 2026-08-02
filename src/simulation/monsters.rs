@@ -3,6 +3,9 @@ use crate::data::monsters::get_monster_template;
 use crate::game_state::{GameState, LogEntry, Monster, RoomType, Stats};
 use std::collections::BTreeMap;
 
+mod swap;
+pub use swap::{plan_swap, swap_monster, SwapKind};
+
 /// Place a monster in a room
 pub fn place_monster(
     state: &mut GameState,
