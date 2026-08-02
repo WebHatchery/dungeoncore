@@ -3,6 +3,212 @@
 Everything through the "make the simulation legible" and "give the player levers"
 work is shipped. What follows is what is still genuinely open.
 
+## Queued next (specced, not started)
+
+Six items from playtesting, in the order they were raised. Directions below are
+decided; the code references are where the work lands.
+
+### Monster status in the room inspector
+
+A room's defenders are effectively opaque. `draw_monster_progress_rows`
+(`src/ui/upgrade_panel.rs:442`) prints only the type name and an evolution
+status string — no HP, no element, no traits, no XP numbers — so there is no way
+to tell a healthy defender from one crawling back at half HP, or to see which
+monster is close to evolving.
+
+- Extend the existing rows in place (decided: richer rows, not a new page or a
+  board hover card). Each row wants: an HP bar (`monster.hp`/`max_hp` — respawn
+  already returns living defenders at half HP when mana ran short), element,
+  trait names, and floor-scaled attack/defense as numbers rather than a phrase.
+  No per-creature level or XP — that model is dropped (see the variants item
+  below); the row instead shows the *type's* variant progress, and it is also
+  where the swap control lands, so design the two together.
+- `DEFENDER_ROW_H` and `MAX_DEFENDER_ROWS` both need a pass — the taller rows
+  change how many fit, and the card height math in `draw_selected_room` is
+  hardcoded around the current row size.
+- Dead-but-not-yet-respawned defenders should read as dead in the list, not just
+  dimmed text.
+
+### Adventurer visits should be mana-positive — *mechanism done, tuning open*
+
+A living adventurer inside used to be worth a flat `count * 0.5` mana/hour
+regardless of level, against raid costs of respawning each dead living defender
+at half its summon cost (`src/simulation/monsters.rs:193`) and re-arming each
+sprung trap at a quarter of its price (`src/simulation/combat/traps.rs:216`) —
+so a visit lost mana.
+
+Shipped: `adventurer_presence_regen` (`src/simulation/time.rs`) now pays
+`mana_regen_per_adventurer + level * mana_regen_per_adventurer_level` per living
+intruder per hour, times `income_mult`, with both rates in the `time` block of
+`assets/constants.json` (0.5 / 0.5 to start). Difficulty now scales the trickle
+as well as the death payout. Presence is deliberately the main income during a
+raid — a death is still a burst, but it *ends* the trickle, so a long deep delve
+beats a quick wipe and farming kills trades income for the `threat_tier()` climb
+toward the siege.
+
+Still open:
+
+- **Tune the two rates in play.** The target: a full party clearing to the boss
+  and wiping leaves the dungeon net mana-positive after respawn and re-arm
+  costs, at every difficulty preset. Only the JSON needs to move.
+- The `.min(state.max_mana)` clamp is kept — overflow is lost by design, which
+  is what makes a cap upgrade a real choice. Revisit only if tuning shows the
+  early cap eating a meaningful share of a raid's income.
+- The raid report still shows only "Mana earned"; it never shows what the raid
+  *cost* in respawns and re-arms, so the player cannot yet see the net. Worth a
+  pass once the rates settle.
+
+### Adventurer journal (follow the NPCs)
+
+`HeroRecord` (`src/game_state.rs:252`) already persists name, race, class, level,
+delves, kills, gold stolen, status, death floor/day, plus `is_rival()` and
+`bounty()`. The HEROES tab (`src/ui/side_drawer/heroes_tab.rs`) lists all of it
+but rows are not clickable, so an individual adventurer has no page.
+
+- Make a HEROES row open a per-hero journal page: the profile stats above, laid
+  out properly, with the rival badge and bounty made explicit.
+- Add a per-delve history — a short persisted event list on `HeroRecord`
+  (entered on day X, slew Y on floor Z, fled with N gold, died to M). This is
+  new state on a serialized struct, so it needs a `#[serde(default)]` field and
+  a save-migration check; keep the list bounded so a long run cannot grow the
+  save without limit.
+- Events are already narrated into the game log at the moments that matter
+  (kills, deaths, escapes) — the journal wants the same facts recorded against
+  the hero id rather than a second source of truth.
+- Live tracking of a hero inside the dungeon (current room, HP, conditions) is
+  explicitly out of scope for the first pass; the journal is a ledger, not a
+  minimap. Revisit once the page exists.
+
+### Traps and upgrades use the monster placement flow
+
+Monsters are placed by selecting from the drawer and clicking a room. Traps and
+the other room upgrades have that flow half-built — the TRAPS & LOOT tab already
+sets `selected_upgrade` and `main.rs` already applies it on a room click — but
+the board never highlights anything, because `placement_state`
+(`src/ui/dungeon_view.rs:247`) only reacts to `selected_monster`. So the
+discoverable path is still the inspector's `draw_upgrade_choices` catalog, which
+is a different interaction for the same job.
+
+- Teach `placement_state` and `current_objective` about `selected_upgrade`, so
+  arming a trap highlights valid rooms and states the objective exactly as
+  monster placement does. Validity differs from monsters: a room can hold only
+  one of each `RoomUpgradeType` (see the `installed` filter in
+  `draw_upgrade_choices`), so rooms that already hold that type read as invalid.
+- The inspector keeps its catalog as **review + jump**, not a second build path:
+  list what is installed with remove controls, and an "Add upgrade" control that
+  arms the drawer tab pre-filtered to what this room can still take.
+- The `state.adventurer_parties.is_empty()` gate on applying and removing
+  upgrades must survive the move — the drawer path currently enforces cost but
+  not the no-raid-in-progress rule that the inspector rows do.
+
+### Evolution becomes type-level variant unlocks
+
+**Individual monsters do not level and do not evolve.** XP accrues to a monster
+*type*: every Goblin in the dungeon feeds one shared Goblin pool, and when that
+pool crosses a threshold, Goblin Warrior unlocks — both as a new placeable unit
+in the MONSTERS tab and as an upgrade the player can apply to an already-placed
+Goblin. A given monster only gets deadlier by being placed on a deeper floor
+(`get_scaled_stats(base, floor_number, is_boss)` already does this); there is no
+per-creature progression to track.
+
+Individual XP and levels belong to adventurers, not defenders — that side is
+already correct (`HeroRecord.experience` / `level`, advanced in
+`src/simulation/adventure.rs:449` with `xp_for_level`), and the journal item
+above is where it gets surfaced.
+
+What contradicts the model today:
+
+- `Monster.experience` (`src/game_state.rs:91`) is per-creature. It gets deleted.
+  Serde ignores unknown fields, so old saves drop it without a migration step.
+- `reward_adventurer_kills` (`src/simulation/combat/rewards.rs:101`) awards XP to
+  every surviving monster in the room individually. It should instead credit the
+  shared pool for each of those monsters' types.
+- `process_evolutions` (`src/simulation/monsters.rs:356`, reached from
+  `DrawerAction::ProcessEvolutions` in `src/main.rs:430`) is a bulk button that
+  transforms every eligible defender at once. It goes away.
+- `process_evolution_unlocks` (`src/simulation/monsters.rs:323`) has the right
+  shape already — it unlocks a form without transforming anything — but reads
+  per-monster XP. It rereads the type pool instead, and can stop scanning every
+  room every hour since the pool is a single lookup.
+
+The work:
+
+- New state: a type-keyed XP pool on `GameState` (`HashMap<String, i32>` keyed by
+  `type_name`), `#[serde(default)]` so old saves start empty. Decide whether the
+  pool survives prestige or resets with the run.
+- **Placing a monster onto an existing one is the interaction**, and what happens
+  depends on whether it is that creature's own line:
+  - *Direct upgrade* (Goblin Warrior onto a Goblin): the creature transforms in
+    place, no retirement, no refund.
+  - *Unrelated monster* (Harpy onto a Goblin): the Goblin is retired for half its
+    mana back, then the Harpy is summoned at full price. Exactly the existing
+    dismiss-then-summon pair, done in one click — reuse `dismiss_monster`'s refund
+    rule (`get_monster_mana_cost(base, floor, boss_surcharge) / 2`, souls stay
+    spent) rather than inventing a second refund path.
+  - The upgrade branch must be strictly cheaper than the retire-and-replace one,
+    or the whole variant line is pointless. Its price is the one number still
+    open: full variant cost, or the difference against what the base creature is
+    worth.
+- That means placement needs a **per-monster target**, which does not exist today
+  — `summon_monster` just appends to `room.monsters`. With a monster armed in the
+  drawer, the inspector's defender rows become drop targets ("place on this
+  defender") while clicking an open slot still adds a new one. Board-level
+  targeting can come later; the inspector rows are the cheap version and they are
+  already being rebuilt for the status item above. Pairs directly with the room
+  creature limit below — once a room is full, placing onto an occupant is the
+  *only* way to put something new in it, which is what makes the upgrade-vs-
+  replace choice bite.
+- `process_evolutions`' second pass already transforms correctly (rescales via
+  `get_scaled_stats`, rebuilds `active_traits`) — reuse it as a single-monster
+  function for the upgrade branch rather than rewriting it.
+- `evolution_trees.json` stays the source of truth for which variant follows
+  which monster; `experience_required` becomes a type-pool threshold rather than
+  a per-creature one, so the numbers need a rebalance pass — one pool filled by
+  N goblins fills far faster than any single goblin did.
+- Rename throughout the UI. The EVOLVE tab, `monster_evolution_status`, and
+  `template_evolution_hint` speak of "evolution" and "next form"; the model is
+  "variants unlocked by a type's collective experience". The tab stops *doing*
+  evolutions and becomes a progress board: pool XP per type, what unlocks next,
+  how far off it is. Note that with XP no longer per-creature, the defender row
+  in the inspector (first item above) shows the *type's* progress, identical for
+  every monster of that type in the room.
+- The player needs to see which branch a click will take *before* taking it — a
+  direct upgrade and a retire-and-replace cost very different amounts. Show the
+  outcome and price on the targeted row while a monster is armed.
+
+### Rooms get a creature limit that grows with depth
+
+A room currently holds unlimited monsters — `summon_monster`
+(`src/simulation/monsters.rs`) validates room type, boss-only placement, mana and
+souls, then pushes onto `room.monsters` with no cap. Rooms should hold a limited
+number of creatures, and that limit should rise the deeper the floor sits.
+
+- The limit is balance data, not a Rust constant: it belongs in
+  `assets/constants.json` alongside the existing `floor_scaling` table, read
+  through `get_floor_scaling(floor)` with `deep_floor_scaling` covering floors
+  past the table — the same shape stat scaling already uses. Note
+  `MAX_ROOMS_PER_FLOOR` (`src/data/constants.rs:166`) is a hardcoded `const`
+  despite a `max_rooms_per_floor()` JSON accessor existing right above it; don't
+  copy that pattern for the new value.
+- Boss rooms probably want their own limit (fewer slots, one of them boss-only)
+  rather than the plain floor number. Decide when the table is written.
+- `summon_monster` gains a capacity check returning the usual `Err(String)`, and
+  the same rule has to gate the placement UI — a full room reads as an invalid
+  target in `placement_state` (`src/ui/dungeon_view.rs:247`), not as a click that
+  fails with a message.
+- Show occupancy everywhere a room is summarised: the room tile on the board, and
+  the inspector's `Defenders` stat line, which already prints `alive/total` and
+  should print capacity too.
+- Existing saves can exceed a newly-introduced limit. Over-capacity rooms must
+  keep working — block new placement, never delete a defender the player paid
+  for.
+- This is the constraint that makes the rest of the build loop a real decision:
+  with slots scarce, adding a floor competes with upgrading what is already
+  placed, and the upgrade-vs-retire-and-replace choice above becomes the main way
+  to improve a full room. Expect a balance pass on room cost, monster cost, and
+  the capacity curve together — and check the siege and threat curves still hold
+  when the early dungeon can field fewer defenders than it can today.
+
 ## Dungeon graph (branching layouts)
 
 The dungeon is still a linear room queue. The edge model (`Room::exits`,

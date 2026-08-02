@@ -28,7 +28,8 @@ pub struct DifficultyProfile {
     pub spawn_chance_mult: f32,
     /// Scales the death count that triggers a siege (higher = sieges later).
     pub siege_threshold_mult: f32,
-    /// Scales mana income banked from slain invaders.
+    /// Scales mana income from invaders — both the trickle drawn from those
+    /// still inside and the payout banked when one is slain.
     pub income_mult: f32,
     /// Scales the core's starting HP.
     pub core_hp_mult: f32,

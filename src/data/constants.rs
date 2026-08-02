@@ -16,6 +16,10 @@ struct DungeonConstants {
 struct TimeConstants {
     mana_regen_interval: f32,
     time_advance_interval_ms: f32,
+    /// Mana per hour the core draws from each living intruder, before level.
+    mana_regen_per_adventurer: f32,
+    /// Additional mana per hour per level of that intruder.
+    mana_regen_per_adventurer_level: f32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -86,6 +90,16 @@ pub fn boss_room_extra_cost() -> i32 {
 
 pub fn core_room_mana_bonus() -> f32 {
     load_constants().dungeon.core_room_mana_bonus
+}
+
+/// Mana per hour each living intruder feeds the core, before their level.
+pub fn mana_regen_per_adventurer() -> f32 {
+    load_constants().time.mana_regen_per_adventurer
+}
+
+/// Extra mana per hour per level of a living intruder.
+pub fn mana_regen_per_adventurer_level() -> f32 {
+    load_constants().time.mana_regen_per_adventurer_level
 }
 
 pub fn adventurer_spawn_chance() -> f32 {

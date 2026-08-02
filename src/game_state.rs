@@ -640,7 +640,8 @@ impl GameState {
         (SIEGE_THREAT_DEATHS as f32 * self.difficulty.profile().siege_threshold_mult).round() as i32
     }
 
-    /// Mana-income multiplier from difficulty (applied to death income).
+    /// Mana-income multiplier from difficulty (applied to the presence trickle
+    /// and to death income alike).
     pub fn income_mult(&self) -> f32 {
         self.difficulty.profile().income_mult
     }
