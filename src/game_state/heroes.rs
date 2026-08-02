@@ -69,6 +69,17 @@ pub enum HeroStatus {
     Dead,
 }
 
+/// How many journal lines a hero keeps. A long campaign must not be able to
+/// grow the save without limit, so the oldest entries fall off the front.
+pub const HERO_JOURNAL_LIMIT: usize = 12;
+
+/// One line in a hero's journal: what they did, and the day they did it.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct HeroEvent {
+    pub day: i32,
+    pub text: String,
+}
+
 /// Persistent ledger entry for an adventurer who has entered the dungeon.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HeroRecord {
@@ -90,6 +101,10 @@ pub struct HeroRecord {
     pub death_floor: i32,
     #[serde(default)]
     pub death_day: i32,
+    /// This hero's own history, newest last. Saves written before the journal
+    /// existed simply start empty.
+    #[serde(default)]
+    pub journal: Vec<HeroEvent>,
 }
 
 impl HeroRecord {
@@ -98,6 +113,17 @@ impl HeroRecord {
     /// board, and carry a bounty — the dungeon's grudge made concrete.
     pub fn is_rival(&self) -> bool {
         self.delves >= 3 || self.kills >= 5
+    }
+
+    /// Add a line to this hero's history, dropping the oldest once full.
+    pub fn remember(&mut self, day: i32, text: impl Into<String>) {
+        self.journal.push(HeroEvent {
+            day,
+            text: text.into(),
+        });
+        if self.journal.len() > HERO_JOURNAL_LIMIT {
+            self.journal.remove(0);
+        }
     }
 
     /// Bounty (souls, gold) for finally slaying this rival, scaled by how much

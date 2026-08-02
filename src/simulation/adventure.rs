@@ -120,9 +120,12 @@ pub fn spawn_party(state: &mut GameState) {
         let use_veteran = slot % 2 == 0 && !returning.is_empty();
         if use_veteran {
             let hero_id = returning.pop().unwrap();
+            let day = state.day;
             if let Some(record) = state.hero_mut(hero_id) {
                 record.status = HeroStatus::Inside;
                 record.delves += 1;
+                let delve = record.delves;
+                record.remember(day, format!("Returned for delve {delve}"));
                 let (name, class, race, level) = (
                     record.name.clone(),
                     record.class_name.clone(),
@@ -158,7 +161,12 @@ pub fn spawn_party(state: &mut GameState) {
             status: HeroStatus::Inside,
             death_floor: 0,
             death_day: 0,
+            journal: Vec::new(),
         });
+        let day = state.day;
+        if let Some(record) = state.hero_mut(id) {
+            record.remember(day, "First delve into the dungeon");
+        }
         members.push(build_adventurer(
             id,
             name,
@@ -444,15 +452,27 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
     for (id, alive) in member_ids {
         if alive {
             // Escaped: bank XP, gold, and possibly a level.
+            let day = state.day;
             if let Some(record) = state.hero_mut(id) {
                 record.status = HeroStatus::Alive;
                 record.experience += 20 + record.delves * 5;
                 record.gold_stolen += loot_share;
+                let level_before = record.level;
                 while record.level < 10
                     && record.experience >= GameState::xp_for_level(record.level)
                 {
                     record.experience -= GameState::xp_for_level(record.level);
                     record.level += 1;
+                }
+                let escaped = if loot_share > 0 {
+                    format!("Escaped with {loot_share} gold")
+                } else {
+                    "Escaped empty-handed".to_string()
+                };
+                record.remember(day, escaped);
+                if record.level > level_before {
+                    let level = record.level;
+                    record.remember(day, format!("Reached level {level}"));
                 }
             }
         } else {

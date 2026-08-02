@@ -330,6 +330,7 @@ pub fn maybe_launch_siege(state: &mut GameState) {
             status: HeroStatus::Inside,
             death_floor: 0,
             death_day: 0,
+            journal: Vec::new(),
         });
 
         let hp = (((class.hp + (level - 1) * 12) as f32 * stat_mult).round() as i32).max(1);

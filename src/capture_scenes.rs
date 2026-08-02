@@ -269,6 +269,48 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             }
             state.selected_upgrade = Some("Poison Dart".to_string());
         }
+        "journal" => {
+            // A rival's page: profile, bounty, and the history the dungeon has
+            // watched her accumulate across several delves.
+            use crate::game_state::{HeroRecord, HeroStatus};
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.day = 14;
+            let mut sable = HeroRecord {
+                id: 500,
+                name: "Sable the Bold".to_string(),
+                class_name: "Rogue".to_string(),
+                race: "Halfling".to_string(),
+                level: 5,
+                experience: 30,
+                delves: 5,
+                kills: 12,
+                gold_stolen: 240,
+                status: HeroStatus::Alive,
+                death_floor: 0,
+                death_day: 0,
+                journal: Vec::new(),
+            };
+            for (day, text) in [
+                (2, "First delve into the dungeon"),
+                (2, "Slew a Goblin on floor 1"),
+                (3, "Escaped with 40 gold"),
+                (6, "Returned for delve 2"),
+                (6, "Slew a Goblin Archer on floor 2"),
+                (7, "Escaped with 85 gold"),
+                (9, "Reached level 4"),
+                (11, "Returned for delve 4"),
+                (12, "Slew an Orc on floor 2"),
+                (13, "Escaped with 115 gold"),
+                (14, "Returned for delve 5"),
+            ] {
+                sable.remember(day, text);
+            }
+            state.known_adventurers = vec![sable];
+            state.selected_hero = Some(500);
+        }
         "rival" => {
             use crate::game_state::{Equipment, HeroRecord, HeroStatus};
             if let Some(species) = first_starter_species() {
@@ -298,6 +340,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                     status: HeroStatus::Inside,
                     death_floor: 0,
                     death_day: 0,
+                    journal: Vec::new(),
                 },
                 HeroRecord {
                     id: 501,
@@ -312,6 +355,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                     status: HeroStatus::Inside,
                     death_floor: 0,
                     death_day: 0,
+                    journal: Vec::new(),
                 },
             ];
             if let Some((floor, pos)) = find_combat_room(state) {
@@ -524,6 +568,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                 status,
                 death_floor: df,
                 death_day: dd,
+                journal: Vec::new(),
             };
             state.known_adventurers = vec![
                 seed_hero(

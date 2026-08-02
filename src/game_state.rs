@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 mod effects;
 mod floor;
-mod heroes;
+pub(crate) mod heroes;
 pub use effects::{EffectAnchor, EffectKind, RoomEffect};
 pub use floor::Floor;
 pub use heroes::{Adventurer, AdventurerParty, Condition, Equipment, HeroRecord, HeroStatus};
@@ -352,6 +352,9 @@ pub struct GameState {
     pub selected_monster: Option<String>,
     #[serde(skip)]
     pub selected_upgrade: Option<String>,
+    /// Hero whose journal page is open in the HEROES tab, if any.
+    #[serde(skip)]
+    pub selected_hero: Option<u64>,
     #[serde(skip)]
     pub effects: Vec<RoomEffect>,
     /// Income accumulating over the raid currently in progress.
@@ -417,6 +420,7 @@ impl GameState {
             selected_room: None,
             selected_monster: None,
             selected_upgrade: None,
+            selected_hero: None,
             effects: Vec::new(),
             current_raid: None,
             last_raid_summary: None,
@@ -455,10 +459,13 @@ impl GameState {
         self.known_adventurers.iter_mut().find(|h| h.id == id)
     }
 
-    /// Credit a monster kill to a hero's ledger.
-    pub fn record_hero_kill(&mut self, hero_id: u64) {
+    /// Credit a monster kill to a hero's ledger, and remember it by name — a
+    /// hero's journal is the story of what they did to *this* dungeon.
+    pub fn record_hero_kill(&mut self, hero_id: u64, monster: &str, floor: i32) {
+        let day = self.day;
         if let Some(record) = self.hero_mut(hero_id) {
             record.kills += 1;
+            record.remember(day, format!("Slew a {monster} on floor {floor}"));
         }
     }
 
@@ -475,6 +482,7 @@ impl GameState {
             record.status = HeroStatus::Dead;
             record.death_floor = floor;
             record.death_day = day;
+            record.remember(day, format!("Fell on floor {floor}"));
         }
         if let Some((name, souls, gold)) = bounty {
             self.souls += souls;
@@ -586,7 +594,24 @@ mod tests {
             status: HeroStatus::Inside,
             death_floor: 0,
             death_day: 0,
+            journal: Vec::new(),
         }
+    }
+
+    #[test]
+    fn a_journal_keeps_only_its_last_pages() {
+        // A long campaign must not grow the save without bound.
+        let mut h = hero(1, 0, 0);
+        for day in 1..=(crate::game_state::heroes::HERO_JOURNAL_LIMIT as i32 + 5) {
+            h.remember(day, format!("Delve {day}"));
+        }
+        assert_eq!(
+            h.journal.len(),
+            crate::game_state::heroes::HERO_JOURNAL_LIMIT
+        );
+        // The oldest fell off the front; the newest is still there.
+        assert_eq!(h.journal.first().unwrap().text, "Delve 6");
+        assert_eq!(h.journal.last().unwrap().text, "Delve 17");
     }
 
     #[test]

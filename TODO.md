@@ -5,8 +5,8 @@ work is shipped. What follows is what is still genuinely open.
 
 ## Queued next (specced, not started)
 
-Six items from playtesting, in the order they were raised. Directions below are
-decided; the code references are where the work lands.
+Six items from playtesting, in the order they were raised. All six are now
+built; what remains under each is balance tuning against real play.
 
 ### Monster status in the room inspector — *done*
 
@@ -58,26 +58,38 @@ Still open:
   *cost* in respawns and re-arms, so the player cannot yet see the net. Worth a
   pass once the rates settle.
 
-### Adventurer journal (follow the NPCs)
+### Adventurer journal (follow the NPCs) — *done*
 
-`HeroRecord` (`src/game_state.rs:252`) already persists name, race, class, level,
-delves, kills, gold stolen, status, death floor/day, plus `is_rival()` and
-`bounty()`. The HEROES tab (`src/ui/side_drawer/heroes_tab.rs`) lists all of it
-but rows are not clickable, so an individual adventurer has no page.
+`HeroRecord` already persisted the numbers; the HEROES tab listed them but rows
+were inert, so an individual adventurer had no page.
 
-- Make a HEROES row open a per-hero journal page: the profile stats above, laid
-  out properly, with the rival badge and bounty made explicit.
-- Add a per-delve history — a short persisted event list on `HeroRecord`
-  (entered on day X, slew Y on floor Z, fled with N gold, died to M). This is
-  new state on a serialized struct, so it needs a `#[serde(default)]` field and
-  a save-migration check; keep the list bounded so a long run cannot grow the
-  save without limit.
-- Events are already narrated into the game log at the moments that matter
-  (kills, deaths, escapes) — the journal wants the same facts recorded against
-  the hero id rather than a second source of truth.
-- Live tracking of a hero inside the dungeon (current room, HP, conditions) is
-  explicitly out of scope for the first pass; the journal is a ledger, not a
-  minimap. Revisit once the page exists.
+Shipped:
+
+- `HeroRecord.journal` — a `Vec<HeroEvent>` (`day` + a sentence),
+  `#[serde(default)]` so older saves start empty, bounded to
+  `HERO_JOURNAL_LIMIT` (12) by `remember()`, which drops the oldest line as it
+  pushes. A test pins that bound: a long campaign cannot grow the save without
+  limit.
+- Four moments are recorded against the hero id: entering (first delve or
+  returning for delve N), each kill *by name and floor*, escaping with a purse
+  (and any level gained), and falling. `record_hero_kill` now takes the monster
+  and floor, and `kill_credits` in combat carries the slain creature's name
+  along with its slayer.
+- Clicking a HEROES row opens that hero's page in place of the list: name,
+  level/race/class, standing, the rival badge with its bounty spelled out, the
+  three lifetime totals, death circumstances when fallen, and the history
+  newest-first. A "< Heroes" control returns to the list.
+- `GameState.selected_hero` is `#[serde(skip)]` UI state, driven by two new
+  `DrawerAction` variants.
+
+Verified against a `journal` capture scene: a five-delve rival with a full
+history and a live bounty.
+
+Still open:
+
+- Live tracking of a hero inside the dungeon (current room, HP, conditions)
+  remains out of scope — the journal is a ledger; the board is where a raid is
+  watched.
 
 ### Traps and upgrades use the monster placement flow — *done*
 

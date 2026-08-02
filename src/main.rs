@@ -84,6 +84,7 @@ async fn main() {
             "build" => DrawerTab::Build,
             "variants" => DrawerTab::Evolution,
             "traps" => DrawerTab::Traps,
+            "journal" => DrawerTab::Heroes,
             _ => DrawerTab::Monsters,
         };
         let mut upgrade_section = UpgradeSection::Traps;
@@ -439,6 +440,8 @@ fn render_playing_frame(
             let _ = persistence::save_game(state);
             reset_timers(last_time_advance, last_adventure_tick, last_save);
         }
+        DrawerAction::OpenHero(id) => state.selected_hero = Some(id),
+        DrawerAction::CloseHero => state.selected_hero = None,
         DrawerAction::None => {}
     }
 

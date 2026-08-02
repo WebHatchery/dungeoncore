@@ -75,6 +75,9 @@ pub enum DrawerAction {
     OpenCorePowers,
     ChannelGold,
     ResetGame,
+    /// Open a hero's journal page, or close it again.
+    OpenHero(u64),
+    CloseHero,
 }
 
 /// What the Build tab wants to do this frame.
@@ -132,9 +135,11 @@ pub fn draw_side_drawer(
         DrawerTab::Evolution => {
             action = draw_evolution_tab(state, content);
         }
-        DrawerTab::Heroes => {
-            draw_heroes_tab(state, content, heroes_scroll);
-        }
+        DrawerTab::Heroes => match draw_heroes_tab(state, content, heroes_scroll) {
+            heroes_tab::HeroesTabAction::Open(id) => action = DrawerAction::OpenHero(id),
+            heroes_tab::HeroesTabAction::Close => action = DrawerAction::CloseHero,
+            heroes_tab::HeroesTabAction::None => {}
+        },
     }
 
     action

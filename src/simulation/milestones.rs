@@ -233,6 +233,7 @@ mod tests {
                 status: crate::game_state::HeroStatus::Alive,
                 death_floor: 0,
                 death_day: 0,
+                journal: Vec::new(),
             });
         }
         for m in MILESTONES.iter() {

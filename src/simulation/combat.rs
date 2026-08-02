@@ -112,7 +112,8 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
 
     let mut monster_kills: Vec<(String, bool)> = Vec::new();
     let mut split_spawns: Vec<String> = Vec::new();
-    let mut kill_credits: Vec<u64> = Vec::new();
+    // (slayer, what they slew) — the journal wants the name, not just a tally.
+    let mut kill_credits: Vec<(u64, String)> = Vec::new();
     let mut party_hit_strong = false;
     let mut party_hit_weak = false;
     {
@@ -142,7 +143,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                 monster.hp = 0;
                 monster.alive = false;
                 monster_kills.push((monster.type_name.clone(), monster.is_boss));
-                kill_credits.push(*attacker_id);
+                kill_credits.push((*attacker_id, monster.type_name.clone()));
                 if has_passive(monster, "SplitOnDeath") {
                     if let Some(spawn) = split_spawn(&monster.type_name, floor_num) {
                         split_spawns.push(spawn.type_name.clone());
@@ -152,8 +153,8 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             }
         }
     }
-    for hero_id in kill_credits {
-        state.record_hero_kill(hero_id);
+    for (hero_id, monster_name) in kill_credits {
+        state.record_hero_kill(hero_id, &monster_name, floor_num);
     }
 
     for spawn_name in &split_spawns {
