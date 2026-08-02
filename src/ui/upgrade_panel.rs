@@ -229,12 +229,23 @@ fn draw_selected_room(
     let alive = room.monsters.iter().filter(|monster| monster.alive).count();
     let adventurers = adventurers_in_room(state, room);
     draw_section_rule(rect.x + 12.0, rect.y + 102.0, rect.w - 24.0, "ROOM STATS");
+    // Combat rooms report their slot budget alongside the headcount; the
+    // entrance and core hold nothing, so a capacity there would be noise.
+    let held = room.monsters.len();
+    let defenders = if room.room_type == RoomType::Normal || room.room_type == RoomType::Boss {
+        format!(
+            "{alive} alive · {held}/{} slots",
+            crate::data::constants::room_capacity(room)
+        )
+    } else {
+        format!("{alive}/{held}")
+    };
     draw_stat_line(
         rect.x + 12.0,
         rect.y + 130.0,
         rect.w - 24.0,
         "Defenders",
-        &format!("{alive}/{}", room.monsters.len()),
+        &defenders,
         if alive > 0 { EMERALD } else { TEXT_DIM },
     );
     let upgrade_names = if room.upgrades.is_empty() {

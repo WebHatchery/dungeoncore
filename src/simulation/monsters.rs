@@ -52,6 +52,16 @@ pub fn place_monster(
         ));
     }
 
+    // Slots are scarce and only depth buys more. A full room can still be
+    // improved — by replacing an occupant — but it cannot be added to.
+    if crate::data::constants::room_is_full(room) {
+        return Err(format!(
+            "This room is full ({} of {} slots). Dig deeper or replace a defender.",
+            room.monsters.len(),
+            crate::data::constants::room_capacity(room)
+        ));
+    }
+
     // Boss uniques already price in their throne room — no 2x boss surcharge.
     let boss_surcharge = is_boss && !template.boss_only;
     let cost = get_monster_mana_cost(template.base_cost, floor_num, boss_surcharge);
@@ -494,6 +504,60 @@ mod tests {
         assert!(m.alive);
         assert_eq!(m.hp, m.max_hp);
         assert!(s.mana < 100, "the living cost mana to reknit");
+    }
+
+    /// A dungeon with one Normal room on floor 1 and Goblins unlocked.
+    fn dungeon_with_a_combat_room() -> GameState {
+        let mut s = GameState::new();
+        s.mana = 100_000;
+        crate::simulation::rooms::add_room(&mut s, None).expect("room built");
+        let template =
+            crate::data::monsters::get_monster_template("Goblin").expect("goblin exists");
+        s.unlocked_species.push(template.species.clone());
+        s.unlocked_monsters.push(template.name.clone());
+        s
+    }
+
+    #[test]
+    fn a_room_takes_its_fill_and_then_refuses_more() {
+        let mut s = dungeon_with_a_combat_room();
+        let capacity = crate::data::constants::room_monster_capacity(1, false);
+        for _ in 0..capacity {
+            place_monster(&mut s, 1, 1, "Goblin").expect("slot available");
+        }
+
+        let err = place_monster(&mut s, 1, 1, "Goblin").expect_err("room is full");
+        assert!(err.contains("full"), "{err}");
+        assert_eq!(s.floors[0].rooms[1].monsters.len(), capacity);
+    }
+
+    #[test]
+    fn an_over_capacity_room_keeps_its_defenders() {
+        // A save written before the limit existed can hold more than the cap.
+        // Placement stops; nothing the player paid for is taken away.
+        let mut s = dungeon_with_a_combat_room();
+        let capacity = crate::data::constants::room_monster_capacity(1, false);
+        for _ in 0..capacity + 3 {
+            s.floors[0].rooms[1]
+                .monsters
+                .push(dead_monster("Goblin", 40));
+        }
+
+        assert!(place_monster(&mut s, 1, 1, "Goblin").is_err());
+        assert_eq!(s.floors[0].rooms[1].monsters.len(), capacity + 3);
+    }
+
+    #[test]
+    fn a_dismissal_frees_the_slot_it_held() {
+        let mut s = dungeon_with_a_combat_room();
+        let capacity = crate::data::constants::room_monster_capacity(1, false);
+        for _ in 0..capacity {
+            place_monster(&mut s, 1, 1, "Goblin").expect("slot available");
+        }
+        let victim = s.floors[0].rooms[1].monsters[0].id;
+
+        remove_monster(&mut s, 1, 1, victim).expect("dismissed");
+        place_monster(&mut s, 1, 1, "Goblin").expect("the freed slot takes a new defender");
     }
 
     #[test]

@@ -249,7 +249,8 @@ fn placement_state(state: &GameState, room: &Room) -> PlacementState {
         return PlacementState::Idle;
     }
 
-    if room.room_type == RoomType::Normal || room.room_type == RoomType::Boss {
+    let combat_room = room.room_type == RoomType::Normal || room.room_type == RoomType::Boss;
+    if combat_room && !crate::data::constants::room_is_full(room) {
         PlacementState::Valid
     } else {
         PlacementState::Invalid

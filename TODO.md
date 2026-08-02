@@ -142,7 +142,7 @@ The work:
     place, no retirement, no refund.
   - *Unrelated monster* (Harpy onto a Goblin): the Goblin is retired for half its
     mana back, then the Harpy is summoned at full price. Exactly the existing
-    dismiss-then-summon pair, done in one click — reuse `dismiss_monster`'s refund
+    dismiss-then-summon pair, done in one click — reuse `remove_monster`'s refund
     rule (`get_monster_mana_cost(base, floor, boss_surcharge) / 2`, souls stay
     spent) rather than inventing a second refund path.
   - The upgrade branch must be strictly cheaper than the retire-and-replace one,
@@ -150,14 +150,13 @@ The work:
     open: full variant cost, or the difference against what the base creature is
     worth.
 - That means placement needs a **per-monster target**, which does not exist today
-  — `summon_monster` just appends to `room.monsters`. With a monster armed in the
+  — `place_monster` only appends to `room.monsters`. With a monster armed in the
   drawer, the inspector's defender rows become drop targets ("place on this
   defender") while clicking an open slot still adds a new one. Board-level
   targeting can come later; the inspector rows are the cheap version and they are
-  already being rebuilt for the status item above. Pairs directly with the room
-  creature limit below — once a room is full, placing onto an occupant is the
-  *only* way to put something new in it, which is what makes the upgrade-vs-
-  replace choice bite.
+  already being rebuilt for the status item above. The room creature limit below
+  is in, so this already bites: a full room can only be improved by replacing an
+  occupant.
 - `process_evolutions`' second pass already transforms correctly (rescales via
   `get_scaled_stats`, rebuilds `active_traits`) — reuse it as a single-monster
   function for the upgrade branch rather than rewriting it.
@@ -176,38 +175,32 @@ The work:
   direct upgrade and a retire-and-replace cost very different amounts. Show the
   outcome and price on the targeted row while a monster is armed.
 
-### Rooms get a creature limit that grows with depth
+### Rooms get a creature limit that grows with depth — *done, balance open*
 
-A room currently holds unlimited monsters — `summon_monster`
-(`src/simulation/monsters.rs`) validates room type, boss-only placement, mana and
-souls, then pushes onto `room.monsters` with no cap. Rooms should hold a limited
-number of creatures, and that limit should rise the deeper the floor sits.
+Rooms used to hold unlimited defenders; `place_monster` just pushed onto
+`room.monsters`.
 
-- The limit is balance data, not a Rust constant: it belongs in
-  `assets/constants.json` alongside the existing `floor_scaling` table, read
-  through `get_floor_scaling(floor)` with `deep_floor_scaling` covering floors
-  past the table — the same shape stat scaling already uses. Note
-  `MAX_ROOMS_PER_FLOOR` (`src/data/constants.rs:166`) is a hardcoded `const`
-  despite a `max_rooms_per_floor()` JSON accessor existing right above it; don't
-  copy that pattern for the new value.
-- Boss rooms probably want their own limit (fewer slots, one of them boss-only)
-  rather than the plain floor number. Decide when the table is written.
-- `summon_monster` gains a capacity check returning the usual `Err(String)`, and
-  the same rule has to gate the placement UI — a full room reads as an invalid
-  target in `placement_state` (`src/ui/dungeon_view.rs:247`), not as a click that
-  fails with a message.
-- Show occupancy everywhere a room is summarised: the room tile on the board, and
-  the inspector's `Defenders` stat line, which already prints `alive/total` and
-  should print capacity too.
-- Existing saves can exceed a newly-introduced limit. Over-capacity rooms must
-  keep working — block new placement, never delete a defender the player paid
-  for.
-- This is the constraint that makes the rest of the build loop a real decision:
-  with slots scarce, adding a floor competes with upgrading what is already
-  placed, and the upgrade-vs-retire-and-replace choice above becomes the main way
-  to improve a full room. Expect a balance pass on room cost, monster cost, and
-  the capacity curve together — and check the siege and threat curves still hold
-  when the early dungeon can field fewer defenders than it can today.
+Shipped: `room_monster_capacity(floor, is_boss)` in `src/data/constants.rs`,
+driven by a `monster_capacity` column on the `floor_scaling` table (2/3/3/4/4 for
+floors 1–5), extrapolated past the table at `monster_capacity_increase` per
+floor, with `boss_room_capacity_delta` (-1) trading a throne room's slot for its
+boss. `place_monster` refuses a full room; `placement_state` marks it an invalid
+target so the board dims it and shows a "Full" pill instead of letting the click
+fail; every combat room tile carries `used/capacity` on its label plate and the
+inspector's `Defenders` line reads `N alive · used/capacity slots`.
+
+Still open:
+
+- **Balance the curve against room and monster cost.** Slots are now the scarce
+  build resource, so adding a floor competes with improving what is placed.
+  Check the siege and threat curves still hold when the early dungeon fields two
+  defenders per room instead of an unbounded pile.
+- Whether boss rooms should reserve one of their slots for a boss-only monster,
+  rather than just being one slot smaller.
+- Capacity gates *player placement* only. `SplitOnDeath`
+  (`src/simulation/combat.rs:149`) still spawns over the cap mid-fight, which is
+  the trait working as intended — revisit only if a split-heavy room gets
+  silly.
 
 ## Dungeon graph (branching layouts)
 

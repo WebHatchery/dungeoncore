@@ -1,4 +1,4 @@
-use crate::game_state::Stats;
+use crate::game_state::{Room, RoomType, Stats};
 use serde::Deserialize;
 
 // ===== JSON Data Structures =====
@@ -10,6 +10,9 @@ struct DungeonConstants {
     base_room_cost: i32,
     boss_room_extra_cost: i32,
     core_room_mana_bonus: f32,
+    /// Slots a boss room gains (or, negative, gives up) against its floor's
+    /// capacity — the throne room trades numbers for the boss itself.
+    boss_room_capacity_delta: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -44,12 +47,16 @@ pub struct FloorScaling {
     pub monster_boost: i32,
     pub adventurer_level_min: i32,
     pub adventurer_level_max: i32,
+    /// Defenders a room on this floor can hold.
+    pub monster_capacity: i32,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct DeepFloorScaling {
     pub mana_cost_multiplier_increase: f32,
     pub monster_boost_increase: i32,
+    /// Extra defender slots per floor beyond the scaling table.
+    pub monster_capacity_increase: i32,
     pub adventurer_level_increase: i32,
 }
 
@@ -169,6 +176,50 @@ pub fn get_monster_mana_cost(base_cost: i32, floor_number: i32, is_boss_room: bo
     (base_cost as f32 * floor_mult * boss_mult) as i32
 }
 
+/// How many defenders a room on this floor can hold. Slots are the scarce
+/// resource that makes building a decision: a shallow room fields a couple of
+/// bodies, and only depth buys room for more. Floors past the scaling table
+/// keep growing at `monster_capacity_increase` per floor. Boss rooms apply
+/// `boss_room_capacity_delta` — the throne trades numbers for the boss.
+pub fn room_monster_capacity(floor: i32, is_boss: bool) -> usize {
+    let data = load_constants();
+    let table_capacity = data
+        .floor_scaling
+        .iter()
+        .find(|s| s.floor == floor)
+        .map(|s| s.monster_capacity)
+        .or_else(|| {
+            // Beyond the table: extrapolate from its deepest entry.
+            data.floor_scaling
+                .iter()
+                .max_by_key(|s| s.floor)
+                .map(|last| {
+                    let beyond = (floor - last.floor).max(0);
+                    last.monster_capacity
+                        + data.deep_floor_scaling.monster_capacity_increase * beyond
+                })
+        })
+        .unwrap_or(1);
+
+    let delta = if is_boss {
+        data.dungeon.boss_room_capacity_delta
+    } else {
+        0
+    };
+    (table_capacity + delta).max(1) as usize
+}
+
+/// Defender slots in this specific room.
+pub fn room_capacity(room: &Room) -> usize {
+    room_monster_capacity(room.floor_number, room.room_type == RoomType::Boss)
+}
+
+/// Whether the room has no free slot left for another defender. Over-capacity
+/// rooms from older saves read as full rather than being trimmed.
+pub fn room_is_full(room: &Room) -> bool {
+    room.monsters.len() >= room_capacity(room)
+}
+
 /// Get adventurer level range for a floor
 pub fn get_adventurer_level_range(floor: i32) -> (i32, i32) {
     get_floor_scaling(floor)
@@ -184,3 +235,33 @@ pub const MAX_PARTY_SIZE: usize = 4;
 pub const MIN_PARTY_SIZE: usize = 2;
 pub const RETREAT_THRESHOLD: i32 = 2;
 pub const CORE_ROOM_MANA_BONUS: f32 = 0.1;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deeper_floors_hold_more_defenders() {
+        assert!(room_monster_capacity(4, false) > room_monster_capacity(1, false));
+    }
+
+    #[test]
+    fn capacity_keeps_growing_past_the_scaling_table() {
+        let last_tabled = room_monster_capacity(5, false);
+        assert!(room_monster_capacity(9, false) > last_tabled);
+        assert!(room_monster_capacity(20, false) > room_monster_capacity(9, false));
+    }
+
+    #[test]
+    fn a_throne_room_trades_slots_for_its_boss() {
+        assert!(room_monster_capacity(3, true) < room_monster_capacity(3, false));
+    }
+
+    #[test]
+    fn every_room_holds_at_least_one_defender() {
+        for floor in 1..=20 {
+            assert!(room_monster_capacity(floor, true) >= 1);
+            assert!(room_monster_capacity(floor, false) >= 1);
+        }
+    }
+}

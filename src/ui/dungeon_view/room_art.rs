@@ -98,6 +98,22 @@ pub(super) fn draw_room_tile(
                 draw_rect.h,
                 Color::new(0.0, 0.0, 0.0, 0.36),
             );
+            // A combat room that is merely out of slots reads as "no room
+            // left", not as the wrong kind of room.
+            if (room.room_type == RoomType::Normal || room.room_type == RoomType::Boss)
+                && crate::data::constants::room_is_full(room)
+            {
+                draw_pill(
+                    Rect::new(
+                        draw_rect.x + draw_rect.w - 44.0,
+                        draw_rect.y + draw_rect.h * 0.46,
+                        39.0,
+                        16.0,
+                    ),
+                    "Full",
+                    WARNING,
+                );
+            }
         }
         PlacementState::Idle => {}
     }
@@ -387,6 +403,25 @@ fn draw_room_label_plate(rect: Rect, title: &str, room: &Room, color: Color) {
         7.0,
         color,
     );
+
+    // Combat rooms carry their occupancy: slots are the scarce build resource,
+    // so the board states them without needing a click.
+    if room.room_type == RoomType::Normal || room.room_type == RoomType::Boss {
+        let capacity = crate::data::constants::room_capacity(room);
+        let used = room.monsters.len();
+        draw_text_fit_right(
+            &format!("{}/{}", used, capacity),
+            rect.x + rect.w - 6.0,
+            rect.y + 18.0,
+            30.0,
+            11.0,
+            if used >= capacity {
+                WARNING
+            } else {
+                TEXT_MUTED
+            },
+        );
+    }
 }
 
 pub(super) fn draw_future_room_tile(state: &GameState, rect: Rect, plan: &BuildPreview) -> bool {

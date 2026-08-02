@@ -4,7 +4,8 @@
         "max_log_entries": 50,
         "base_room_cost": 20,
         "boss_room_extra_cost": 30,
-        "core_room_mana_bonus": 0.1
+        "core_room_mana_bonus": 0.1,
+        "boss_room_capacity_delta": -1
     },
     "time": {
         "mana_regen_interval": 1.0,
@@ -29,40 +30,46 @@
             "mana_cost_multiplier": 1.0,
             "monster_boost": 0,
             "adventurer_level_min": 1,
-            "adventurer_level_max": 2
+            "adventurer_level_max": 2,
+            "monster_capacity": 2
         },
         {
             "floor": 2,
             "mana_cost_multiplier": 1.2,
             "monster_boost": 10,
             "adventurer_level_min": 1,
-            "adventurer_level_max": 3
+            "adventurer_level_max": 3,
+            "monster_capacity": 3
         },
         {
             "floor": 3,
             "mana_cost_multiplier": 1.5,
             "monster_boost": 20,
             "adventurer_level_min": 2,
-            "adventurer_level_max": 4
+            "adventurer_level_max": 4,
+            "monster_capacity": 3
         },
         {
             "floor": 4,
             "mana_cost_multiplier": 1.8,
             "monster_boost": 30,
             "adventurer_level_min": 2,
-            "adventurer_level_max": 5
+            "adventurer_level_max": 5,
+            "monster_capacity": 4
         },
         {
             "floor": 5,
             "mana_cost_multiplier": 2.0,
             "monster_boost": 40,
             "adventurer_level_min": 3,
-            "adventurer_level_max": 5
+            "adventurer_level_max": 5,
+            "monster_capacity": 4
         }
     ],
     "deep_floor_scaling": {
         "mana_cost_multiplier_increase": 0.2,
         "monster_boost_increase": 10,
+        "monster_capacity_increase": 1,
         "adventurer_level_increase": 1
     }
 }
