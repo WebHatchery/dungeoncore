@@ -398,8 +398,9 @@ On each `resolve_combat` tick:
 
 ## Product & UX infrastructure
 
-- Settings menu: audio sliders, fullscreen/resolution, UI scale, speed defaults,
-  autosave interval, colourblind mode, reduced motion, key rebinding.
+- Settings now persists fullscreen, UI scale, reduced motion and autosave
+  cadence through `macroquad-toolkit::settings::GameSettings`. Audio sliders,
+  speed defaults, colourblind mode and key rebinding remain open.
 - Save hardening: multiple slots with metadata, explicit save-version discipline,
   corrupt-save backup/recovery that never panics or silently resets.
 - True pause is now a first-class persisted state with a Space shortcut, HUD

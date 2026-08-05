@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 use macroquad_toolkit::assets::AssetManager;
 use macroquad_toolkit::input::{is_hovered_rect, was_clicked_rect};
+use macroquad_toolkit::settings::GameSettings;
 
 use crate::data::difficulty::Difficulty;
 
@@ -23,6 +24,9 @@ pub enum TitleAction {
 pub enum TitleSettingsAction {
     None,
     ToggleFullscreen,
+    AdjustUiScale(i8),
+    ToggleReducedMotion,
+    AdjustAutosave(i8),
     Back,
 }
 
@@ -230,7 +234,7 @@ fn draw_wrapped_blurb(text: &str, x: f32, y: f32, max_w: f32) {
 
 pub fn draw_title_settings_screen(
     assets: &AssetManager,
-    fullscreen_enabled: bool,
+    settings: &GameSettings,
     notice: Option<&str>,
 ) -> TitleSettingsAction {
     let sw = screen_width();
@@ -240,9 +244,9 @@ pub fn draw_title_settings_screen(
     let panel_w = sw.min(1280.0) * 0.32;
     let panel = Rect::new(
         (sw - panel_w.clamp(320.0, 430.0)) * 0.5,
-        (sh - 250.0) * 0.5,
+        (sh - 470.0) * 0.5,
         panel_w.clamp(320.0, 430.0),
-        250.0,
+        470.0,
     );
     draw_title_panel(panel);
 
@@ -255,7 +259,7 @@ pub fn draw_title_settings_screen(
         TEXT,
     );
     draw_text_fit(
-        "Display preferences for this session.",
+        "Preferences are saved for every future delve.",
         panel.x + 28.0,
         panel.y + 64.0,
         panel.w - 56.0,
@@ -267,7 +271,7 @@ pub fn draw_title_settings_screen(
     let button_x = panel.x + 28.0;
     if draw_title_button(
         Rect::new(button_x, panel.y + 96.0, button_w, 48.0),
-        if fullscreen_enabled {
+        if settings.fullscreen {
             "Fullscreen: On"
         } else {
             "Fullscreen: Off"
@@ -279,7 +283,35 @@ pub fn draw_title_settings_screen(
     }
 
     if draw_title_button(
-        Rect::new(button_x, panel.y + 158.0, button_w, 48.0),
+        Rect::new(button_x, panel.y + 158.0, button_w, 42.0),
+        &format!("UI scale: {:.0}%", settings.ui_text_scale * 100.0),
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::AdjustUiScale(1);
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 212.0, button_w, 42.0),
+        if settings.screen_shake {
+            "Reduced motion: Off"
+        } else {
+            "Reduced motion: On"
+        },
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::ToggleReducedMotion;
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 266.0, button_w, 42.0),
+        &format!("Autosave: {:.0}s", settings.autosave_interval),
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::AdjustAutosave(1);
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 340.0, button_w, 48.0),
         "Back",
         true,
         ButtonTone::Ghost,
