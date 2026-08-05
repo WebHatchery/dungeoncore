@@ -398,9 +398,11 @@ change combat outcomes.
 
 #### Later art following the creature pass
 
-- Trap, upgrade and attunement art remain open. Room interiors now gain a
-  gradual cool arcane wash by floor depth while retaining their room-type cue;
-  the core remains the visual centrepiece.
+- Installed traps, treasure, reinforcement, evolution, and attunement upgrades
+  now add compact, type-specific chamber decorations without covering the unit
+  row; disarmed traps visibly dim. Room interiors also gain a gradual cool
+  arcane wash by floor depth while retaining their room-type cue, and the core
+  remains the visual centrepiece.
 - Elemental impact cues now tint and shape combat and elemental-trap strikes
   across the current Fire/Water/Nature/Earth/Air/Spirit/Death/Arcane/Body
   roster; the `combat_sprites` capture pins a Fire example. Dedicated poison,

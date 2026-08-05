@@ -5,7 +5,7 @@ use macroquad::prelude::*;
 use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::input::{is_hovered_rect, was_clicked_rect};
 
-use crate::game_state::{Adventurer, GameState, Room, RoomType};
+use crate::game_state::{Adventurer, GameState, Room, RoomType, RoomUpgradeType};
 use crate::ui::theme::*;
 
 use super::icons::{
@@ -231,6 +231,131 @@ fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, ic
         RoomType::Entrance => draw_entrance_art(wall, icon_color),
         RoomType::Normal | RoomType::Boss => draw_combat_art(wall, icon_color),
         RoomType::Core => draw_core_art(wall, icon_color),
+    }
+    draw_room_upgrade_art(wall, room);
+}
+
+/// Give installed room upgrades a compact, distinct physical presence inside
+/// the chamber. These cues supplement the inspector and never cover unit rows.
+fn draw_room_upgrade_art(wall: Rect, room: &Room) {
+    for upgrade in &room.upgrades {
+        let element = upgrade.element.as_deref().unwrap_or_default();
+        let elemental_color = element_color(element);
+        match upgrade.upgrade_type {
+            RoomUpgradeType::Trap => {
+                let color = if upgrade.disarmed {
+                    TEXT_DIM
+                } else if element.is_empty() {
+                    WARNING
+                } else {
+                    elemental_color
+                };
+                let y = wall.y + 9.0;
+                for offset in [0.0, 10.0, 20.0] {
+                    let x = wall.x + wall.w * 0.5 - 10.0 + offset;
+                    draw_triangle(
+                        vec2(x - 4.0, y + 7.0),
+                        vec2(x, y),
+                        vec2(x + 4.0, y + 7.0),
+                        with_alpha(color, if upgrade.disarmed { 0.34 } else { 0.78 }),
+                    );
+                }
+                if upgrade.disarmed {
+                    draw_line(
+                        wall.x + wall.w * 0.5 - 16.0,
+                        y + 2.0,
+                        wall.x + wall.w * 0.5 + 16.0,
+                        y + 10.0,
+                        1.5,
+                        TEXT_DIM,
+                    );
+                }
+            }
+            RoomUpgradeType::Treasure => {
+                let chest = Rect::new(wall.x + 10.0, wall.y + 11.0, 15.0, 11.0);
+                draw_rectangle(
+                    chest.x,
+                    chest.y,
+                    chest.w,
+                    chest.h,
+                    with_alpha(TREASURE, 0.68),
+                );
+                draw_rectangle_lines(chest.x, chest.y, chest.w, chest.h, 1.0, TREASURE);
+                draw_line(
+                    chest.x,
+                    chest.y + 4.0,
+                    chest.x + chest.w,
+                    chest.y + 4.0,
+                    1.0,
+                    BLACK,
+                );
+                draw_circle(chest.x + chest.w * 0.5, chest.y + 5.0, 1.5, SOUL);
+            }
+            RoomUpgradeType::Reinforcement => {
+                let center = vec2(wall.x + wall.w - 17.0, wall.y + 17.0);
+                let color = Color::new(0.68, 0.76, 0.84, 1.0);
+                draw_triangle(
+                    vec2(center.x, center.y - 9.0),
+                    vec2(center.x - 8.0, center.y - 4.0),
+                    vec2(center.x + 8.0, center.y - 4.0),
+                    with_alpha(color, 0.52),
+                );
+                draw_line(
+                    center.x - 8.0,
+                    center.y - 4.0,
+                    center.x - 5.0,
+                    center.y + 8.0,
+                    1.5,
+                    color,
+                );
+                draw_line(
+                    center.x + 8.0,
+                    center.y - 4.0,
+                    center.x + 5.0,
+                    center.y + 8.0,
+                    1.5,
+                    color,
+                );
+                draw_line(
+                    center.x - 5.0,
+                    center.y + 8.0,
+                    center.x + 5.0,
+                    center.y + 8.0,
+                    1.5,
+                    color,
+                );
+            }
+            RoomUpgradeType::Evolution => {
+                let center = vec2(wall.x + 18.0, wall.y + wall.h * 0.48);
+                draw_circle_lines(center.x, center.y, 8.0, 1.2, with_alpha(SOUL, 0.72));
+                draw_line(
+                    center.x - 5.0,
+                    center.y + 4.0,
+                    center.x + 5.0,
+                    center.y - 4.0,
+                    1.4,
+                    SOUL,
+                );
+                draw_circle(center.x - 5.0, center.y + 4.0, 1.5, SOUL);
+                draw_circle(center.x + 5.0, center.y - 4.0, 1.5, SOUL);
+            }
+            RoomUpgradeType::Attunement => {
+                let center = vec2(wall.x + wall.w - 18.0, wall.y + wall.h * 0.48);
+                draw_circle(center.x, center.y, 9.0, with_alpha(elemental_color, 0.18));
+                draw_triangle(
+                    vec2(center.x, center.y - 8.0),
+                    vec2(center.x - 6.0, center.y + 4.0),
+                    vec2(center.x, center.y + 8.0),
+                    with_alpha(elemental_color, 0.74),
+                );
+                draw_triangle(
+                    vec2(center.x, center.y - 8.0),
+                    vec2(center.x + 6.0, center.y + 4.0),
+                    vec2(center.x, center.y + 8.0),
+                    with_alpha(elemental_color, 0.48),
+                );
+            }
+        }
     }
 }
 
