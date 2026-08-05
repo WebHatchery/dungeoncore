@@ -11,10 +11,13 @@ pub const UNIT_SHEET_KEY: &str = "dungeon_unit_sheet";
 pub const UNIT_SHEET_PATH: &str = "assets/sprites/dungeon_units.png";
 pub const ANIMATED_UNIT_SHEET_KEY: &str = "dungeon_unit_sheet_animated";
 pub const ANIMATED_UNIT_SHEET_PATH: &str = "assets/sprites/dungeon_units_animated.png";
+pub const ANIMATED_MONSTER_SHEET_KEY: &str = "dungeon_monsters_animated";
+pub const ANIMATED_MONSTER_SHEET_PATH: &str = "assets/sprites/dungeon_monsters_animated.png";
 
 pub struct DungeonSprites {
     atlas: Option<SpriteAtlas>,
     animated_atlas: Option<SpriteAtlas>,
+    animated_monster_atlas: Option<SpriteAtlas>,
     idle: SpriteClip,
     walk: SpriteClip,
     attack: SpriteClip,
@@ -35,9 +38,19 @@ impl DungeonSprites {
                 let frame_h = texture.height() / 4.0;
                 SpriteAtlas::new(texture, frame_w, frame_h)
             });
+        let animated_monster_atlas =
+            assets
+                .get_texture(ANIMATED_MONSTER_SHEET_KEY)
+                .cloned()
+                .map(|texture| {
+                    let frame_w = texture.width() / 4.0;
+                    let frame_h = texture.height() / 4.0;
+                    SpriteAtlas::new(texture, frame_w, frame_h)
+                });
         Self {
             atlas,
             animated_atlas,
+            animated_monster_atlas,
             // The supplied art is a pose atlas. Keeping named clips now makes
             // future animated sheets a manifest-only asset change.
             idle: SpriteClip::new("idle", 0, 1, 2.0),
@@ -59,8 +72,11 @@ impl DungeonSprites {
         elapsed: f32,
         flip_x: bool,
     ) -> bool {
+        if name == "Goblin" {
+            return self.draw_animated_frame(0, center, size, elapsed, flip_x, &self.idle);
+        }
         if let Some(frame) = animated_monster_frame(name) {
-            return self.draw_animated_frame(frame, center, size, elapsed, flip_x, &self.idle);
+            return self.draw_monster_animated_frame(frame, center, size, flip_x, &self.idle);
         }
         self.draw_frame(
             monster_frame(name),
@@ -104,8 +120,17 @@ impl DungeonSprites {
         elapsed: f32,
         flip_x: bool,
     ) -> bool {
+        if monster && key != "Goblin" {
+            if let Some(frame) = animated_monster_frame(key) {
+                return self.draw_monster_animated_frame(frame, center, size, flip_x, &self.death);
+            }
+        }
         let frame = if monster {
-            monster_frame(key)
+            if key == "Goblin" {
+                Some(0)
+            } else {
+                monster_frame(key)
+            }
         } else {
             adventurer_frame(key)
         };
@@ -162,10 +187,38 @@ impl DungeonSprites {
         atlas.draw_frame(base_frame + pose, center, vec2(size, size), flip_x, WHITE);
         true
     }
+
+    fn draw_monster_animated_frame(
+        &self,
+        base: usize,
+        center: Vec2,
+        size: f32,
+        flip_x: bool,
+        clip: &SpriteClip,
+    ) -> bool {
+        let Some(atlas) = &self.animated_monster_atlas else {
+            return false;
+        };
+        let pose = match clip.name.as_str() {
+            "walk" => 1,
+            "attack" => 2,
+            "death" => 3,
+            _ => 0,
+        };
+        atlas.draw_frame(base + pose, center, vec2(size, size), flip_x, WHITE);
+        true
+    }
 }
 
 fn animated_monster_frame(name: &str) -> Option<usize> {
-    (name == "Goblin").then_some(0)
+    let species = crate::data::monsters::get_monster_template(name)?.species;
+    match species.as_str() {
+        "Slime" => Some(0),
+        "Undead" => Some(4),
+        "Beast" => Some(8),
+        "Demon" => Some(12),
+        _ => None,
+    }
 }
 
 fn animated_adventurer_frame(class_name: &str) -> Option<usize> {
