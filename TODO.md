@@ -448,9 +448,10 @@ On each `resolve_combat` tick:
 - Gameplay randomness comes from a serializable per-run seeded stream, so
   save/load resumes the exact future and the optional hexadecimal challenge
   seed on the difficulty screen can reproduce a run for a bug report or event.
-- Release pipeline on top of the existing fmt/clippy/test CI: per-platform
-  builds, versioned artifacts, and a title-screen Cargo version stamp are now
-  present; wire the checks into a release pipeline.
+- Release pipeline: the existing fmt/clippy/test CI now builds both platforms;
+  pushing a `v*` tag packages versioned Windows/WebGL artifacts and attaches
+  them to generated GitHub release notes. The title screen already carries the
+  Cargo version stamp.
 
 ## QA, balance & business
 

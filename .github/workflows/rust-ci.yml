@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master]
+    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -98,6 +99,23 @@ jobs:
           wasm_name="$(cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | python3 -c 'import json, sys; from pathlib import Path; metadata = json.load(sys.stdin); manifest = Path("Cargo.toml").resolve(); package = next((package for package in metadata["packages"] if Path(package["manifest_path"]).resolve() == manifest), metadata["packages"][0]); bins = [target["name"] for target in package["targets"] if "bin" in target["kind"]]; name = bins[0] if bins else package["name"]; print(name.replace("-", "_") + ".wasm")')"
           test -s "target/wasm32-unknown-unknown/release/${wasm_name}"
 
+      - name: Package WebGL artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          mkdir -p release/webgl
+          wasm_name="$(cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | python3 -c 'import json, sys; from pathlib import Path; metadata = json.load(sys.stdin); manifest = Path("Cargo.toml").resolve(); package = next((package for package in metadata["packages"] if Path(package["manifest_path"]).resolve() == manifest), metadata["packages"][0]); bins = [target["name"] for target in package["targets"] if "bin" in target["kind"]]; name = bins[0] if bins else package["name"]; print(name.replace("-", "_") + ".wasm")')"
+          cp "target/wasm32-unknown-unknown/release/${wasm_name}" release/webgl/
+          cp catalog_thumbnail.png release/webgl/
+          tar -czf "release/dungeon-core-webgl-${GITHUB_REF_NAME}.tar.gz" -C release webgl
+
+      - name: Upload WebGL release artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: dungeon-core-webgl-${{ github.ref_name }}
+          path: game/release/dungeon-core-webgl-${{ github.ref_name }}.tar.gz
+          if-no-files-found: error
+
   windows-build:
     name: Build Windows release
     runs-on: windows-latest
@@ -155,3 +173,43 @@ jobs:
           if (-not (Test-Path $exePath -PathType Leaf)) {
             throw "Missing $exePath"
           }
+
+      - name: Package Windows artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release\windows | Out-Null
+          Copy-Item target\release\*.exe release\windows\
+          Copy-Item catalog_thumbnail.png release\windows\
+          Compress-Archive -Path release\windows\* -DestinationPath "release\dungeon-core-windows-$env:GITHUB_REF_NAME.zip" -Force
+
+      - name: Upload Windows release artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: dungeon-core-windows-${{ github.ref_name }}
+          path: game/release/dungeon-core-windows-${{ github.ref_name }}.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [checks-and-webgl, windows-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release/dungeon-core-webgl-${{ github.ref_name }}.tar.gz
+            release/dungeon-core-windows-${{ github.ref_name }}.zip
