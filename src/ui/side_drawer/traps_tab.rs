@@ -150,5 +150,31 @@ fn draw_upgrade_option(
         if can_afford { MANA } else { DANGER },
     );
 
+    if is_hovered_rect(rect) {
+        let availability = if !peacetime {
+            "Upgrades can only be installed between raids."
+        } else if !can_afford {
+            "The dungeon cannot afford this upgrade yet."
+        } else {
+            "Choose it, then click a highlighted combat room. A room can hold one of each upgrade type."
+        };
+        let souls = if template.souls_cost > 0 {
+            format!(" + {} souls", template.souls_cost)
+        } else {
+            String::new()
+        };
+        macroquad_toolkit::ui::draw_tooltip(
+            &format!(
+                "{}\nCost: {} mana{}\n{}\n{}",
+                template.name,
+                template.mana_cost,
+                souls,
+                crate::ui::upgrade_panel::previews::upgrade_preview(template),
+                availability,
+            ),
+            vec2(rect.x, rect.y + rect.h),
+        );
+    }
+
     can_afford && was_clicked_rect(rect)
 }

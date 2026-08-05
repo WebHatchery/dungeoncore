@@ -139,6 +139,30 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
         if can_afford { MANA } else { DANGER },
     );
 
+    if is_hovered_rect(rect) {
+        let availability = if !unlocked {
+            "Unlock this species and variant first."
+        } else if !can_afford {
+            "The dungeon cannot afford this summon yet."
+        } else if template.boss_only {
+            "Place this defender only in a boss room."
+        } else {
+            "Choose it, then click a combat room with a free defender slot."
+        };
+        let souls = if template.souls_cost > 0 {
+            format!(" + {} souls", template.souls_cost)
+        } else {
+            String::new()
+        };
+        macroquad_toolkit::ui::draw_tooltip(
+            &format!(
+                "{}\nCost: {} mana{} · Tier {}\n{}\n{}",
+                template.name, template.base_cost, souls, template.tier, traits, availability,
+            ),
+            vec2(rect.x, rect.y + rect.h),
+        );
+    }
+
     enabled && was_clicked_rect(rect)
 }
 
