@@ -30,6 +30,15 @@ pub enum EffectKind {
     HitSpark,
 }
 
+/// A semantic, one-shot sound request emitted by the authoritative simulation.
+/// It is transient like visual effects: audio never affects saves or outcomes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SoundEvent {
+    Combat,
+    Trap,
+    Death,
+}
+
 /// Which side of the room a floating effect belongs over, so damage/deaths
 /// rise above the units actually involved rather than all stacking centre.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -61,6 +70,20 @@ impl RoomEffect {
 }
 
 impl GameState {
+    /// Queue a cosmetic sound for the interactive renderer to consume once.
+    pub fn queue_sound(&mut self, event: SoundEvent) {
+        self.sound_events.push(event);
+        // Avoid an extreme combat tick scheduling an unbounded chorus.
+        if self.sound_events.len() > 12 {
+            self.sound_events.remove(0);
+        }
+    }
+
+    /// Drain the cosmetic queue. Capture rendering deliberately leaves it alone.
+    pub fn take_sound_events(&mut self) -> Vec<SoundEvent> {
+        std::mem::take(&mut self.sound_events)
+    }
+
     /// Spawn a short-lived floating effect centred over a room.
     pub fn push_effect(
         &mut self,

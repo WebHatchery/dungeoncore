@@ -7,7 +7,7 @@ mod effects;
 mod floor;
 pub(crate) mod heroes;
 mod reputation;
-pub use effects::{EffectAnchor, EffectKind, RoomEffect};
+pub use effects::{EffectAnchor, EffectKind, RoomEffect, SoundEvent};
 pub use floor::Floor;
 pub use heroes::{Adventurer, AdventurerParty, Condition, Equipment, HeroRecord, HeroStatus};
 pub use reputation::{ReputationBand, VisitorQuality, REPUTATION_MAX, REPUTATION_MIN};
@@ -425,6 +425,9 @@ pub struct GameState {
     pub selected_hero: Option<u64>,
     #[serde(skip)]
     pub effects: Vec<RoomEffect>,
+    /// Simulation-originated, cosmetic audio requests; never serialized.
+    #[serde(skip)]
+    pub sound_events: Vec<SoundEvent>,
     /// Income accumulating over the raid currently in progress.
     #[serde(skip)]
     pub current_raid: Option<RaidTally>,
@@ -502,6 +505,7 @@ impl GameState {
             selected_upgrade: None,
             selected_hero: None,
             effects: Vec::new(),
+            sound_events: Vec::new(),
             current_raid: None,
             last_raid_summary: None,
             pending_confirmation: None,
@@ -823,5 +827,19 @@ mod tests {
         assert_eq!(state.log.len(), limit);
         assert_eq!(state.log.first().unwrap().message, "Event 1");
         assert_eq!(state.log.last().unwrap().message, format!("Event {limit}"));
+    }
+
+    #[test]
+    fn cosmetic_sound_queue_is_bounded_and_drains_once() {
+        let mut state = GameState::new();
+        for _ in 0..14 {
+            state.queue_sound(SoundEvent::Combat);
+        }
+        state.queue_sound(SoundEvent::Trap);
+
+        let queued = state.take_sound_events();
+        assert_eq!(queued.len(), 12);
+        assert_eq!(queued.last(), Some(&SoundEvent::Trap));
+        assert!(state.take_sound_events().is_empty());
     }
 }

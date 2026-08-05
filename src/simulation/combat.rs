@@ -28,7 +28,7 @@ pub fn spring_undefended_trap(
 
 use crate::data::constants::RETREAT_THRESHOLD;
 use crate::data::elements::element_multiplier;
-use crate::game_state::{EffectAnchor, EffectKind, GameState, LogEntry};
+use crate::game_state::{EffectAnchor, EffectKind, GameState, LogEntry, SoundEvent};
 
 use abilities::{resolve_abilities, tick_conditions};
 use helpers::{
@@ -78,6 +78,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectKind::MeleeDust,
             EffectAnchor::Center,
         );
+        state.queue_sound(SoundEvent::Combat);
     }
 
     let reinforcement_mult = state.floors[floor_idx].rooms[room_idx].reinforcement_multiplier();

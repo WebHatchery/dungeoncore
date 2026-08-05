@@ -388,10 +388,12 @@ On each `resolve_combat` tick:
 
 ## Audio
 
-- Procedural UI, room-placement, and Core Smite SFX now load without external
-  assets and honor master×SFX volume on native and WebGL builds. Expand toward
-  the full set: per-element hits, trap triggers, deaths, income ticks, threat
-  stings, siege alarm, core-damage heartbeat, and prestige.
+- Procedural UI, room-placement, Core Smite, combat impact, trap trigger, and
+  death SFX now load without external assets and honor master×SFX volume on
+  native and WebGL builds. Simulation queues semantic audio events for the
+  renderer, so sound remains cosmetic and capture-safe. Expand toward
+  per-element hits, income ticks, threat stings, siege alarm, core-damage
+  heartbeat, and prestige.
 - Music: build theme, raid tension layer, siege track, title; adaptive layering.
 - Room ambience that deepens with floor depth.
 - Mixing, ducking, and per-channel volume (needs the settings menu).

@@ -1,7 +1,7 @@
 //! Loot, mana, soul, and monster-XP payouts for kills resolved during a tick.
 
 use crate::data::adventurers::get_victory_quotes;
-use crate::game_state::{EffectAnchor, EffectKind, GameState, LogEntry};
+use crate::game_state::{EffectAnchor, EffectKind, GameState, LogEntry, SoundEvent};
 
 /// Grant loot/souls for monsters slain this tick and narrate the kills.
 pub(super) fn reward_monster_kills(
@@ -51,6 +51,7 @@ pub(super) fn reward_monster_kills(
             EffectKind::MonsterDown,
             EffectAnchor::Defenders,
         );
+        state.queue_sound(SoundEvent::Death);
     }
 
     // Victory quote
@@ -121,5 +122,6 @@ pub(super) fn reward_adventurer_kills(
             EffectKind::AdventurerDown,
             EffectAnchor::Invaders,
         );
+        state.queue_sound(SoundEvent::Death);
     }
 }

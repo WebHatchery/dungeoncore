@@ -402,6 +402,14 @@ fn render_playing_frame(
         }
     }
 
+    // Simulations enqueue semantic effects; only a live interactive frame
+    // consumes them, keeping capture runs silent and deterministic.
+    if simulate {
+        for event in state.take_sound_events() {
+            audio.play(event.into(), sfx_volume);
+        }
+    }
+
     // Game over: the core has fallen. Offer a fresh dungeon.
     if state.game_over {
         draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.82));
