@@ -170,11 +170,11 @@ Shipped (the swap):
   room is open so the rows stay on screen. A `swap` capture scene covers both
   branches side by side.
 
-Still open:
-
-- **Rebalance `experience_required`.** The thresholds were written for a single
-  creature's XP; a pool filled by N creatures crosses them far faster. This is
-  the last real gap in the variants work.
+Pooled-XP balance shipped: every `experience_required` threshold is now three
+times its single-creature value. A full early room therefore needs several
+adventurer kills before it opens a line-wide variant, rather than one short
+raid; the established relative costs, floor gates, and gold prices are
+preserved. This clears the remaining variants balance pass.
 - A two-step reach (placing a Troll onto a Goblin) counts as a replace, not an
   upgrade — only one step along the line is an upgrade. That is deliberate for
   now; revisit if it feels punitive in play.

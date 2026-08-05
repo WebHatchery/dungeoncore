@@ -483,8 +483,8 @@ mod tests {
     fn a_line_unlocks_its_variant_once_the_pool_fills() {
         let mut s = dungeon_with_a_combat_room();
         place_monster(&mut s, 1, 1, "Goblin").expect("placed");
-        // Goblin -> Orc wants 50 pooled XP and a floor-1 posting.
-        s.add_type_experience("Goblin", 50);
+        // Goblin -> Orc wants 150 pooled XP and a floor-1 posting.
+        s.add_type_experience("Goblin", 150);
 
         process_evolution_unlocks(&mut s);
         assert!(s.unlocked_monsters.iter().any(|m| m == "Orc"));
@@ -497,10 +497,10 @@ mod tests {
         let mut s = dungeon_with_a_combat_room();
         place_monster(&mut s, 1, 1, "Goblin").expect("placed");
         place_monster(&mut s, 1, 1, "Goblin").expect("placed");
-        s.add_type_experience("Goblin", 25);
-        s.add_type_experience("Goblin", 25);
+        s.add_type_experience("Goblin", 75);
+        s.add_type_experience("Goblin", 75);
 
-        assert_eq!(s.type_experience("Goblin"), 50);
+        assert_eq!(s.type_experience("Goblin"), 150);
         process_evolution_unlocks(&mut s);
         assert!(s.unlocked_monsters.iter().any(|m| m == "Orc"));
     }

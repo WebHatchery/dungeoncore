@@ -4,7 +4,7 @@
             {
                 "from_monster": "Goblin",
                 "to_monster": "Orc",
-                "experience_required": 50,
+                "experience_required": 150,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 0
@@ -13,7 +13,7 @@
             {
                 "from_monster": "Goblin Archer",
                 "to_monster": "Orc",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -22,7 +22,7 @@
             {
                 "from_monster": "Goblin Shaman",
                 "to_monster": "Goblin Mage",
-                "experience_required": 70,
+                "experience_required": 210,
                 "conditions": {
                     "min_floor": 2,
                     "gold_cost": 25
@@ -31,7 +31,7 @@
             {
                 "from_monster": "Orc",
                 "to_monster": "Troll",
-                "experience_required": 100,
+                "experience_required": 300,
                 "conditions": {
                     "min_floor": 2,
                     "gold_cost": 25
@@ -40,7 +40,7 @@
             {
                 "from_monster": "Troll",
                 "to_monster": "Goblin King",
-                "experience_required": 200,
+                "experience_required": 600,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 150
@@ -51,7 +51,7 @@
             {
                 "from_monster": "Red Slime",
                 "to_monster": "Monster Slime",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -60,7 +60,7 @@
             {
                 "from_monster": "Green Slime",
                 "to_monster": "Monster Slime",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -69,7 +69,7 @@
             {
                 "from_monster": "Blue Slime",
                 "to_monster": "Magic Slime",
-                "experience_required": 70,
+                "experience_required": 210,
                 "conditions": {
                     "min_floor": 2,
                     "gold_cost": 25
@@ -78,7 +78,7 @@
             {
                 "from_monster": "Monster Slime",
                 "to_monster": "Slime Empress",
-                "experience_required": 180,
+                "experience_required": 540,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 140
@@ -87,7 +87,7 @@
             {
                 "from_monster": "Magic Slime",
                 "to_monster": "Slime Empress",
-                "experience_required": 180,
+                "experience_required": 540,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 140
@@ -98,7 +98,7 @@
             {
                 "from_monster": "Skeleton",
                 "to_monster": "Vampire",
-                "experience_required": 100,
+                "experience_required": 300,
                 "conditions": {
                     "min_floor": 2,
                     "gold_cost": 50
@@ -107,7 +107,7 @@
             {
                 "from_monster": "Skeleton",
                 "to_monster": "Bone Mage",
-                "experience_required": 80,
+                "experience_required": 240,
                 "conditions": {
                     "min_floor": 2,
                     "gold_cost": 30
@@ -116,7 +116,7 @@
             {
                 "from_monster": "Vampire",
                 "to_monster": "Lich",
-                "experience_required": 150,
+                "experience_required": 450,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 80
@@ -125,7 +125,7 @@
             {
                 "from_monster": "Bone Mage",
                 "to_monster": "Lich",
-                "experience_required": 140,
+                "experience_required": 420,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 80
@@ -134,7 +134,7 @@
             {
                 "from_monster": "Lich",
                 "to_monster": "Grave King",
-                "experience_required": 220,
+                "experience_required": 660,
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 200
@@ -145,7 +145,7 @@
             {
                 "from_monster": "Dragon",
                 "to_monster": "Elder Dragon",
-                "experience_required": 250,
+                "experience_required": 750,
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 250
@@ -156,7 +156,7 @@
             {
                 "from_monster": "Wolf",
                 "to_monster": "Dire Wolf",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -165,7 +165,7 @@
             {
                 "from_monster": "Giant Rat",
                 "to_monster": "Dire Wolf",
-                "experience_required": 70,
+                "experience_required": 210,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 15
@@ -174,7 +174,7 @@
             {
                 "from_monster": "Wild Boar",
                 "to_monster": "Alpha Boar",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -183,7 +183,7 @@
             {
                 "from_monster": "Dire Wolf",
                 "to_monster": "Werewolf",
-                "experience_required": 110,
+                "experience_required": 330,
                 "conditions": {
                     "min_floor": 2,
                     "gold_cost": 40
@@ -192,7 +192,7 @@
             {
                 "from_monster": "Alpha Boar",
                 "to_monster": "Behemoth",
-                "experience_required": 110,
+                "experience_required": 330,
                 "conditions": {
                     "min_floor": 2,
                     "gold_cost": 40
@@ -201,7 +201,7 @@
             {
                 "from_monster": "Werewolf",
                 "to_monster": "Fenrir",
-                "experience_required": 200,
+                "experience_required": 600,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 160
@@ -210,7 +210,7 @@
             {
                 "from_monster": "Behemoth",
                 "to_monster": "Fenrir",
-                "experience_required": 200,
+                "experience_required": 600,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 160
@@ -221,7 +221,7 @@
             {
                 "from_monster": "Imp",
                 "to_monster": "Hellhound",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 15
@@ -230,7 +230,7 @@
             {
                 "from_monster": "Imp",
                 "to_monster": "Shadow Fiend",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 15
@@ -239,7 +239,7 @@
             {
                 "from_monster": "Hellhound",
                 "to_monster": "Pit Fiend",
-                "experience_required": 120,
+                "experience_required": 360,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 60
@@ -248,7 +248,7 @@
             {
                 "from_monster": "Shadow Fiend",
                 "to_monster": "Pit Fiend",
-                "experience_required": 120,
+                "experience_required": 360,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 60
@@ -257,7 +257,7 @@
             {
                 "from_monster": "Pit Fiend",
                 "to_monster": "Archfiend",
-                "experience_required": 220,
+                "experience_required": 660,
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 200
@@ -268,7 +268,7 @@
             {
                 "from_monster": "Ember Wisp",
                 "to_monster": "Flame Elemental",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -277,7 +277,7 @@
             {
                 "from_monster": "Frost Wisp",
                 "to_monster": "Tide Elemental",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -286,7 +286,7 @@
             {
                 "from_monster": "Gale Wisp",
                 "to_monster": "Storm Elemental",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 10
@@ -295,7 +295,7 @@
             {
                 "from_monster": "Flame Elemental",
                 "to_monster": "Primal Elemental",
-                "experience_required": 120,
+                "experience_required": 360,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 60
@@ -304,7 +304,7 @@
             {
                 "from_monster": "Tide Elemental",
                 "to_monster": "Primal Elemental",
-                "experience_required": 120,
+                "experience_required": 360,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 60
@@ -313,7 +313,7 @@
             {
                 "from_monster": "Storm Elemental",
                 "to_monster": "Primal Elemental",
-                "experience_required": 120,
+                "experience_required": 360,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 60
@@ -322,7 +322,7 @@
             {
                 "from_monster": "Primal Elemental",
                 "to_monster": "Elemental Overlord",
-                "experience_required": 220,
+                "experience_required": 660,
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 180
@@ -333,7 +333,7 @@
             {
                 "from_monster": "Animated Armor",
                 "to_monster": "Blade Sentinel",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 15
@@ -342,7 +342,7 @@
             {
                 "from_monster": "Clay Golem",
                 "to_monster": "Stone Golem",
-                "experience_required": 60,
+                "experience_required": 180,
                 "conditions": {
                     "min_floor": 1,
                     "gold_cost": 15
@@ -351,7 +351,7 @@
             {
                 "from_monster": "Blade Sentinel",
                 "to_monster": "Iron Colossus",
-                "experience_required": 120,
+                "experience_required": 360,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 60
@@ -360,7 +360,7 @@
             {
                 "from_monster": "Stone Golem",
                 "to_monster": "Iron Colossus",
-                "experience_required": 120,
+                "experience_required": 360,
                 "conditions": {
                     "min_floor": 3,
                     "gold_cost": 60
@@ -369,7 +369,7 @@
             {
                 "from_monster": "Iron Colossus",
                 "to_monster": "Ancient Guardian",
-                "experience_required": 220,
+                "experience_required": 660,
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 200

@@ -55,6 +55,19 @@ mod tests {
     }
 
     #[test]
+    fn pooled_variant_thresholds_require_more_than_a_single_quick_raid() {
+        for path in evolutions::get_evolution_trees().values().flatten() {
+            assert!(
+                path.experience_required >= 150,
+                "{} -> {} still has a single-creature XP threshold of {}",
+                path.from_monster,
+                path.to_monster,
+                path.experience_required
+            );
+        }
+    }
+
+    #[test]
     fn constants_json_parses() {
         assert!(constants::max_rooms_per_floor() > 0);
         assert!(constants::max_log_entries() > 0);
