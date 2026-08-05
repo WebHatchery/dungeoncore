@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 
 use super::{draw_section_title, DrawerAction};
 use macroquad_toolkit::colors::with_alpha;
+use macroquad_toolkit::input::is_hovered_rect;
 
 pub(super) fn draw_evolution_tab(state: &GameState, rect: Rect) -> DrawerAction {
     draw_section_title(rect, "VARIANTS", "What your lines are learning.");
@@ -42,6 +43,13 @@ pub(super) fn draw_evolution_tab(state: &GameState, rect: Rect) -> DrawerAction 
         13.0,
         TEXT_MUTED,
     );
+    let xp_rect = Rect::new(rect.x + 6.0, rect.y + 19.0, rect.w - 92.0, 18.0);
+    if is_hovered_rect(xp_rect) {
+        macroquad_toolkit::ui::draw_tooltip(
+            "XP is pooled across every defender of this line. Field the listed floor to unlock its next variant.",
+            vec2(xp_rect.x, xp_rect.y + xp_rect.h + 4.0),
+        );
+    }
     draw_text_fit(
         &format!(
             "Species: {}  Souls: {}",
