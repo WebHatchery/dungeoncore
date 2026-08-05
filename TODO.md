@@ -466,8 +466,9 @@ On each `resolve_combat` tick:
 ## Testing & code health
 
 - Input-state tests: the authoritative pause/capture simulation gate now has a
-  pure truth-table test. Focus loss, tooltip blocking, resource-panel updates,
-  and log-message ordering remain open.
+  pure truth-table test. Log-message ordering and bounded retention now have a
+  deterministic state test. Focus loss, tooltip blocking, and resource-panel
+  updates remain open.
 - Resource-panel values now come from a pure helper with fixtures for zero
   income, zero capacity, and capped resources. — *done*
 - Small dungeon-run scenarios that verify controls, log output, and theme-driven

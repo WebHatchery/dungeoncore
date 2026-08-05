@@ -810,4 +810,18 @@ mod tests {
         assert_eq!(restored.run_seed, original.run_seed);
         assert_eq!(restored.run_rng.next_u64(), original.run_rng.next_u64());
     }
+
+    #[test]
+    fn event_log_keeps_chronological_order_when_it_trims() {
+        let mut state = GameState::new();
+        state.log.clear();
+        let limit = crate::data::MAX_LOG_ENTRIES;
+        for entry in 0..=limit {
+            state.add_log(LogEntry::system(format!("Event {entry}")));
+        }
+
+        assert_eq!(state.log.len(), limit);
+        assert_eq!(state.log.first().unwrap().message, "Event 1");
+        assert_eq!(state.log.last().unwrap().message, format!("Event {limit}"));
+    }
 }
