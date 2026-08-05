@@ -9,9 +9,12 @@ use macroquad_toolkit::sprite::{SpriteAtlas, SpriteClip};
 
 pub const UNIT_SHEET_KEY: &str = "dungeon_unit_sheet";
 pub const UNIT_SHEET_PATH: &str = "assets/sprites/dungeon_units.png";
+pub const ANIMATED_UNIT_SHEET_KEY: &str = "dungeon_unit_sheet_animated";
+pub const ANIMATED_UNIT_SHEET_PATH: &str = "assets/sprites/dungeon_units_animated.png";
 
 pub struct DungeonSprites {
     atlas: Option<SpriteAtlas>,
+    animated_atlas: Option<SpriteAtlas>,
     idle: SpriteClip,
     walk: SpriteClip,
     attack: SpriteClip,
@@ -24,8 +27,17 @@ impl DungeonSprites {
             .get_texture(UNIT_SHEET_KEY)
             .cloned()
             .map(|texture| SpriteAtlas::new(texture, 313.5, 313.5));
+        let animated_atlas = assets
+            .get_texture(ANIMATED_UNIT_SHEET_KEY)
+            .cloned()
+            .map(|texture| {
+                let frame_w = texture.width() / 4.0;
+                let frame_h = texture.height() / 4.0;
+                SpriteAtlas::new(texture, frame_w, frame_h)
+            });
         Self {
             atlas,
+            animated_atlas,
             // The supplied art is a pose atlas. Keeping named clips now makes
             // future animated sheets a manifest-only asset change.
             idle: SpriteClip::new("idle", 0, 1, 2.0),
@@ -47,6 +59,9 @@ impl DungeonSprites {
         elapsed: f32,
         flip_x: bool,
     ) -> bool {
+        if let Some(frame) = animated_monster_frame(name) {
+            return self.draw_animated_frame(frame, center, size, elapsed, flip_x, &self.idle);
+        }
         self.draw_frame(
             monster_frame(name),
             center,
@@ -67,6 +82,9 @@ impl DungeonSprites {
         walking: bool,
     ) -> bool {
         let clip = if walking { &self.walk } else { &self.attack };
+        if let Some(frame) = animated_adventurer_frame(class_name) {
+            return self.draw_animated_frame(frame, center, size, elapsed, flip_x, clip);
+        }
         self.draw_frame(
             adventurer_frame(class_name),
             center,
@@ -91,6 +109,13 @@ impl DungeonSprites {
         } else {
             adventurer_frame(key)
         };
+        if let Some(frame) = if monster {
+            animated_monster_frame(key)
+        } else {
+            animated_adventurer_frame(key)
+        } {
+            return self.draw_animated_frame(frame, center, size, elapsed, flip_x, &self.death);
+        }
         self.draw_frame(frame, center, size, elapsed, flip_x, &self.death)
     }
 
@@ -111,6 +136,44 @@ impl DungeonSprites {
         let animated = frame + clip.frame_at(elapsed).saturating_sub(clip.start_frame);
         atlas.draw_frame(animated, center, vec2(size, size), flip_x, WHITE);
         true
+    }
+
+    fn draw_animated_frame(
+        &self,
+        base_frame: usize,
+        center: Vec2,
+        size: f32,
+        _elapsed: f32,
+        flip_x: bool,
+        clip: &SpriteClip,
+    ) -> bool {
+        let Some(atlas) = &self.animated_atlas else {
+            return false;
+        };
+        // Each animated row contains idle, walk, attack, then death. The
+        // existing clip names supply the intentional pose index while phase
+        // remains cosmetic and stable for this render frame.
+        let pose = match clip.name.as_str() {
+            "walk" => 1,
+            "attack" => 2,
+            "death" => 3,
+            _ => 0,
+        };
+        atlas.draw_frame(base_frame + pose, center, vec2(size, size), flip_x, WHITE);
+        true
+    }
+}
+
+fn animated_monster_frame(name: &str) -> Option<usize> {
+    (name == "Goblin").then_some(0)
+}
+
+fn animated_adventurer_frame(class_name: &str) -> Option<usize> {
+    match class_name {
+        "Warrior" => Some(4),
+        "Rogue" => Some(8),
+        "Mage" => Some(12),
+        _ => None,
     }
 }
 

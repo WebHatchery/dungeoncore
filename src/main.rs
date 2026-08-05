@@ -52,6 +52,19 @@ async fn main() {
         // is absent, which is especially useful for partial browser deploys.
         eprintln!("Failed to load unit sprite sheet; using icons: {}", e);
     }
+    if let Err(e) = assets
+        .load_texture_with_filter(
+            ANIMATED_UNIT_SHEET_KEY,
+            ANIMATED_UNIT_SHEET_PATH,
+            FilterMode::Nearest,
+        )
+        .await
+    {
+        eprintln!(
+            "Failed to load animated unit sprite sheet; using pose atlas: {}",
+            e
+        );
+    }
     let sprites = DungeonSprites::from_assets(&assets);
     let audio = GameAudio::new().await;
 
