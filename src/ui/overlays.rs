@@ -342,6 +342,7 @@ pub fn draw_controls_reference(sw: f32, sh: f32) -> bool {
     );
     let shortcuts = [
         ("Space", "Pause / resume the dungeon"),
+        ("Arrow keys", "Inspect connected rooms and nearby floors"),
         ("Q", "Cast Core Smite"),
         ("C", "Open the element Codex"),
         ("K", "Open the goals track"),

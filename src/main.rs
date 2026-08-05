@@ -515,6 +515,26 @@ fn render_playing_frame(
         dungeon_h.max(220.0),
     );
 
+    if simulate && state.selected_monster.is_none() && state.selected_upgrade.is_none() {
+        let navigation = if is_key_pressed(KeyCode::Left) {
+            Some(RoomNavigation::Left)
+        } else if is_key_pressed(KeyCode::Right) {
+            Some(RoomNavigation::Right)
+        } else if is_key_pressed(KeyCode::Up) {
+            Some(RoomNavigation::Up)
+        } else if is_key_pressed(KeyCode::Down) {
+            Some(RoomNavigation::Down)
+        } else {
+            None
+        };
+        if let Some(navigation) = navigation {
+            if let Some(selected) = keyboard_room_selection(state, navigation) {
+                state.selected_room = Some(selected);
+                *defender_scroll = 0.0;
+            }
+        }
+    }
+
     match draw_dungeon_board(state, dungeon_rect, sprites) {
         DungeonAction::RoomSelected(floor_num, room_pos) => {
             audio.play(SoundCue::Place, sfx_volume);

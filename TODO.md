@@ -430,8 +430,9 @@ On each `resolve_combat` tick:
   Adventure/Build/System filters, anchored to the newest matching event until
   the player scrolls upward. — *done*
 - An in-game `[H]` controls reference now documents the live keyboard and
-  pointer interactions. Expand this toward full keyboard navigation and decide
-  on gamepad/Steam Deck support.
+  pointer interactions. Arrow keys now inspect connected rooms and nearby
+  floors without a mouse; expand this toward full keyboard navigation and
+  decide on gamepad/Steam Deck support.
 - Accessibility: board tokens and attunements now carry compact text labels in
   addition to their element colours; UI scale and reduced motion are settings.
   Audit every future element VFX and colour-only state against those cues; key

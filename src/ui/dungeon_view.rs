@@ -34,6 +34,59 @@ pub enum DungeonAction {
     BuildRoom,
 }
 
+/// Directional keyboard movement through the dungeon graph and its floor rows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RoomNavigation {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+/// Pick the next inspectable room for a directional keyboard command. Horizontal
+/// movement follows graph edges; vertical movement preserves the nearest room
+/// position across adjacent floors, so it stays predictable on forked layouts.
+pub fn keyboard_room_selection(
+    state: &GameState,
+    direction: RoomNavigation,
+) -> Option<(i32, usize)> {
+    let floors = sorted_floors(state);
+    let current = state.selected_room.or_else(|| {
+        floors.first().and_then(|floor| {
+            floor
+                .rooms
+                .iter()
+                .find(|room| room.room_type == RoomType::Entrance)
+                .map(|room| (floor.number, room.position))
+        })
+    })?;
+    let floor_index = floors.iter().position(|floor| floor.number == current.0)?;
+    let floor = floors[floor_index];
+    let room = floor.room_at(current.1)?;
+
+    match direction {
+        RoomNavigation::Right => room.exits.first().map(|&position| (floor.number, position)),
+        RoomNavigation::Left => floor
+            .rooms
+            .iter()
+            .filter(|candidate| candidate.exits.contains(&room.position))
+            .min_by_key(|candidate| candidate.position)
+            .map(|candidate| (floor.number, candidate.position)),
+        RoomNavigation::Up | RoomNavigation::Down => {
+            let next_floor_index = match direction {
+                RoomNavigation::Up => floor_index.checked_sub(1),
+                RoomNavigation::Down => (floor_index + 1 < floors.len()).then_some(floor_index + 1),
+                _ => None,
+            }?;
+            floors[next_floor_index]
+                .rooms
+                .iter()
+                .min_by_key(|candidate| candidate.position.abs_diff(room.position))
+                .map(|candidate| (floors[next_floor_index].number, candidate.position))
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PlacementState {
     Idle,
@@ -558,4 +611,24 @@ fn next_build_preview(state: &GameState) -> Option<BuildPreview> {
         cost: get_room_cost(total_rooms, is_boss),
         new_floor: false,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn keyboard_navigation_follows_edges_and_defaults_to_entrance() {
+        let mut state = GameState::new();
+        assert_eq!(
+            keyboard_room_selection(&state, RoomNavigation::Right),
+            Some((1, 1))
+        );
+
+        state.selected_room = Some((1, 1));
+        assert_eq!(
+            keyboard_room_selection(&state, RoomNavigation::Left),
+            Some((1, 0))
+        );
+    }
 }
