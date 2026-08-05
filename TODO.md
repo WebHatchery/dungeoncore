@@ -225,15 +225,117 @@ The dungeon is still a linear room queue. The edge model (`Room::exits`,
 
 ## Art
 
-- Pick a visual identity that is affordable across ~70 assets (pixel art is the
-  realistic option) — everything else here depends on that call.
-- Monster sprites (47, sharing bases across evolution lines is fine);
-  `assets/image_prompts.json` is prepped for generation.
-- Adventurer sprites (7 classes × 4 races, palette/part swaps fine).
-- Trap, upgrade, and attunement art; themed room interiors with floor-depth
+### Little creatures fighting — *planned next*
+
+**Goal:** every living defender and adventurer is represented on the dungeon
+board by a recognisable little sprite, parties visibly walk between rooms, and
+an occupied combat room reads as a fight without requiring bespoke attack
+animation for every creature. Melee can happen inside a dust cloud: the units,
+health bars, impacts, damage and deaths matter more than literal weapon swings.
+Combat remains deterministic and authoritative; all animation is cosmetic,
+transient and absent from saves.
+
+#### Visual direction and affordable asset scope
+
+- Use compact 24×24 or 32×32 pixel-art sprites drawn with nearest-neighbour
+  filtering. This is affordable across the current roster and stays legible in
+  the board's small room tiles.
+- Begin with one adventurer sheet per class (Warrior, Rogue, Mage, Cleric,
+  Ranger, Paladin and Alchemist) and one base monster sheet per species.
+  Adventurer races use palette/accessory variations; evolved monsters share
+  their species body and vary by palette, equipment, silhouette details and
+  scale. Do not make 47 unrelated monster sheets or 28 unrelated adventurer
+  sheets merely to achieve coverage.
+- Give each sheet small `idle`, `walk`, `attack` and `death` clips. The first
+  vertical slice only needs Goblin plus Warrior, Rogue and Mage art; prove the
+  pipeline and room composition before filling the roster.
+- Keep the existing coloured initial discs as a conspicuous missing-asset
+  fallback. A broken mapping must log clearly and never make a combatant
+  invisible.
+
+#### Shared animation primitive
+
+`macroquad-toolkit::sprite` can draw a texture but has no sprite-sheet clip
+abstraction. Add the missing shared capability there before inventing one in
+Dungeon Core: atlas frame rectangles, named looping/one-shot clips, horizontal
+flip, nearest-neighbour drawing, and pure frame selection from elapsed time.
+Unit id supplies a stable phase offset so a room of goblins does not breathe in
+perfect synchrony. Cover frame selection, looping and one-shot clamping with
+toolkit unit tests.
+
+#### Asset loading and mappings
+
+- Add a sprite manifest mapping every monster name and adventurer class to its
+  sheet, clips, palette/variation and display scale. Load sheets through the
+  existing `AssetManager` in `main.rs`, including the capture harness, and pass
+  the visual assets down to the dungeon board.
+- Keep sprite PNGs transparent, load them with `FilterMode::Nearest`, and make
+  sure the root publisher includes them in both the loose-assets and
+  `assets.zip` paths used by native and WebGL builds.
+- Add a coverage test that every monster in `assets/monsters.json` and every
+  class in `assets/adventurers.json` resolves to a sprite definition or an
+  intentional documented fallback.
+
+#### Room unit presentation
+
+`ui/dungeon_view/room_art.rs` is already substantial. Before expanding it,
+extract unit composition to `ui/dungeon_view/room_art/units.rs` and transient
+visuals to `ui/dungeon_view/room_art/effects.rs`; do not drive the file toward
+the 800-line gate.
+
+- Replace the current defender and adventurer discs with sprites: defenders on
+  the left, invaders on the right, facing the room centre. Retain compact health
+  bars, monster element cues, rival rings/names and the `+N` overflow rule.
+- Derive idle bob and clip frame from time plus stable unit id. Drawing must not
+  mutate gameplay state. At narrow room scales, prioritise the front units and
+  counts instead of shrinking every sprite into noise.
+- Upgrade the current single `A` corridor marker to the first two or three
+  surviving adventurer sprites in a walking formation during the existing
+  `PARTY_MOVE_SECONDS` tween, with excess members represented by a count badge.
+
+#### Combat presentation cues
+
+Extend the room-anchored transient effect model separately from floating text.
+It needs short-lived `MeleeDust`, `HitSpark`, `MonsterDeath` and
+`AdventurerDeath` cues with their own lifetimes. Screen position remains a UI
+concern so effects follow a room when layout or window size changes.
+
+On each `resolve_combat` tick:
+
+1. Spawn a 0.6–0.9 second dust cloud in the room centre when both sides engage.
+2. Briefly lunge the visible front units toward it or select their attack clip.
+3. Spark on the side taking damage while the existing damage text rises above
+   that side.
+4. Puff/fade each casualty and then remove its sprite; health bars and controls
+   must remain readable throughout.
+5. Later layer element-distinct colours and trap cues over this same event path
+   without changing combat timing or damage rules.
+
+#### Capture, verification and completion gate
+
+- Add a `combat_sprites` capture scene containing several adventurer classes,
+  multiple monster silhouettes, wounded units, one party in transit, an active
+  dust cloud and a death cue. Use the toolkit filmstrip capture to review motion
+  across frames, plus static captures at 1280×720 and a narrower common desktop
+  size.
+- The goal is done only when every living unit has a sprite or explicit
+  overflow count, parties visibly walk, fighting produces and clears a dust
+  cloud on combat ticks, damage/deaths remain readable without the log, missing
+  art falls back safely, and animation cannot affect deterministic simulation.
+- After meaningful implementation stages and again at completion, run
+  `.\publish.ps1` with no parameters from this project and report whether it
+  passes. Once the completion publish passes, commit all intended files using
+  `rust_management/docs/COMMIT_STYLE.md`: Dungeon Core's diegetic subject,
+  plain-terms parenthetical tag, honest prose body including verification, and
+  the required AI co-author trailer. A passing publish without that standards-
+  compliant commit does not complete this goal.
+
+#### Later art following the creature pass
+
+- Trap, upgrade and attunement art; themed room interiors with floor-depth
   theming; the core room as a visual centrepiece.
-- Idle/walk/attack animation and element-distinct VFX (fire, frost, poison,
-  trap triggers, deaths, siege arrival, prestige).
+- Element-distinct VFX beyond the melee slice (fire, frost, poison, trap
+  triggers, siege arrival and prestige).
 - Cohesive UI kit replacing the programmer-art panels and emoji glyphs.
 - Title, game-over, and prestige screens at shipping quality.
 
