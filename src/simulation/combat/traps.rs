@@ -185,11 +185,21 @@ pub(super) fn resolve_trap(
                         "{} dealt {} damage to {}",
                         trap.name, damage, victim_name
                     )));
-                    state.push_effect(
+                    state.push_element_effect_at(
                         floor_num,
                         room_pos,
                         format!("-{}", damage),
                         EffectKind::Damage,
+                        crate::game_state::EffectAnchor::Invaders,
+                        &trap_element,
+                    );
+                    state.push_element_effect_at(
+                        floor_num,
+                        room_pos,
+                        "",
+                        EffectKind::HitSpark,
+                        crate::game_state::EffectAnchor::Invaders,
+                        &trap_element,
                     );
                 }
             }

@@ -179,6 +179,10 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     }
 
     if damage_to_monsters > 0 {
+        let impact_element = adv_attacks
+            .first()
+            .map(|(_, _, element)| element.as_str())
+            .unwrap_or_default();
         state.push_effect_at(
             floor_num,
             room_pos,
@@ -186,12 +190,13 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectKind::Damage,
             EffectAnchor::Defenders,
         );
-        state.push_effect_at(
+        state.push_element_effect_at(
             floor_num,
             room_pos,
             "",
             EffectKind::HitSpark,
             EffectAnchor::Defenders,
+            impact_element,
         );
     }
 
@@ -272,7 +277,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     let mut leeched_mana = 0;
     {
         let party = &mut state.adventurer_parties[party_idx];
-        for strike in monster_strikes {
+        for strike in &monster_strikes {
             let alive_idxs: Vec<usize> = party
                 .members
                 .iter()
@@ -359,12 +364,17 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectKind::Damage,
             EffectAnchor::Invaders,
         );
-        state.push_effect_at(
+        let impact_element = monster_strikes
+            .first()
+            .map(|strike| strike.element.as_str())
+            .unwrap_or_default();
+        state.push_element_effect_at(
             floor_num,
             room_pos,
             "",
             EffectKind::HitSpark,
             EffectAnchor::Invaders,
+            impact_element,
         );
     }
 

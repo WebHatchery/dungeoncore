@@ -122,12 +122,13 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                     });
                 }
                 state.push_effect_at(floor, pos, "", EffectKind::MeleeDust, EffectAnchor::Center);
-                state.push_effect_at(
+                state.push_element_effect_at(
                     floor,
                     pos,
                     "",
                     EffectKind::HitSpark,
                     EffectAnchor::Defenders,
+                    "Fire",
                 );
                 state.push_effect_at(
                     floor,

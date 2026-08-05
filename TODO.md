@@ -401,8 +401,10 @@ change combat outcomes.
 - Trap, upgrade and attunement art remain open. Room interiors now gain a
   gradual cool arcane wash by floor depth while retaining their room-type cue;
   the core remains the visual centrepiece.
-- Element-distinct VFX beyond the melee slice (fire, frost, poison, trap
-  triggers, siege arrival and prestige).
+- Elemental impact cues now tint and shape combat and elemental-trap strikes
+  across the current Fire/Water/Nature/Earth/Air/Spirit/Death/Arcane/Body
+  roster; the `combat_sprites` capture pins a Fire example. Dedicated poison,
+  siege-arrival, and prestige VFX remain open.
 - Cohesive UI kit replacing the programmer-art panels and emoji glyphs.
 - Title, game-over, and prestige screens at shipping quality.
 

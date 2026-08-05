@@ -65,6 +65,8 @@ pub struct RoomEffect {
     pub anchor: EffectAnchor,
     /// Optional casualty identity for renderer-only death-pose playback.
     pub visual_unit: Option<String>,
+    /// Optional damage element used only to choose an impact treatment.
+    pub visual_element: Option<String>,
     timer: Timer,
 }
 
@@ -119,6 +121,7 @@ impl GameState {
             kind,
             anchor,
             visual_unit: None,
+            visual_element: None,
             timer: Timer::new(effect_ttl(kind)),
         });
         if self.effects.len() > 48 {
@@ -143,6 +146,33 @@ impl GameState {
             kind,
             anchor,
             visual_unit: Some(visual_unit.into()),
+            visual_element: None,
+            timer: Timer::new(effect_ttl(kind)),
+        });
+        if self.effects.len() > 48 {
+            self.effects.remove(0);
+        }
+    }
+
+    /// Spawn an impact effect with an element-specific cosmetic treatment.
+    /// The element is never read by simulation logic or persisted in saves.
+    pub fn push_element_effect_at(
+        &mut self,
+        floor: i32,
+        room: usize,
+        text: impl Into<String>,
+        kind: EffectKind,
+        anchor: EffectAnchor,
+        element: impl Into<String>,
+    ) {
+        self.effects.push(RoomEffect {
+            floor,
+            room,
+            text: text.into(),
+            kind,
+            anchor,
+            visual_unit: None,
+            visual_element: Some(element.into()),
             timer: Timer::new(effect_ttl(kind)),
         });
         if self.effects.len() > 48 {
