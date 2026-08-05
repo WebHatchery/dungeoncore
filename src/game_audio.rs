@@ -7,7 +7,7 @@ use macroquad::audio::{
 use macroquad_toolkit::synth::{render_wav, SynthConfig, Voice, Wave};
 use std::cell::Cell;
 
-use crate::game_state::{EffectKind, ElementSound, GameState, SoundEvent};
+use crate::game_state::{EffectKind, ElementSound, GameState, RoomType, SoundEvent};
 
 #[derive(Clone, Copy)]
 pub enum SoundCue {
@@ -37,6 +37,7 @@ enum MusicLayer {
 enum AmbienceLayer {
     Upper,
     Deep,
+    Boss,
 }
 
 pub struct GameAudio {
@@ -62,6 +63,7 @@ pub struct GameAudio {
     active_music: Cell<Option<MusicLayer>>,
     upper_ambience: Option<Sound>,
     deep_ambience: Option<Sound>,
+    boss_ambience: Option<Sound>,
     active_ambience: Cell<Option<AmbienceLayer>>,
 }
 
@@ -268,6 +270,14 @@ impl GameAudio {
                 41,
             )
             .await,
+            boss_ambience: load_effect(
+                &[
+                    Voice::tone(0.0, 4.2, 48.0, 0.055).wave(Wave::Square),
+                    Voice::tone(0.4, 1.4, 146.8, 0.040).wave(Wave::Triangle),
+                ],
+                42,
+            )
+            .await,
             active_ambience: Cell::new(None),
         }
     }
@@ -347,17 +357,32 @@ impl GameAudio {
     /// Room tone is a second, quieter loop: it follows construction depth, not
     /// raid state, so it enriches rather than competes with the music layer.
     fn update_ambience(&self, state: &GameState, volume: f32) {
+        let selected_boss = state.selected_room.is_some_and(|(floor, position)| {
+            state.floors.iter().any(|floor_data| {
+                floor_data.number == floor
+                    && floor_data
+                        .rooms
+                        .iter()
+                        .any(|room| room.position == position && room.room_type == RoomType::Boss)
+            })
+        });
         let wanted = if state.game_over {
             None
+        } else if selected_boss {
+            Some(AmbienceLayer::Boss)
         } else if state.total_floors >= 6 {
             Some(AmbienceLayer::Deep)
         } else {
             Some(AmbienceLayer::Upper)
         };
         if self.active_ambience.get() != wanted {
-            for sound in [&self.upper_ambience, &self.deep_ambience]
-                .into_iter()
-                .flatten()
+            for sound in [
+                &self.upper_ambience,
+                &self.deep_ambience,
+                &self.boss_ambience,
+            ]
+            .into_iter()
+            .flatten()
             {
                 stop_sound(sound);
             }
@@ -384,6 +409,7 @@ impl GameAudio {
         match layer {
             AmbienceLayer::Upper => self.upper_ambience.as_ref(),
             AmbienceLayer::Deep => self.deep_ambience.as_ref(),
+            AmbienceLayer::Boss => self.boss_ambience.as_ref(),
         }
     }
 

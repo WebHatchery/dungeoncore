@@ -431,7 +431,8 @@ change combat outcomes.
   layered/cross-faded arrangements remain open.
 - A low-volume procedural room ambience loop now runs under music, changing
   from upper-hall air to a deeper rumble at floor six without affecting combat
-  or saves. More location-specific ambience remains open.
+  or saves. Inspecting a boss room now switches to a distinct ominous chamber
+  tone; more location-specific ambience remains open.
 - Music and ambience now duck to 62% while transient melee/impact cues are
   active, making room for combat SFX while retaining the persisted master,
   music, and SFX channels. Further mix tuning remains open.
