@@ -409,8 +409,9 @@ On each `resolve_combat` tick:
   deepest floor, prestige, and open/closed state; the wrapper records the Cargo
   version and a new run confirms before replacing an occupied slot. A valid
   legacy single save migrates to Slot 1; an unreadable slot can only be
-  recovered by quarantining its bytes, never silently reset. Add a formal
-  migration registry as the save schema grows.
+  recovered by quarantining its bytes, never silently reset. A named,
+  idempotent migration registry now routes older wrappers and the legacy save
+  through the same schema steps as the save format grows.
 - True pause is now a first-class persisted state with a Space shortcut, HUD
   control, dedicated pause menu and simulation gate. Pause-on-focus-loss
   remains open.

@@ -3,14 +3,29 @@
 
 use crate::game_state::GameState;
 use macroquad_toolkit::persistence::{
-    json_key_exists, load_json_key, quarantine_slot, save_to_slot_with_version, slot_exists,
+    json_key_exists, load_from_slot_with_migration, load_json_key, quarantine_slot,
+    save_to_slot_with_version, slot_exists,
 };
+use serde_json::Value;
 
 const LEGACY_SAVE_FILE: &str = "dungeon_core_save.json";
 const GAME_NAME: &str = "dungeon_core";
 const SAVE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const DEFAULT_SLOT: &str = "slot_1";
 pub const SAVE_SLOTS: [&str; 3] = ["slot_1", "slot_2", "slot_3"];
+
+/// A named, idempotent save-state migration. Entries stay in chronological
+/// order so adding a later schema step never turns migration history into an
+/// opaque catch-all method.
+struct SaveMigration {
+    name: &'static str,
+    apply: fn(&mut GameState),
+}
+
+const SAVE_MIGRATIONS: &[SaveMigration] = &[SaveMigration {
+    name: "room upgrades and graph exits",
+    apply: GameState::migrate,
+}];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SlotState {
@@ -30,9 +45,25 @@ pub fn save_game(slot: &str, state: &GameState) -> Result<(), String> {
 }
 
 pub fn load_game(slot: &str) -> Result<GameState, String> {
-    let mut state: GameState = macroquad_toolkit::persistence::load_from_slot(GAME_NAME, slot)?;
-    state.migrate();
+    let mut state = load_from_slot_with_migration(GAME_NAME, slot, SAVE_VERSION, migrate_slot)?;
+    apply_save_migrations(&mut state);
     Ok(state)
+}
+
+/// Decode an older slot wrapper. The shared toolkit owns wrapper validation;
+/// this game owns only the version-independent migration registry for its data.
+fn migrate_slot(_version: Option<String>, value: Value) -> Result<GameState, String> {
+    let data = value
+        .get("data")
+        .cloned()
+        .ok_or_else(|| "Save slot is missing its data payload.".to_string())?;
+    serde_json::from_value(data).map_err(|error| format!("Save data is invalid: {error}"))
+}
+
+fn apply_save_migrations(state: &mut GameState) {
+    for migration in SAVE_MIGRATIONS {
+        (migration.apply)(state);
+    }
 }
 
 pub fn slot_state(slot: &str) -> SlotState {
@@ -66,7 +97,7 @@ pub fn migrate_legacy_save() -> Result<bool, String> {
         return Ok(false);
     }
     let mut state: GameState = load_json_key(GAME_NAME, LEGACY_SAVE_FILE)?;
-    state.migrate();
+    apply_save_migrations(&mut state);
     save_game(DEFAULT_SLOT, &state)?;
     Ok(true)
 }
@@ -102,5 +133,33 @@ mod tests {
                 dungeon_open: true,
             }
         );
+    }
+
+    #[test]
+    fn migration_registry_has_named_idempotent_steps() {
+        assert!(!SAVE_MIGRATIONS.is_empty());
+        assert!(SAVE_MIGRATIONS
+            .iter()
+            .all(|migration| !migration.name.is_empty()));
+
+        let mut state = GameState::new();
+        for room in &mut state.floors[0].rooms {
+            room.exits.clear();
+        }
+        apply_save_migrations(&mut state);
+        assert!(state.floors[0].validate_graph().is_ok());
+        apply_save_migrations(&mut state);
+        assert!(state.floors[0].validate_graph().is_ok());
+    }
+
+    #[test]
+    fn older_wrapper_payload_decodes_through_the_registry_path() {
+        let state = GameState::new();
+        let wrapper = serde_json::json!({
+            "slot": { "version": "0.0.1" },
+            "data": state,
+        });
+        let migrated = migrate_slot(Some("0.0.1".to_string()), wrapper).unwrap();
+        assert_eq!(migrated.day, 1);
     }
 }
