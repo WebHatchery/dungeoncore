@@ -1,4 +1,4 @@
-use crate::game_state::{DungeonStatus, GameState, LogEntry};
+use crate::game_state::{DungeonStatus, GameState, LogEntry, SoundEvent};
 
 /// Mana per hour the core draws from the intruders currently inside it.
 ///
@@ -34,7 +34,11 @@ pub fn advance_time(state: &mut GameState) {
     // Mana regeneration (rounded so fractional bonuses aren't lost)
     let regen = 1.0 + state.deep_core_bonus + adventurer_presence_regen(state) + core_power_bonus;
     state.mana_regen = regen;
+    let mana_before = state.mana;
     state.mana = (state.mana + regen.round() as i32).min(state.max_mana);
+    if !state.adventurer_parties.is_empty() && state.mana > mana_before {
+        state.queue_sound(SoundEvent::Income);
+    }
 
     // Auto-close dungeon when closing and no parties remain
     if state.status == DungeonStatus::Closing && state.adventurer_parties.is_empty() {
@@ -70,6 +74,7 @@ fn check_threat_level(state: &mut GameState) {
             _ => "Your dungeon is branded a deathtrap. The realm is mustering an army to destroy your core.",
         };
         state.add_log(LogEntry::system(message));
+        state.queue_sound(SoundEvent::Threat);
     }
 }
 
@@ -210,5 +215,19 @@ mod tests {
             adventurer(3, 3, true),
         ]));
         assert!(adventurer_presence_regen(&s) >= 5.0);
+    }
+
+    #[test]
+    fn presence_income_and_new_threat_tier_request_feedback() {
+        let mut s = GameState::new();
+        s.mana = 0;
+        s.total_deaths = 10;
+        s.adventurer_parties
+            .push(party_of(vec![adventurer(1, 2, true)]));
+
+        advance_time(&mut s);
+        let sounds = s.take_sound_events();
+        assert!(sounds.contains(&SoundEvent::Income));
+        assert!(sounds.contains(&SoundEvent::Threat));
     }
 }

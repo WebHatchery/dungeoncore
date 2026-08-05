@@ -14,6 +14,11 @@ pub enum SoundCue {
     Combat,
     Trap,
     Death,
+    Income,
+    Threat,
+    Siege,
+    CoreDamage,
+    Prestige,
 }
 
 pub struct GameAudio {
@@ -23,6 +28,11 @@ pub struct GameAudio {
     combat: Option<Sound>,
     trap: Option<Sound>,
     death: Option<Sound>,
+    income: Option<Sound>,
+    threat: Option<Sound>,
+    siege: Option<Sound>,
+    core_damage: Option<Sound>,
+    prestige: Option<Sound>,
 }
 
 impl GameAudio {
@@ -78,6 +88,48 @@ impl GameAudio {
                 6,
             )
             .await,
+            income: load_effect(
+                &[Voice::tone(0.0, 0.11, 520.0, 0.16)
+                    .glide(790.0)
+                    .wave(Wave::Triangle)],
+                7,
+            )
+            .await,
+            threat: load_effect(
+                &[Voice::tone(0.0, 0.18, 220.0, 0.22)
+                    .glide(145.0)
+                    .wave(Wave::Square)],
+                8,
+            )
+            .await,
+            siege: load_effect(
+                &[
+                    Voice::tone(0.0, 0.30, 105.0, 0.30).wave(Wave::Square),
+                    Voice::tone(0.04, 0.24, 208.0, 0.20).wave(Wave::Triangle),
+                ],
+                9,
+            )
+            .await,
+            core_damage: load_effect(
+                &[
+                    Voice::tone(0.0, 0.14, 130.0, 0.26).wave(Wave::Noise),
+                    Voice::tone(0.02, 0.10, 92.0, 0.20).wave(Wave::Square),
+                ],
+                10,
+            )
+            .await,
+            prestige: load_effect(
+                &[
+                    Voice::tone(0.0, 0.28, 390.0, 0.18)
+                        .glide(1170.0)
+                        .wave(Wave::Triangle),
+                    Voice::tone(0.10, 0.18, 780.0, 0.14)
+                        .glide(1560.0)
+                        .wave(Wave::Triangle),
+                ],
+                11,
+            )
+            .await,
         }
     }
 
@@ -89,6 +141,11 @@ impl GameAudio {
             SoundCue::Combat => self.combat.as_ref(),
             SoundCue::Trap => self.trap.as_ref(),
             SoundCue::Death => self.death.as_ref(),
+            SoundCue::Income => self.income.as_ref(),
+            SoundCue::Threat => self.threat.as_ref(),
+            SoundCue::Siege => self.siege.as_ref(),
+            SoundCue::CoreDamage => self.core_damage.as_ref(),
+            SoundCue::Prestige => self.prestige.as_ref(),
         };
         if let Some(sound) = sound {
             play_sound(
@@ -108,6 +165,11 @@ impl From<SoundEvent> for SoundCue {
             SoundEvent::Combat => Self::Combat,
             SoundEvent::Trap => Self::Trap,
             SoundEvent::Death => Self::Death,
+            SoundEvent::Income => Self::Income,
+            SoundEvent::Threat => Self::Threat,
+            SoundEvent::Siege => Self::Siege,
+            SoundEvent::CoreDamage => Self::CoreDamage,
+            SoundEvent::Prestige => Self::Prestige,
         }
     }
 }

@@ -37,6 +37,11 @@ pub enum SoundEvent {
     Combat,
     Trap,
     Death,
+    Income,
+    Threat,
+    Siege,
+    CoreDamage,
+    Prestige,
 }
 
 /// Which side of the room a floating effect belongs over, so damage/deaths

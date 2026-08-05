@@ -1,7 +1,7 @@
 use macroquad_toolkit::timing::Cooldown;
 
 use crate::game_state::{
-    Adventurer, AdventurerParty, GameState, HeroRecord, HeroStatus, LogEntry, Stats,
+    Adventurer, AdventurerParty, GameState, HeroRecord, HeroStatus, LogEntry, SoundEvent, Stats,
     PARTY_MOVE_SECONDS,
 };
 
@@ -381,6 +381,7 @@ pub fn maybe_launch_siege(state: &mut GameState) {
     state.add_log(LogEntry::system(
         "THE SIEGE BEGINS! The realm's army storms the dungeon, bound for your core.",
     ));
+    state.queue_sound(SoundEvent::Siege);
 }
 
 /// A siege party has reached the core. Trade blows: the party batters the
@@ -411,6 +412,7 @@ pub fn assault_core(state: &mut GameState, party_idx: usize) -> bool {
         "The core takes {} damage! ({}/{})",
         party_attack, state.core_hp, state.core_max_hp
     )));
+    state.queue_sound(SoundEvent::CoreDamage);
 
     // Core wards strike the assailants.
     let mut deaths: Vec<(u64, String)> = Vec::new();
@@ -476,6 +478,7 @@ pub fn repel_siege(state: &mut GameState) {
         "THE SIEGE IS BROKEN! Prestige {} attained — your dungeon is now a {}. The core swells (+150 HP, +100 max mana) and the realm retreats to lick its wounds.",
         state.prestige, rank
     )));
+    state.queue_sound(SoundEvent::Prestige);
 
     // A repelled siege can cross prestige milestones (Ascendant, Eternal Core).
     crate::simulation::milestones::check_milestones(state);
@@ -494,6 +497,7 @@ mod tests {
         assert!(s.siege_active);
         assert_eq!(s.adventurer_parties.len(), 1);
         assert!(s.adventurer_parties[0].sieging);
+        assert!(s.take_sound_events().contains(&SoundEvent::Siege));
         // A second call must not stack another siege.
         maybe_launch_siege(&mut s);
         assert_eq!(s.adventurer_parties.len(), 1);
@@ -511,6 +515,7 @@ mod tests {
         assert!(!s.siege_active);
         assert_eq!(s.total_deaths, 0);
         assert!(s.core_max_hp > hp_before);
+        assert!(s.take_sound_events().contains(&SoundEvent::Prestige));
     }
 
     #[test]
