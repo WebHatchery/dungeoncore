@@ -1,7 +1,9 @@
 //! Room trap resolution (damage, DoT, control, economy) and between-raid re-arming.
 
 use crate::data::elements::element_multiplier;
-use crate::game_state::{Condition, EffectKind, GameState, LogEntry, RoomUpgradeType, SoundEvent};
+use crate::game_state::{
+    Condition, EffectKind, ElementSound, GameState, LogEntry, RoomUpgradeType, SoundEvent,
+};
 
 use super::helpers::{adventurer_element, random_alive_idx};
 
@@ -34,6 +36,9 @@ pub(super) fn resolve_trap(
     let floor_num = state.floors[floor_idx].number;
     let room_pos = state.floors[floor_idx].rooms[room_idx].position;
     state.queue_sound(SoundEvent::Trap);
+    if let Some(element) = trap.element.as_deref().and_then(ElementSound::from_id) {
+        state.queue_sound(SoundEvent::ElementalHit(element));
+    }
 
     // Rogue counterplay: the trap is sprung safely and stays down this raid.
     let has_rogue = state.adventurer_parties[party_idx]

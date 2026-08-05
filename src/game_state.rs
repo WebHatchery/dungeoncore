@@ -7,7 +7,7 @@ mod effects;
 mod floor;
 pub(crate) mod heroes;
 mod reputation;
-pub use effects::{EffectAnchor, EffectKind, RoomEffect, SoundEvent};
+pub use effects::{EffectAnchor, EffectKind, ElementSound, RoomEffect, SoundEvent};
 pub use floor::Floor;
 pub use heroes::{Adventurer, AdventurerParty, Condition, Equipment, HeroRecord, HeroStatus};
 pub use reputation::{ReputationBand, VisitorQuality, REPUTATION_MAX, REPUTATION_MIN};

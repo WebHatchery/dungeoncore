@@ -417,8 +417,9 @@ change combat outcomes.
   load without external assets and honor master×SFX volume on native and WebGL
   builds. Simulation queues semantic audio events for the renderer, so sound
   remains cosmetic and capture-safe. Combat, trap, and death cues rotate among
-  deterministic-in-the-renderer sample variations; expand next toward
-  per-element hits and richer event-specific variation.
+  deterministic-in-the-renderer sample variations, and elemental combat/trap
+  hits now add a short Fire/Water/Nature/Earth/Air/Spirit/Death/Arcane/Body
+  sting. Richer event-specific variation remains open.
 - Procedural looping music now selects a build theme, raid-tension theme, or
   siege track from live game state and honors the persisted master×music gain;
   capture frames stay silent. Title music starts only after the first key or

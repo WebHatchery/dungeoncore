@@ -28,7 +28,7 @@ pub fn spring_undefended_trap(
 
 use crate::data::constants::RETREAT_THRESHOLD;
 use crate::data::elements::element_multiplier;
-use crate::game_state::{EffectAnchor, EffectKind, GameState, LogEntry, SoundEvent};
+use crate::game_state::{EffectAnchor, EffectKind, ElementSound, GameState, LogEntry, SoundEvent};
 
 use abilities::{resolve_abilities, tick_conditions};
 use helpers::{
@@ -198,6 +198,9 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectAnchor::Defenders,
             impact_element,
         );
+        if let Some(element) = ElementSound::from_id(impact_element) {
+            state.queue_sound(SoundEvent::ElementalHit(element));
+        }
     }
 
     for spawn_name in &split_spawns {
@@ -376,6 +379,9 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectAnchor::Invaders,
             impact_element,
         );
+        if let Some(element) = ElementSound::from_id(impact_element) {
+            state.queue_sound(SoundEvent::ElementalHit(element));
+        }
     }
 
     reward_monster_kills(state, party_idx, floor_idx, room_idx, &monster_kills);

@@ -42,6 +42,53 @@ pub enum SoundEvent {
     Siege,
     CoreDamage,
     Prestige,
+    /// A short renderer-only sting keyed to an elemental combat or trap hit.
+    ElementalHit(ElementSound),
+}
+
+/// Compact, serialisation-free element identity for procedural sound selection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ElementSound {
+    Fire,
+    Water,
+    Nature,
+    Earth,
+    Air,
+    Spirit,
+    Death,
+    Arcane,
+    Body,
+}
+
+impl ElementSound {
+    pub fn from_id(element: &str) -> Option<Self> {
+        match element {
+            "Fire" => Some(Self::Fire),
+            "Water" => Some(Self::Water),
+            "Nature" => Some(Self::Nature),
+            "Earth" => Some(Self::Earth),
+            "Air" => Some(Self::Air),
+            "Spirit" => Some(Self::Spirit),
+            "Death" => Some(Self::Death),
+            "Arcane" => Some(Self::Arcane),
+            "Body" => Some(Self::Body),
+            _ => None,
+        }
+    }
+
+    pub(crate) const fn index(self) -> usize {
+        match self {
+            Self::Fire => 0,
+            Self::Water => 1,
+            Self::Nature => 2,
+            Self::Earth => 3,
+            Self::Air => 4,
+            Self::Spirit => 5,
+            Self::Death => 6,
+            Self::Arcane => 7,
+            Self::Body => 8,
+        }
+    }
 }
 
 /// Which side of the room a floating effect belongs over, so damage/deaths
@@ -194,5 +241,20 @@ fn effect_ttl(kind: EffectKind) -> f32 {
         EffectKind::MeleeDust => DUST_TTL,
         EffectKind::HitSpark => SPARK_TTL,
         _ => EFFECT_TTL,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ElementSound;
+
+    #[test]
+    fn every_declared_element_has_a_sound_identity() {
+        for element in [
+            "Fire", "Water", "Nature", "Earth", "Air", "Spirit", "Death", "Arcane", "Body",
+        ] {
+            assert!(ElementSound::from_id(element).is_some());
+        }
+        assert_eq!(ElementSound::from_id("Unknown"), None);
     }
 }

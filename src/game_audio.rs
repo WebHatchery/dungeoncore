@@ -7,7 +7,7 @@ use macroquad::audio::{
 use macroquad_toolkit::synth::{render_wav, SynthConfig, Voice, Wave};
 use std::cell::Cell;
 
-use crate::game_state::{EffectKind, GameState, SoundEvent};
+use crate::game_state::{EffectKind, ElementSound, GameState, SoundEvent};
 
 #[derive(Clone, Copy)]
 pub enum SoundCue {
@@ -22,6 +22,7 @@ pub enum SoundCue {
     Siege,
     CoreDamage,
     Prestige,
+    ElementalHit(ElementSound),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -53,6 +54,7 @@ pub struct GameAudio {
     siege: Option<Sound>,
     core_damage: Option<Sound>,
     prestige: Option<Sound>,
+    elemental: Vec<Option<Sound>>,
     title_music: Option<Sound>,
     build_music: Option<Sound>,
     raid_music: Option<Sound>,
@@ -161,6 +163,59 @@ impl GameAudio {
                 11,
             )
             .await,
+            elemental: vec![
+                load_effect(
+                    &[Voice::tone(0.0, 0.11, 230.0, 0.18)
+                        .glide(780.0)
+                        .wave(Wave::Noise)],
+                    50,
+                )
+                .await,
+                load_effect(
+                    &[Voice::tone(0.0, 0.13, 860.0, 0.16)
+                        .glide(380.0)
+                        .wave(Wave::Triangle)],
+                    51,
+                )
+                .await,
+                load_effect(
+                    &[Voice::tone(0.0, 0.13, 330.0, 0.15)
+                        .glide(520.0)
+                        .wave(Wave::Triangle)],
+                    52,
+                )
+                .await,
+                load_effect(&[Voice::tone(0.0, 0.12, 120.0, 0.22).wave(Wave::Noise)], 53).await,
+                load_effect(
+                    &[Voice::tone(0.0, 0.11, 1040.0, 0.13)
+                        .glide(1420.0)
+                        .wave(Wave::Triangle)],
+                    54,
+                )
+                .await,
+                load_effect(
+                    &[Voice::tone(0.0, 0.15, 620.0, 0.15)
+                        .glide(980.0)
+                        .wave(Wave::Triangle)],
+                    55,
+                )
+                .await,
+                load_effect(
+                    &[Voice::tone(0.0, 0.14, 170.0, 0.20)
+                        .glide(80.0)
+                        .wave(Wave::Square)],
+                    56,
+                )
+                .await,
+                load_effect(
+                    &[Voice::tone(0.0, 0.14, 440.0, 0.15)
+                        .glide(1320.0)
+                        .wave(Wave::Triangle)],
+                    57,
+                )
+                .await,
+                load_effect(&[Voice::tone(0.0, 0.09, 190.0, 0.18).wave(Wave::Noise)], 58).await,
+            ],
             title_music: load_effect(
                 &[
                     Voice::tone(0.0, 4.2, 174.6, 0.09).wave(Wave::Triangle),
@@ -345,6 +400,9 @@ impl GameAudio {
             SoundCue::Siege => self.siege.as_ref(),
             SoundCue::CoreDamage => self.core_damage.as_ref(),
             SoundCue::Prestige => self.prestige.as_ref(),
+            SoundCue::ElementalHit(element) => {
+                self.elemental.get(element.index()).and_then(Option::as_ref)
+            }
         };
         if let Some(sound) = sound {
             play_sound(
@@ -380,6 +438,7 @@ impl From<SoundEvent> for SoundCue {
             SoundEvent::Siege => Self::Siege,
             SoundEvent::CoreDamage => Self::CoreDamage,
             SoundEvent::Prestige => Self::Prestige,
+            SoundEvent::ElementalHit(element) => Self::ElementalHit(element),
         }
     }
 }
