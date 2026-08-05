@@ -399,8 +399,8 @@ On each `resolve_combat` tick:
 ## Product & UX infrastructure
 
 - Settings now persists fullscreen, UI scale, reduced motion and autosave
-  cadence and default run speed through `macroquad-toolkit::settings::GameSettings`.
-  Colourblind mode and key rebinding remain open.
+  cadence, default run speed, and audio preferences through
+  `macroquad-toolkit::settings::GameSettings`. Key rebinding remains open.
 - Save hardening: multiple slots with metadata, explicit save-version discipline,
   corrupt-save backup/recovery that never panics or silently resets.
 - True pause is now a first-class persisted state with a Space shortcut, HUD
@@ -413,8 +413,10 @@ On each `resolve_combat` tick:
 - Large-dungeon hardening: dungeon-view scroll/zoom, log scrollback and
   filtering, drawer performance with the full monster roster, 20-floor legibility.
 - Full keyboard coverage with an in-game reference; decide on gamepad/Steam Deck.
-- Accessibility: shape-and-label element cues (the system is 100% colour-coded
-  today), text-size options, reduced-motion/no-flash, no reaction-time gates.
+- Accessibility: board tokens and attunements now carry compact text labels in
+  addition to their element colours; UI scale and reduced motion are settings.
+  Audit every future element VFX and colour-only state against those cues; key
+  rebinding and the no-reaction-time-gates audit remain open.
 - Localization readiness: externalize player-facing strings to an ID-keyed table,
   audit for text expansion, pick fonts with the needed glyph coverage.
 

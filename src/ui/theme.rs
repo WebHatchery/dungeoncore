@@ -51,6 +51,33 @@ pub fn element_color(element: &str) -> Color {
     }
 }
 
+/// A compact, colour-independent identifier for a combat element. These are
+/// intentionally distinct even where element names begin alike (Air/Arcane),
+/// so small board badges remain unambiguous.
+pub fn element_marker(element: &str) -> &'static str {
+    match element {
+        "Fire" => "FI",
+        "Water" => "WA",
+        "Nature" => "NA",
+        "Earth" => "EA",
+        "Air" => "AI",
+        "Spirit" => "SP",
+        "Death" => "DE",
+        "Arcane" => "AR",
+        "Body" => "BO",
+        _ => "NE",
+    }
+}
+
+/// A small element badge for sprites and other compact board tokens. Its
+/// outlined lozenge and text label carry the distinction without hue alone.
+pub fn draw_element_badge(center: Vec2, element: &str) {
+    let color = element_color(element);
+    let rect = Rect::new(center.x - 8.0, center.y - 5.5, 16.0, 11.0);
+    draw_card(rect, with_alpha(BG_DEEP, 0.88), with_alpha(color, 0.92));
+    draw_centered_text(element_marker(element), rect, 7.0, TEXT);
+}
+
 pub fn draw_game_background(sw: f32, sh: f32) {
     clear_background(BG_DEEP);
     draw_rectangle(0.0, 0.0, sw, sh, BG);

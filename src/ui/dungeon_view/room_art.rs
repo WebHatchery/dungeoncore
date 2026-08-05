@@ -33,6 +33,17 @@ pub(super) fn draw_room_tile(
     }
 
     draw_room_chamber_art(draw_rect, room, fill, border, icon_color);
+    if let Some((element, multiplier)) = room.attunement() {
+        draw_pill(
+            Rect::new(draw_rect.x + 6.0, draw_rect.y + 6.0, 58.0, 16.0),
+            &format!(
+                "{} +{:.0}%",
+                element_marker(element),
+                (multiplier - 1.0) * 100.0
+            ),
+            element_color(element),
+        );
+    }
     if fighting {
         let pulse = (get_time() as f32 * 5.5).sin().abs();
         draw_rectangle_lines(
@@ -210,6 +221,7 @@ fn draw_room_units(
             } else {
                 TEXT_DIM
             };
+            let element = crate::data::monsters::monster_element_id(&monster.type_name);
             let initial = monster
                 .type_name
                 .chars()
@@ -228,6 +240,11 @@ fn draw_room_units(
                 );
             if !drawn_sprite {
                 draw_icon_disc(vec2(x, cy), radius, color, &initial);
+            }
+            if monster.alive {
+                if let Some(element) = element {
+                    draw_element_badge(vec2(x + radius - 2.0, cy - radius + 2.0), &element);
+                }
             }
             if monster.alive && (fighting || monster.hp < monster.max_hp) {
                 draw_unit_hp_bar(vec2(x, cy), radius, monster.hp, monster.max_hp);
