@@ -60,6 +60,21 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                             .find(|room| room.position == pos)
                     })
                 {
+                    room.monsters.clear();
+                    room.monsters.push(Monster {
+                        id: 901,
+                        type_name: "Goblin".to_string(),
+                        hp: 20,
+                        max_hp: 20,
+                        alive: true,
+                        is_boss: false,
+                        scaled_stats: Stats {
+                            hp: 20,
+                            attack: 5,
+                            defense: 2,
+                        },
+                        active_traits: Vec::new(),
+                    });
                     room.monsters.push(Monster {
                         id: 902,
                         type_name: "Skeleton".to_string(),
@@ -71,6 +86,20 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                             hp: 28,
                             attack: 8,
                             defense: 2,
+                        },
+                        active_traits: Vec::new(),
+                    });
+                    room.monsters.push(Monster {
+                        id: 904,
+                        type_name: "Dragon".to_string(),
+                        hp: 146,
+                        max_hp: 200,
+                        alive: true,
+                        is_boss: false,
+                        scaled_stats: Stats {
+                            hp: 200,
+                            attack: 30,
+                            defense: 15,
                         },
                         active_traits: Vec::new(),
                     });
@@ -106,7 +135,11 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                 );
             }
             if let Some(party) = state.adventurer_parties.first_mut() {
-                for (member, class) in party.members.iter_mut().zip(["Warrior", "Rogue", "Mage"]) {
+                for (member, class) in party
+                    .members
+                    .iter_mut()
+                    .zip(["Cleric", "Ranger", "Paladin"])
+                {
                     member.class_name = class.to_string();
                 }
             }
