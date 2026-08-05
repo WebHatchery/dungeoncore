@@ -449,9 +449,9 @@ On each `resolve_combat` tick:
   controls, logs, and resource panels.
 - Keep the JSON-integrity suite growing with content, and every file under the
   800-line limit as UI work lands.
-- `src/ui/controls.rs::draw_controls` appears fully superseded by `ui/shell.rs`,
-  which reuses only `ControlAction`'s `ToggleSpeed` / `ToggleDungeon`. The rest
-  of that module looks dead — confirm and delete it.
+- `src/ui/controls.rs::draw_controls` was fully superseded by `ui/shell.rs`.
+  Confirmed and deleted; its two live `ControlAction` variants now live beside
+  the shell that owns them. — *done*
 
 ## Deferred on purpose
 

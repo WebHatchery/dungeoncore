@@ -2,7 +2,6 @@ use macroquad::prelude::*;
 
 use crate::game_state::{DungeonStatus, GameState, RoomType};
 
-use super::controls::ControlAction;
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
 
@@ -11,6 +10,15 @@ pub const LOG_BAR_HEIGHT: f32 = 108.0;
 pub const OUTER_MARGIN: f32 = 8.0;
 pub const PANEL_GAP: f32 = 12.0;
 pub const SIDE_PANEL_WIDTH: f32 = 274.0;
+
+/// The two top-shell controls that mutate simulation state. The older controls
+/// panel had extra actions but is no longer rendered anywhere.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ControlAction {
+    None,
+    ToggleSpeed,
+    ToggleDungeon,
+}
 
 /// Draw the top HUD (resources, time, threat) plus the primary controls
 /// (speed and dungeon open/close). Returns any control action triggered.
