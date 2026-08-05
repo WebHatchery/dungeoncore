@@ -83,6 +83,13 @@ pub fn plan_swap(
     let occupant = room.monsters.iter().find(|m| m.id == occupant_id)?;
     let template = get_monster_template(new_monster)?;
 
+    // A replacement first removes its occupant. Validate the resulting room
+    // now, before the atomicity guarantee below could be broken by a newly
+    // reserved throne slot.
+    if replacement_breaks_boss_reserve(room, occupant_id, template.boss_only) {
+        return None;
+    }
+
     let boss_surcharge = room.room_type == RoomType::Boss && !template.boss_only;
     let new_cost = get_monster_mana_cost(template.base_cost, floor_num, boss_surcharge);
 
@@ -116,6 +123,27 @@ pub fn plan_swap(
             souls: template.souls_cost,
         },
     })
+}
+
+/// Whether removing `occupant_id` then seating this kind of newcomer would
+/// violate the boss-room reserve. Evolution upgrades retain their occupant and
+/// therefore never take this replacement path.
+fn replacement_breaks_boss_reserve(room: &Room, occupant_id: u64, newcomer_is_boss: bool) -> bool {
+    if room.room_type != RoomType::Boss {
+        return false;
+    }
+    let other_boss_exists = room.monsters.iter().any(|monster| {
+        monster.id != occupant_id
+            && get_monster_template(&monster.type_name)
+                .map(|template| template.boss_only)
+                .unwrap_or(false)
+    });
+    if newcomer_is_boss {
+        return other_boss_exists;
+    }
+    let capacity = crate::data::constants::room_capacity(room);
+    let defenders_after_removal = room.monsters.len().saturating_sub(1);
+    !other_boss_exists && defenders_after_removal >= capacity.saturating_sub(1)
 }
 
 /// Place `new_monster` onto the defender `occupant_id`, upgrading it in place or

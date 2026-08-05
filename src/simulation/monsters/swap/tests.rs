@@ -145,6 +145,23 @@ fn a_swap_the_dungeon_cannot_afford_costs_it_nothing() {
 }
 
 #[test]
+fn replacing_a_seated_boss_cannot_break_the_throne_reserve() {
+    let mut s = dungeon();
+    let king = get_monster_template("Goblin King").expect("king template");
+    s.unlocked_monsters.push(king.name.clone());
+    let room = &mut s.floors[0].rooms[1];
+    room.room_type = RoomType::Boss;
+    room.floor_number = 3;
+    place_monster(&mut s, 1, 1, "Goblin").expect("guard fits");
+    place_monster(&mut s, 1, 1, "Goblin King").expect("king fits");
+    let king_id = s.floors[0].rooms[1].monsters[1].id;
+
+    assert!(plan_swap(&s, 1, 1, king_id, "Goblin").is_none());
+    assert!(swap_monster(&mut s, 1, 1, king_id, "Goblin").is_err());
+    assert_eq!(s.floors[0].rooms[1].monsters[1].type_name, "Goblin King");
+}
+
+#[test]
 fn defenders_cannot_be_restructured_mid_raid() {
     let mut s = dungeon();
     place_monster(&mut s, 1, 1, "Goblin").expect("placed");
