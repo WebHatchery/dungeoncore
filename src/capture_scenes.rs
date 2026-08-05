@@ -51,6 +51,14 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.prestige = 3;
             state.total_deaths = 186;
         }
+        "prestige_vfx" => {
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.prestige = 2;
+            simulation::endgame::repel_siege(state);
+        }
         "deep_board" => deep_board::seed(state),
         "combat_sprites" => combat_sprites::seed(state),
         "species" => {

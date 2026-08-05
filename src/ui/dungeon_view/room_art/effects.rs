@@ -66,6 +66,9 @@ fn effect_color(kind: EffectKind) -> Color {
         EffectKind::Loot => TREASURE,
         EffectKind::MeleeDust => Color::new(0.78, 0.66, 0.47, 1.0),
         EffectKind::HitSpark => Color::new(1.0, 0.94, 0.55, 1.0),
+        EffectKind::PoisonCloud => Color::new(0.40, 0.94, 0.30, 1.0),
+        EffectKind::SiegeArrival => WARNING,
+        EffectKind::Prestige => SOUL,
     }
 }
 
@@ -109,6 +112,49 @@ fn draw_room_effect_shape(
                 color,
             );
             draw_element_impact(visual_element, cx, cy, radius, life);
+        }
+        EffectKind::PoisonCloud => {
+            let radius = 9.0 + (1.0 - life) * 13.0;
+            for (dx, dy, scale) in [(-0.48, 0.28, 0.56), (0.46, 0.18, 0.68), (0.0, -0.26, 0.80)] {
+                draw_circle(
+                    cx + dx * radius,
+                    cy + dy * radius - (1.0 - life) * 9.0,
+                    radius * scale,
+                    with_alpha(Color::new(0.40, 0.94, 0.30, 1.0), life * 0.42),
+                );
+            }
+        }
+        EffectKind::SiegeArrival => {
+            let radius = 13.0 + (1.0 - life) * 24.0;
+            let color = with_alpha(WARNING, life * 0.76);
+            draw_circle_lines(cx, cy, radius, 2.0, color);
+            for angle in [0.0_f32, 1.57, 3.14, 4.71] {
+                let direction = vec2(angle.cos(), angle.sin());
+                draw_line(
+                    cx + direction.x * radius * 0.72,
+                    cy + direction.y * radius * 0.72,
+                    cx + direction.x * radius * 1.22,
+                    cy + direction.y * radius * 1.22,
+                    2.0,
+                    color,
+                );
+            }
+        }
+        EffectKind::Prestige => {
+            let radius = 10.0 + (1.0 - life) * 27.0;
+            let color = with_alpha(SOUL, life * 0.84);
+            draw_circle_lines(cx, cy, radius * 0.64, 1.8, color);
+            for angle in [0.25_f32, 1.51, 2.76, 4.02, 5.28] {
+                let direction = vec2(angle.cos(), angle.sin());
+                let point = vec2(cx, cy) + direction * radius;
+                let tangent = vec2(-direction.y, direction.x) * 4.0;
+                draw_triangle(
+                    point - tangent,
+                    point + direction * 8.0,
+                    point + tangent,
+                    color,
+                );
+            }
         }
         EffectKind::MonsterDown | EffectKind::AdventurerDown => {
             if let Some(unit) = visual_unit {

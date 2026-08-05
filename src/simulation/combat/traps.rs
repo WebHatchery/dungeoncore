@@ -88,11 +88,16 @@ pub(super) fn resolve_trap(
                     "{} afflicts {} ({} {}/tick)!",
                     trap.name, name, trap.effect_kind, power
                 )));
-                state.push_effect(
+                state.push_effect_at(
                     floor_num,
                     room_pos,
                     format!("{}!", trap.effect_kind),
-                    EffectKind::Ability,
+                    if trap.effect_kind == "Poison" {
+                        EffectKind::PoisonCloud
+                    } else {
+                        EffectKind::Ability
+                    },
+                    crate::game_state::EffectAnchor::Invaders,
                 );
             }
         }

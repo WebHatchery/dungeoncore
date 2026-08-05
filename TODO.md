@@ -405,8 +405,10 @@ change combat outcomes.
   remains the visual centrepiece.
 - Elemental impact cues now tint and shape combat and elemental-trap strikes
   across the current Fire/Water/Nature/Earth/Air/Spirit/Death/Arcane/Body
-  roster; the `combat_sprites` capture pins a Fire example. Dedicated poison,
-  siege-arrival, and prestige VFX remain open.
+  roster; the `combat_sprites` capture pins a Fire example. Poison traps bloom
+  a green cloud, while siege arrival and earned prestige pulse distinct
+  Core-anchored sigils; `prestige_vfx` captures the latter. Further VFX polish
+  remains open.
 - Cohesive UI kit replacing the programmer-art panels and emoji glyphs.
 - Title and prestige screens still need a shipping-quality pass. The game-over
   overlay now has a shattered-Core emblem, a renewed-descent coda, and a fixed

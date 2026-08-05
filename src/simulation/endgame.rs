@@ -1,8 +1,8 @@
 use macroquad_toolkit::timing::Cooldown;
 
 use crate::game_state::{
-    Adventurer, AdventurerParty, GameState, HeroRecord, HeroStatus, LogEntry, SoundEvent, Stats,
-    PARTY_MOVE_SECONDS,
+    Adventurer, AdventurerParty, EffectAnchor, EffectKind, GameState, HeroRecord, HeroStatus,
+    LogEntry, RoomType, SoundEvent, Stats, PARTY_MOVE_SECONDS,
 };
 
 /// What awakening a core power does. Stat effects (`CoreHp`, `MaxMana`) are
@@ -381,6 +381,15 @@ pub fn maybe_launch_siege(state: &mut GameState) {
     state.add_log(LogEntry::system(
         "THE SIEGE BEGINS! The realm's army storms the dungeon, bound for your core.",
     ));
+    if let Some((floor, room)) = core_location(state) {
+        state.push_effect_at(
+            floor,
+            room,
+            "SIEGE!",
+            EffectKind::SiegeArrival,
+            EffectAnchor::Center,
+        );
+    }
     state.queue_sound(SoundEvent::Siege);
 }
 
@@ -479,9 +488,28 @@ pub fn repel_siege(state: &mut GameState) {
         state.prestige, rank
     )));
     state.queue_sound(SoundEvent::Prestige);
+    if let Some((floor, room)) = core_location(state) {
+        state.push_effect_at(
+            floor,
+            room,
+            format!("Prestige {}", state.prestige),
+            EffectKind::Prestige,
+            EffectAnchor::Center,
+        );
+    }
 
     // A repelled siege can cross prestige milestones (Ascendant, Eternal Core).
     crate::simulation::milestones::check_milestones(state);
+}
+
+fn core_location(state: &GameState) -> Option<(i32, usize)> {
+    state.floors.iter().find_map(|floor| {
+        floor
+            .rooms
+            .iter()
+            .find(|room| room.room_type == RoomType::Core)
+            .map(|room| (floor.number, room.position))
+    })
 }
 
 #[cfg(test)]

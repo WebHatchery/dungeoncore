@@ -15,6 +15,7 @@ use super::GameState;
 const EFFECT_TTL: f32 = 1.6;
 const DUST_TTL: f32 = 0.82;
 const SPARK_TTL: f32 = 0.30;
+const EVENT_TTL: f32 = 1.25;
 
 /// Kind of transient visual effect surfaced over a room
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -28,6 +29,12 @@ pub enum EffectKind {
     MeleeDust,
     /// A very short impact flash on the side that took damage.
     HitSpark,
+    /// Lingering venom bubbles around the afflicted invader side.
+    PoisonCloud,
+    /// A warning sigil pulsing over the Core as the realm's siege begins.
+    SiegeArrival,
+    /// A burst of Core shards after the siege is broken and prestige earned.
+    Prestige,
 }
 
 /// A semantic, one-shot sound request emitted by the authoritative simulation.
@@ -240,6 +247,7 @@ fn effect_ttl(kind: EffectKind) -> f32 {
     match kind {
         EffectKind::MeleeDust => DUST_TTL,
         EffectKind::HitSpark => SPARK_TTL,
+        EffectKind::PoisonCloud | EffectKind::SiegeArrival | EffectKind::Prestige => EVENT_TTL,
         _ => EFFECT_TTL,
     }
 }
