@@ -253,57 +253,14 @@ async fn main() {
                 continue;
             }
             AppScreen::Settings => {
-                match draw_title_settings_screen(&assets, &settings, title_notice.as_deref()) {
-                    TitleSettingsAction::ToggleFullscreen => {
-                        settings.toggle_fullscreen();
-                        title_notice = Some(if settings.fullscreen {
-                            "Fullscreen enabled.".to_string()
-                        } else {
-                            "Fullscreen disabled.".to_string()
-                        });
-                        let _ = settings.save("dungeon_core");
-                    }
-                    TitleSettingsAction::AdjustUiScale(_) => {
-                        settings.ui_text_scale = if settings.ui_text_scale >= 1.5 {
-                            0.8
-                        } else {
-                            settings.ui_text_scale + 0.1
-                        };
-                        settings.sanitize();
-                        settings.apply_display();
-                        title_notice = Some(format!(
-                            "UI scale set to {:.0}%.",
-                            settings.ui_text_scale * 100.0
-                        ));
-                        let _ = settings.save("dungeon_core");
-                    }
-                    TitleSettingsAction::ToggleReducedMotion => {
-                        settings.screen_shake = !settings.screen_shake;
-                        title_notice = Some(if settings.screen_shake {
-                            "Full motion enabled.".to_string()
-                        } else {
-                            "Reduced motion enabled.".to_string()
-                        });
-                        let _ = settings.save("dungeon_core");
-                    }
-                    TitleSettingsAction::AdjustAutosave(_) => {
-                        settings.autosave_interval = if settings.autosave_interval >= 120.0 {
-                            15.0
-                        } else {
-                            settings.autosave_interval + 15.0
-                        };
-                        settings.sanitize();
-                        title_notice = Some(format!(
-                            "Autosave set to {:.0} seconds.",
-                            settings.autosave_interval
-                        ));
-                        let _ = settings.save("dungeon_core");
-                    }
-                    TitleSettingsAction::Back => {
-                        title_notice = None;
-                        screen = AppScreen::Title;
-                    }
-                    TitleSettingsAction::None => {}
+                let action =
+                    draw_title_settings_screen(&assets, &settings, title_notice.as_deref());
+                let (notice, back) = apply_title_settings_action(&mut settings, action);
+                if back {
+                    title_notice = None;
+                    screen = AppScreen::Title;
+                } else if let Some(notice) = notice {
+                    title_notice = Some(notice);
                 }
                 next_frame().await;
                 continue;

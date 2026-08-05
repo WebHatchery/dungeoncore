@@ -24,6 +24,9 @@ pub enum TitleAction {
 pub enum TitleSettingsAction {
     None,
     ToggleFullscreen,
+    AdjustMasterVolume,
+    AdjustSfxVolume,
+    AdjustMusicVolume,
     AdjustUiScale(i8),
     ToggleReducedMotion,
     AdjustAutosave(i8),
@@ -244,9 +247,9 @@ pub fn draw_title_settings_screen(
     let panel_w = sw.min(1280.0) * 0.32;
     let panel = Rect::new(
         (sw - panel_w.clamp(320.0, 430.0)) * 0.5,
-        (sh - 470.0) * 0.5,
+        (sh - 620.0) * 0.5,
         panel_w.clamp(320.0, 430.0),
-        470.0,
+        620.0,
     );
     draw_title_panel(panel);
 
@@ -284,6 +287,30 @@ pub fn draw_title_settings_screen(
 
     if draw_title_button(
         Rect::new(button_x, panel.y + 158.0, button_w, 42.0),
+        &format!("Master volume: {:.0}%", settings.master_volume * 100.0),
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::AdjustMasterVolume;
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 212.0, button_w, 42.0),
+        &format!("SFX volume: {:.0}%", settings.sfx_volume * 100.0),
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::AdjustSfxVolume;
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 266.0, button_w, 42.0),
+        &format!("Music volume: {:.0}%", settings.music_volume * 100.0),
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::AdjustMusicVolume;
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 320.0, button_w, 42.0),
         &format!("UI scale: {:.0}%", settings.ui_text_scale * 100.0),
         true,
         ButtonTone::Ghost,
@@ -291,7 +318,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustUiScale(1);
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 212.0, button_w, 42.0),
+        Rect::new(button_x, panel.y + 374.0, button_w, 42.0),
         if settings.screen_shake {
             "Reduced motion: Off"
         } else {
@@ -303,7 +330,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::ToggleReducedMotion;
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 266.0, button_w, 42.0),
+        Rect::new(button_x, panel.y + 428.0, button_w, 42.0),
         &format!("Autosave: {:.0}s", settings.autosave_interval),
         true,
         ButtonTone::Ghost,
@@ -311,7 +338,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustAutosave(1);
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 340.0, button_w, 48.0),
+        Rect::new(button_x, panel.y + 500.0, button_w, 48.0),
         "Back",
         true,
         ButtonTone::Ghost,
