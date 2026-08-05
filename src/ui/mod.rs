@@ -1,3 +1,4 @@
+pub mod confirmation;
 pub mod core_spell_button;
 pub mod core_tree;
 pub mod dungeon_view;
@@ -14,6 +15,7 @@ pub mod title_screen;
 pub mod tutorial;
 pub mod upgrade_panel;
 
+pub use confirmation::*;
 pub use core_spell_button::*;
 pub use core_tree::*;
 pub use dungeon_view::*;

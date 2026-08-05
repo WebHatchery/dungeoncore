@@ -496,9 +496,7 @@ fn render_playing_frame(
             }
         }
         DrawerAction::ResetGame => {
-            *state = create_new_game(state.difficulty);
-            let _ = persistence::save_game(state);
-            reset_timers(last_time_advance, last_adventure_tick, last_save);
+            state.pending_confirmation = Some(game_state::PendingConfirmation::ResetRun);
         }
         DrawerAction::OpenHero(id) => state.selected_hero = Some(id),
         DrawerAction::CloseHero => state.selected_hero = None,
@@ -594,9 +592,12 @@ fn render_playing_frame(
             }
             UpgradeAction::DismissMonster(monster_id) => {
                 if let Some((floor, pos)) = state.selected_room {
-                    if let Err(e) = simulation::remove_monster(state, floor, pos, monster_id) {
-                        state.add_log(game_state::LogEntry::system(e));
-                    }
+                    state.pending_confirmation =
+                        Some(game_state::PendingConfirmation::DismissMonster {
+                            floor,
+                            room: pos,
+                            monster_id,
+                        });
                 }
             }
             UpgradeAction::ArmUpgrades => {
@@ -666,6 +667,30 @@ fn render_playing_frame(
     if let Some(summary) = state.last_raid_summary.clone() {
         if draw_raid_summary(&summary, dungeon_rect) {
             state.last_raid_summary = None;
+        }
+    }
+
+    if let Some(action) = state.pending_confirmation.clone() {
+        match draw_confirmation_overlay(&action, sw, sh) {
+            ConfirmationChoice::Confirm => match action {
+                game_state::PendingConfirmation::ResetRun => {
+                    *state = create_new_game(state.difficulty);
+                    let _ = persistence::save_game(state);
+                    reset_timers(last_time_advance, last_adventure_tick, last_save);
+                }
+                game_state::PendingConfirmation::DismissMonster {
+                    floor,
+                    room,
+                    monster_id,
+                } => {
+                    if let Err(e) = simulation::remove_monster(state, floor, room, monster_id) {
+                        state.add_log(game_state::LogEntry::system(e));
+                    }
+                    state.pending_confirmation = None;
+                }
+            },
+            ConfirmationChoice::Cancel => state.pending_confirmation = None,
+            ConfirmationChoice::None => {}
         }
     }
 

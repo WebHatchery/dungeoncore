@@ -405,7 +405,9 @@ On each `resolve_combat` tick:
 - True pause is now a first-class persisted state with a Space shortcut, HUD
   control, dedicated pause menu and simulation gate. Pause-on-focus-loss
   remains open.
-- Confirmations on destructive actions (reset run, dismiss monster, overwrite).
+- Confirmations now guard reset run and defender dismissal through a transient,
+  cancel-safe overlay. Save-slot overwrite confirmation remains tied to the
+  future multi-slot save work.
 - Tooltips on every stat, cost, icon, and abbreviation.
 - Large-dungeon hardening: dungeon-view scroll/zoom, log scrollback and
   filtering, drawer performance with the full monster roster, 20-floor legibility.

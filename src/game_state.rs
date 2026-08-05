@@ -232,6 +232,18 @@ pub struct RaidSummary {
     pub reputation_after: i32,
 }
 
+/// A destructive action awaiting the player's explicit second choice. This is
+/// UI state, so it is intentionally not written to a save file.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PendingConfirmation {
+    ResetRun,
+    DismissMonster {
+        floor: i32,
+        room: usize,
+        monster_id: u64,
+    },
+}
+
 /// Log entry type
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LogEntry {
@@ -377,6 +389,8 @@ pub struct GameState {
     /// The most recently concluded raid, shown as a summary card.
     #[serde(skip)]
     pub last_raid_summary: Option<RaidSummary>,
+    #[serde(skip)]
+    pub pending_confirmation: Option<PendingConfirmation>,
 
     // Log
     pub log: Vec<LogEntry>,
@@ -440,6 +454,7 @@ impl GameState {
             effects: Vec::new(),
             current_raid: None,
             last_raid_summary: None,
+            pending_confirmation: None,
             log: vec![LogEntry::system(
                 "Welcome to Dungeon Core! Choose a starter race to awaken your first defenders.",
             )],
