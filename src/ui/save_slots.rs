@@ -49,10 +49,23 @@ pub fn draw_save_slots_screen(
     for (idx, slot) in SAVE_SLOTS.iter().enumerate() {
         let y = panel.y + 88.0 + idx as f32 * 106.0;
         let state = &states[idx];
-        let (summary, tone) = match state {
-            SlotState::Empty => ("Empty".to_string(), TEXT_DIM),
-            SlotState::Ready { day, difficulty } => (format!("Day {day} · {difficulty}"), EMERALD),
-            SlotState::Corrupt => ("Needs recovery".to_string(), DANGER),
+        let (summary, detail, tone) = match state {
+            SlotState::Empty => ("Empty".to_string(), None, TEXT_DIM),
+            SlotState::Ready {
+                day,
+                difficulty,
+                deepest_floor,
+                prestige,
+                dungeon_open,
+            } => (
+                format!("Day {day} · {difficulty}"),
+                Some(format!(
+                    "Floor {deepest_floor} · Prestige {prestige} · {}",
+                    if *dungeon_open { "Open" } else { "Closed" }
+                )),
+                EMERALD,
+            ),
+            SlotState::Corrupt => ("Needs recovery".to_string(), None, DANGER),
         };
         draw_card(
             Rect::new(panel.x + 22.0, y, panel.w - 44.0, 92.0),
@@ -68,6 +81,9 @@ pub fn draw_save_slots_screen(
             TEXT,
         );
         draw_text_fit(&summary, panel.x + 38.0, y + 49.0, 210.0, 12.0, tone);
+        if let Some(detail) = detail {
+            draw_text_fit(&detail, panel.x + 38.0, y + 69.0, 250.0, 10.0, TEXT_MUTED);
+        }
         let button = Rect::new(panel.x + panel.w - 176.0, y + 24.0, 138.0, 38.0);
         match state {
             SlotState::Ready { .. } => {

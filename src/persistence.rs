@@ -15,7 +15,13 @@ pub const SAVE_SLOTS: [&str; 3] = ["slot_1", "slot_2", "slot_3"];
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SlotState {
     Empty,
-    Ready { day: i32, difficulty: String },
+    Ready {
+        day: i32,
+        difficulty: String,
+        deepest_floor: i32,
+        prestige: i32,
+        dungeon_open: bool,
+    },
     Corrupt,
 }
 
@@ -34,11 +40,18 @@ pub fn slot_state(slot: &str) -> SlotState {
         return SlotState::Empty;
     }
     match load_game(slot) {
-        Ok(state) => SlotState::Ready {
-            day: state.day,
-            difficulty: state.difficulty.profile().name.to_string(),
-        },
+        Ok(state) => ready_slot_state(&state),
         Err(_) => SlotState::Corrupt,
+    }
+}
+
+fn ready_slot_state(state: &GameState) -> SlotState {
+    SlotState::Ready {
+        day: state.day,
+        difficulty: state.difficulty.profile().name.to_string(),
+        deepest_floor: state.total_floors,
+        prestige: state.prestige,
+        dungeon_open: state.status == crate::game_state::DungeonStatus::Open,
     }
 }
 
@@ -68,5 +81,26 @@ mod tests {
         assert_eq!(SAVE_SLOTS.len(), 3);
         assert_ne!(SAVE_SLOTS[0], SAVE_SLOTS[1]);
         assert_ne!(SAVE_SLOTS[1], SAVE_SLOTS[2]);
+    }
+
+    #[test]
+    fn ready_slot_metadata_describes_a_run_without_persisting_ui_state() {
+        let mut state = GameState::new();
+        state.day = 14;
+        state.total_floors = 4;
+        state.prestige = 2;
+        state.status = crate::game_state::DungeonStatus::Open;
+
+        let metadata = ready_slot_state(&state);
+        assert_eq!(
+            metadata,
+            SlotState::Ready {
+                day: 14,
+                difficulty: "Keeper".to_string(),
+                deepest_floor: 4,
+                prestige: 2,
+                dungeon_open: true,
+            }
+        );
     }
 }
