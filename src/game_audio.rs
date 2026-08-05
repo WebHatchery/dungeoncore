@@ -32,6 +32,12 @@ enum MusicLayer {
     Siege,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AmbienceLayer {
+    Upper,
+    Deep,
+}
+
 pub struct GameAudio {
     ui: Option<Sound>,
     place: Option<Sound>,
@@ -52,6 +58,9 @@ pub struct GameAudio {
     raid_music: Option<Sound>,
     siege_music: Option<Sound>,
     active_music: Cell<Option<MusicLayer>>,
+    upper_ambience: Option<Sound>,
+    deep_ambience: Option<Sound>,
+    active_ambience: Cell<Option<AmbienceLayer>>,
 }
 
 impl GameAudio {
@@ -188,6 +197,23 @@ impl GameAudio {
             )
             .await,
             active_music: Cell::new(None),
+            upper_ambience: load_effect(
+                &[
+                    Voice::tone(0.0, 4.8, 58.0, 0.035).wave(Wave::Noise),
+                    Voice::tone(0.5, 0.7, 392.0, 0.025).wave(Wave::Triangle),
+                ],
+                40,
+            )
+            .await,
+            deep_ambience: load_effect(
+                &[
+                    Voice::tone(0.0, 4.8, 34.0, 0.050).wave(Wave::Noise),
+                    Voice::tone(0.3, 1.1, 73.4, 0.045).wave(Wave::Triangle),
+                ],
+                41,
+            )
+            .await,
+            active_ambience: Cell::new(None),
         }
     }
 
@@ -204,6 +230,7 @@ impl GameAudio {
             Some(MusicLayer::Raid)
         };
         self.set_music(wanted, volume);
+        self.update_ambience(state, volume * 0.55);
     }
 
     /// Title audio waits for the first real key or pointer gesture. Browsers
@@ -252,6 +279,49 @@ impl GameAudio {
             MusicLayer::Build => self.build_music.as_ref(),
             MusicLayer::Raid => self.raid_music.as_ref(),
             MusicLayer::Siege => self.siege_music.as_ref(),
+        }
+    }
+
+    /// Room tone is a second, quieter loop: it follows construction depth, not
+    /// raid state, so it enriches rather than competes with the music layer.
+    fn update_ambience(&self, state: &GameState, volume: f32) {
+        let wanted = if state.game_over {
+            None
+        } else if state.total_floors >= 6 {
+            Some(AmbienceLayer::Deep)
+        } else {
+            Some(AmbienceLayer::Upper)
+        };
+        if self.active_ambience.get() != wanted {
+            for sound in [&self.upper_ambience, &self.deep_ambience]
+                .into_iter()
+                .flatten()
+            {
+                stop_sound(sound);
+            }
+            if let Some(layer) = wanted {
+                if let Some(sound) = self.ambience_sound(layer) {
+                    play_sound(
+                        sound,
+                        PlaySoundParams {
+                            looped: true,
+                            volume: volume.clamp(0.0, 1.0),
+                        },
+                    );
+                }
+            }
+            self.active_ambience.set(wanted);
+        } else if let Some(layer) = wanted {
+            if let Some(sound) = self.ambience_sound(layer) {
+                set_sound_volume(sound, volume.clamp(0.0, 1.0));
+            }
+        }
+    }
+
+    fn ambience_sound(&self, layer: AmbienceLayer) -> Option<&Sound> {
+        match layer {
+            AmbienceLayer::Upper => self.upper_ambience.as_ref(),
+            AmbienceLayer::Deep => self.deep_ambience.as_ref(),
         }
     }
 

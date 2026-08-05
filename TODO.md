@@ -420,7 +420,9 @@ change combat outcomes.
   capture frames stay silent. Title music starts only after the first key or
   pointer gesture, which satisfies WebAudio unlock rules. Genuinely
   layered/cross-faded arrangements remain open.
-- Room ambience that deepens with floor depth.
+- A low-volume procedural room ambience loop now runs under music, changing
+  from upper-hall air to a deeper rumble at floor six without affecting combat
+  or saves. More location-specific ambience remains open.
 - Mixing, ducking, and per-channel volume (needs the settings menu).
 - Verify macroquad audio on native *and* WASM early — web audio needs an
   unlock-on-first-input path.
