@@ -63,6 +63,8 @@ pub struct RoomEffect {
     pub text: String,
     pub kind: EffectKind,
     pub anchor: EffectAnchor,
+    /// Optional casualty identity for renderer-only death-pose playback.
+    pub visual_unit: Option<String>,
     timer: Timer,
 }
 
@@ -116,6 +118,31 @@ impl GameState {
             text: text.into(),
             kind,
             anchor,
+            visual_unit: None,
+            timer: Timer::new(effect_ttl(kind)),
+        });
+        if self.effects.len() > 48 {
+            self.effects.remove(0);
+        }
+    }
+
+    /// Spawn an effect carrying a short-lived unit identity for cosmetic art.
+    pub fn push_unit_effect_at(
+        &mut self,
+        floor: i32,
+        room: usize,
+        text: impl Into<String>,
+        kind: EffectKind,
+        anchor: EffectAnchor,
+        visual_unit: impl Into<String>,
+    ) {
+        self.effects.push(RoomEffect {
+            floor,
+            room,
+            text: text.into(),
+            kind,
+            anchor,
+            visual_unit: Some(visual_unit.into()),
             timer: Timer::new(effect_ttl(kind)),
         });
         if self.effects.len() > 48 {

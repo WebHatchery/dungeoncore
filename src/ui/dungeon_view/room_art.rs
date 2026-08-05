@@ -372,7 +372,14 @@ fn draw_room_effects(state: &GameState, room: &Room, rect: Rect, sprites: &Dunge
         stack_by_anchor[anchor_idx] += 1;
 
         let life = effect.life_fraction();
-        draw_room_effect_shape(effect.kind, rect, effect.anchor, life, sprites);
+        draw_room_effect_shape(
+            effect.kind,
+            rect,
+            effect.anchor,
+            life,
+            effect.visual_unit.as_deref(),
+            sprites,
+        );
         let rise = (1.0 - life) * 28.0 + stack as f32 * 15.0;
         let color = effect_color(effect.kind);
         let faded = with_alpha(color, life);
@@ -413,7 +420,8 @@ fn draw_room_effect_shape(
     rect: Rect,
     anchor: EffectAnchor,
     life: f32,
-    _sprites: &DungeonSprites,
+    visual_unit: Option<&str>,
+    sprites: &DungeonSprites,
 ) {
     let (cx, cy) = match anchor {
         EffectAnchor::Defenders => (rect.x + rect.w * 0.34, rect.y + rect.h * 0.48),
@@ -447,6 +455,12 @@ fn draw_room_effect_shape(
             );
         }
         EffectKind::MonsterDown | EffectKind::AdventurerDown => {
+            if let Some(unit) = visual_unit {
+                let monster = kind == EffectKind::MonsterDown;
+                if sprites.draw_death(monster, unit, vec2(cx, cy), 30.0 * life, 0.0, !monster) {
+                    return;
+                }
+            }
             let color = if kind == EffectKind::MonsterDown {
                 DANGER
             } else {

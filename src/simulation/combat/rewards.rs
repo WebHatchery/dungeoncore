@@ -44,12 +44,13 @@ pub(super) fn reward_monster_kills(
                 String::new()
             }
         )));
-        state.push_effect_at(
+        state.push_unit_effect_at(
             floor_num,
             room_pos,
             format!("{} down", monster_name),
             EffectKind::MonsterDown,
             EffectAnchor::Defenders,
+            monster_name,
         );
         state.queue_sound(SoundEvent::Death);
     }
@@ -74,7 +75,7 @@ pub(super) fn reward_monster_kills(
 /// Grant mana/XP for adventurers slain this tick and narrate the deaths.
 pub(super) fn reward_adventurer_kills(
     state: &mut GameState,
-    _party_idx: usize,
+    party_idx: usize,
     floor_idx: usize,
     room_idx: usize,
     kills: &[(String, i32)],
@@ -115,12 +116,19 @@ pub(super) fn reward_adventurer_kills(
             "{} has fallen on floor {}! +{} mana, +{} XP to the lines that fought",
             victim_name, floor_num, mana_gain, xp_gain
         )));
-        state.push_effect_at(
+        let class_name = state.adventurer_parties[party_idx]
+            .members
+            .iter()
+            .find(|member| member.name == *victim_name)
+            .map(|member| member.class_name.clone())
+            .unwrap_or_else(|| "Warrior".to_string());
+        state.push_unit_effect_at(
             floor_num,
             room_pos,
             "Slain!",
             EffectKind::AdventurerDown,
             EffectAnchor::Invaders,
+            class_name,
         );
         state.queue_sound(SoundEvent::Death);
     }
