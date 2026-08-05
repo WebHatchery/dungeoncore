@@ -222,6 +222,12 @@ async fn main() {
     let mut milestones_scroll = 0.0;
 
     loop {
+        if screen != AppScreen::Playing {
+            audio.update_title_music(
+                settings.effective_music_volume(),
+                is_mouse_button_pressed(MouseButton::Left) || get_last_key_pressed().is_some(),
+            );
+        }
         match screen {
             AppScreen::Title => {
                 match draw_title_screen(

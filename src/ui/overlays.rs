@@ -380,7 +380,7 @@ pub fn draw_controls_reference(
         y += 32.0;
     }
     draw_text_fit(
-        "Pointer: click rooms to inspect or place an armed defender/upgrade; click drawer tabs and cards to choose actions; scroll long lists.",
+        "Pointer: click rooms to inspect or place an armed defender/upgrade; wheel-scroll board or lists; use board − / Zoom / + for room scale.",
         card.x + 22.0,
         card.y + 290.0,
         card.w - 44.0,

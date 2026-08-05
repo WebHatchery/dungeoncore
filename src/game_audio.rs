@@ -26,6 +26,7 @@ pub enum SoundCue {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum MusicLayer {
+    Title,
     Build,
     Raid,
     Siege,
@@ -46,6 +47,7 @@ pub struct GameAudio {
     siege: Option<Sound>,
     core_damage: Option<Sound>,
     prestige: Option<Sound>,
+    title_music: Option<Sound>,
     build_music: Option<Sound>,
     raid_music: Option<Sound>,
     siege_music: Option<Sound>,
@@ -150,6 +152,15 @@ impl GameAudio {
                 11,
             )
             .await,
+            title_music: load_effect(
+                &[
+                    Voice::tone(0.0, 4.2, 174.6, 0.09).wave(Wave::Triangle),
+                    Voice::tone(0.0, 4.2, 261.6, 0.06).wave(Wave::Triangle),
+                    Voice::tone(0.20, 0.55, 523.2, 0.04).wave(Wave::Triangle),
+                ],
+                30,
+            )
+            .await,
             build_music: load_effect(
                 &[
                     Voice::tone(0.0, 3.6, 146.8, 0.10).wave(Wave::Triangle),
@@ -192,10 +203,27 @@ impl GameAudio {
         } else {
             Some(MusicLayer::Raid)
         };
+        self.set_music(wanted, volume);
+    }
+
+    /// Title audio waits for the first real key or pointer gesture. Browsers
+    /// otherwise reject playback, and capture runs never enter this path.
+    pub fn update_title_music(&self, volume: f32, allow_start: bool) {
+        if self.active_music.get() == Some(MusicLayer::Title) || allow_start {
+            self.set_music(Some(MusicLayer::Title), volume);
+        }
+    }
+
+    fn set_music(&self, wanted: Option<MusicLayer>, volume: f32) {
         if self.active_music.get() != wanted {
-            for sound in [&self.build_music, &self.raid_music, &self.siege_music]
-                .into_iter()
-                .flatten()
+            for sound in [
+                &self.title_music,
+                &self.build_music,
+                &self.raid_music,
+                &self.siege_music,
+            ]
+            .into_iter()
+            .flatten()
             {
                 stop_sound(sound);
             }
@@ -220,6 +248,7 @@ impl GameAudio {
 
     fn music_sound(&self, layer: MusicLayer) -> Option<&Sound> {
         match layer {
+            MusicLayer::Title => self.title_music.as_ref(),
             MusicLayer::Build => self.build_music.as_ref(),
             MusicLayer::Raid => self.raid_music.as_ref(),
             MusicLayer::Siege => self.siege_music.as_ref(),

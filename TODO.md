@@ -417,8 +417,9 @@ change combat outcomes.
   per-element hits and richer event-specific variation.
 - Procedural looping music now selects a build theme, raid-tension theme, or
   siege track from live game state and honors the persisted master×music gain;
-  capture frames stay silent. Title music and genuinely layered/cross-faded
-  arrangements remain open.
+  capture frames stay silent. Title music starts only after the first key or
+  pointer gesture, which satisfies WebAudio unlock rules. Genuinely
+  layered/cross-faded arrangements remain open.
 - Room ambience that deepens with floor depth.
 - Mixing, ducking, and per-channel volume (needs the settings menu).
 - Verify macroquad audio on native *and* WASM early — web audio needs an
