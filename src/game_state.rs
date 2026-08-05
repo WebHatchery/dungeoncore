@@ -261,6 +261,30 @@ pub struct LogEntry {
     pub timestamp: u64,
 }
 
+/// A transient filter for the event-log viewport. It intentionally remains out
+/// of saves: loading a run should never hide events because of a past UI choice.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LogFilter {
+    #[default]
+    All,
+    Combat,
+    Adventure,
+    Building,
+    System,
+}
+
+impl LogFilter {
+    pub fn matches(self, entry: &LogEntry) -> bool {
+        match self {
+            Self::All => true,
+            Self::Combat => entry.log_type == "combat",
+            Self::Adventure => entry.log_type == "adventure",
+            Self::Building => entry.log_type == "building",
+            Self::System => entry.log_type == "system",
+        }
+    }
+}
+
 impl LogEntry {
     pub fn new(message: impl Into<String>, log_type: impl Into<String>) -> Self {
         Self {
@@ -409,6 +433,11 @@ pub struct GameState {
     pub last_raid_summary: Option<RaidSummary>,
     #[serde(skip)]
     pub pending_confirmation: Option<PendingConfirmation>,
+    /// Event-log viewport state is UI-only and deliberately never persisted.
+    #[serde(skip)]
+    pub log_scroll: usize,
+    #[serde(skip)]
+    pub log_filter: LogFilter,
 
     // Log
     pub log: Vec<LogEntry>,
@@ -476,6 +505,8 @@ impl GameState {
             current_raid: None,
             last_raid_summary: None,
             pending_confirmation: None,
+            log_scroll: 0,
+            log_filter: LogFilter::All,
             log: vec![LogEntry::system(
                 "Welcome to Dungeon Core! Choose a starter race to awaken your first defenders.",
             )],

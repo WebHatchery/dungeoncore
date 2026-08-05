@@ -420,8 +420,10 @@ On each `resolve_combat` tick:
   cost, icon, stat, and abbreviation.
 - Large-dungeon hardening: an open inspector now collapses the drawer rail on
   narrower desktops so the board retains usable room width. Dungeon-view
-  scroll/zoom, log scrollback and filtering, full-roster drawer performance,
-  and 20-floor legibility remain open.
+  scroll/zoom, full-roster drawer performance, and 20-floor legibility remain
+  open. The event log now keeps a bounded scrollback with All/Combat/
+  Adventure/Build/System filters, anchored to the newest matching event until
+  the player scrolls upward. — *done*
 - An in-game `[H]` controls reference now documents the live keyboard and
   pointer interactions. Expand this toward full keyboard navigation and decide
   on gamepad/Steam Deck support.
