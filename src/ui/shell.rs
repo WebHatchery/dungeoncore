@@ -62,7 +62,7 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
         TEXT,
     );
     draw_text_fit(
-        "[C] Codex   [K] Goals",
+        "[H] Help  [C] Codex  [K] Goals",
         title_rect.x + 62.0,
         title_rect.y + title_rect.h * 0.5 + 22.0,
         title_rect.w - 66.0,

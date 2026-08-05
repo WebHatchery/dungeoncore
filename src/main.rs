@@ -3,6 +3,7 @@
 //!
 //! Migrated from React/TypeScript + PHP to Rust using macroquad.
 
+mod app_support;
 mod capture_scenes;
 mod data;
 mod game_state;
@@ -15,50 +16,9 @@ use macroquad::prelude::*;
 use macroquad_toolkit::assets::AssetManager;
 use macroquad_toolkit::capture;
 
+use app_support::*;
 use game_state::GameState;
 use ui::*;
-
-/// Env-var prefix for the screenshot capture harness (DUNGEON_CORE_CAPTURE_*).
-const CAPTURE_PREFIX: &str = "DUNGEON_CORE";
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum AppScreen {
-    Title,
-    SaveSlots,
-    ConfirmSlotOverwrite,
-    NewGameSetup,
-    Settings,
-    Playing,
-}
-
-// Helper to check if any modal is open
-fn is_modal_open(state: &GameState) -> bool {
-    // Add other modals here if needed
-    state.unlocked_species.is_empty()
-}
-
-fn window_conf() -> Conf {
-    capture::capture_window_conf(CAPTURE_PREFIX, "Dungeon Core", 1280, 720)
-}
-
-fn create_new_game(difficulty: data::difficulty::Difficulty, default_speed: i32) -> GameState {
-    let mut state = GameState::new();
-    state.difficulty = difficulty;
-    // Scale the starting core so easier runs begin sturdier and harder ones
-    // more fragile.
-    let mult = difficulty.profile().core_hp_mult;
-    state.core_max_hp = ((state.core_max_hp as f32 * mult).round() as i32).max(1);
-    state.core_hp = state.core_max_hp;
-    state.speed = default_speed.clamp(1, 4);
-    state
-}
-
-fn reset_timers(last_time_advance: &mut f64, last_adventure_tick: &mut f64, last_save: &mut f64) {
-    let now = get_time();
-    *last_time_advance = now;
-    *last_adventure_tick = now;
-    *last_save = now;
-}
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -109,6 +69,7 @@ async fn main() {
         let mut defender_scroll = 0.0;
         let mut heroes_scroll = 0.0;
         let mut show_codex = false;
+        let mut show_controls = false;
         let mut codex_scroll = 0.0;
         // The `coretree` scene boots straight into the core-power tree overlay.
         let mut show_core_tree = config.scene == "coretree";
@@ -130,6 +91,7 @@ async fn main() {
                     &mut defender_scroll,
                     &mut heroes_scroll,
                     &mut show_codex,
+                    &mut show_controls,
                     &mut codex_scroll,
                     &mut show_core_tree,
                     &mut show_milestones,
@@ -155,6 +117,7 @@ async fn main() {
                     &mut defender_scroll,
                     &mut heroes_scroll,
                     &mut show_codex,
+                    &mut show_controls,
                     &mut codex_scroll,
                     &mut show_core_tree,
                     &mut show_milestones,
@@ -197,6 +160,7 @@ async fn main() {
     let mut defender_scroll = 0.0;
     let mut heroes_scroll = 0.0;
     let mut show_codex = false;
+    let mut show_controls = false;
     let mut codex_scroll = 0.0;
     let mut show_core_tree = false;
     let mut show_milestones = false;
@@ -325,6 +289,7 @@ async fn main() {
             &mut defender_scroll,
             &mut heroes_scroll,
             &mut show_codex,
+            &mut show_controls,
             &mut codex_scroll,
             &mut show_core_tree,
             &mut show_milestones,
@@ -356,6 +321,7 @@ fn render_playing_frame(
     defender_scroll: &mut f32,
     heroes_scroll: &mut f32,
     show_codex: &mut bool,
+    show_controls: &mut bool,
     codex_scroll: &mut f32,
     show_core_tree: &mut bool,
     show_milestones: &mut bool,
@@ -764,7 +730,12 @@ fn render_playing_frame(
 
     // Core Power tree overlay: opened with 'P' or the BUILD-tab button. Drawn
     // before the Codex so 'C'/'P' don't fight over the same frame.
-    if !*show_core_tree && !*show_codex && !*show_milestones && is_key_pressed(KeyCode::P) {
+    if !*show_core_tree
+        && !*show_codex
+        && !*show_milestones
+        && !*show_controls
+        && is_key_pressed(KeyCode::P)
+    {
         *show_core_tree = true;
     }
     if *show_core_tree {
@@ -780,7 +751,12 @@ fn render_playing_frame(
     }
 
     // Goals overlay: the milestone track, opened with 'K'.
-    if !*show_milestones && !*show_core_tree && !*show_codex && is_key_pressed(KeyCode::K) {
+    if !*show_milestones
+        && !*show_core_tree
+        && !*show_codex
+        && !*show_controls
+        && is_key_pressed(KeyCode::K)
+    {
         *show_milestones = true;
         *milestones_scroll = 0.0;
     }
@@ -789,12 +765,28 @@ fn render_playing_frame(
     }
 
     // Codex overlay: opened with 'C', drawn last so it sits over everything.
-    if !*show_codex && !*show_core_tree && !*show_milestones && is_key_pressed(KeyCode::C) {
+    if !*show_codex
+        && !*show_core_tree
+        && !*show_milestones
+        && !*show_controls
+        && is_key_pressed(KeyCode::C)
+    {
         *show_codex = true;
         *codex_scroll = 0.0;
         state.tutorial_codex_seen = true;
     }
     if *show_codex && draw_codex(state, sw, sh, codex_scroll) {
         *show_codex = false;
+    }
+    if !*show_controls
+        && !*show_codex
+        && !*show_core_tree
+        && !*show_milestones
+        && is_key_pressed(KeyCode::H)
+    {
+        *show_controls = true;
+    }
+    if *show_controls && draw_controls_reference(sw, sh) {
+        *show_controls = false;
     }
 }

@@ -326,6 +326,58 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
     close
 }
 
+/// Keyboard and pointer reference, kept in the game so a keeper never has to
+/// leave a running dungeon to rediscover its controls.
+pub fn draw_controls_reference(sw: f32, sh: f32) -> bool {
+    draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.72));
+    let card = Rect::new((sw - 480.0) * 0.5, (sh - 380.0) * 0.5, 480.0, 380.0);
+    draw_panel(card, Some("Controls"), ARCANE);
+    draw_text_fit(
+        "Keyboard shortcuts",
+        card.x + 22.0,
+        card.y + 54.0,
+        card.w - 44.0,
+        14.0,
+        TEXT,
+    );
+    let shortcuts = [
+        ("Space", "Pause / resume the dungeon"),
+        ("Q", "Cast Core Smite"),
+        ("C", "Open the element Codex"),
+        ("K", "Open the goals track"),
+        ("P", "Open Core Powers"),
+        ("H / Esc", "Close this reference"),
+    ];
+    let mut y = card.y + 82.0;
+    for (key, action) in shortcuts {
+        draw_pill(Rect::new(card.x + 22.0, y - 14.0, 72.0, 22.0), key, SOUL);
+        draw_text_fit(
+            action,
+            card.x + 108.0,
+            y + 1.0,
+            card.w - 130.0,
+            12.0,
+            TEXT_MUTED,
+        );
+        y += 32.0;
+    }
+    draw_text_fit(
+        "Pointer: click rooms to inspect or place an armed defender/upgrade; click drawer tabs and cards to choose actions; scroll long lists.",
+        card.x + 22.0,
+        card.y + 290.0,
+        card.w - 44.0,
+        11.0,
+        TEXT_DIM,
+    );
+    draw_centered_text(
+        "Press H or Esc to return",
+        Rect::new(card.x + 22.0, card.y + 326.0, card.w - 44.0, 26.0),
+        11.0,
+        TEXT_MUTED,
+    );
+    is_key_pressed(KeyCode::H) || is_key_pressed(KeyCode::Escape)
+}
+
 /// Full-screen "the core has fallen" overlay. Returns true when the player
 /// clicks to begin a new dungeon.
 pub fn draw_game_over_overlay(state: &GameState, sw: f32, sh: f32) -> bool {

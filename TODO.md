@@ -416,7 +416,9 @@ On each `resolve_combat` tick:
 - Tooltips on every stat, cost, icon, and abbreviation.
 - Large-dungeon hardening: dungeon-view scroll/zoom, log scrollback and
   filtering, drawer performance with the full monster roster, 20-floor legibility.
-- Full keyboard coverage with an in-game reference; decide on gamepad/Steam Deck.
+- An in-game `[H]` controls reference now documents the live keyboard and
+  pointer interactions. Expand this toward full keyboard navigation and decide
+  on gamepad/Steam Deck support.
 - Accessibility: board tokens and attunements now carry compact text labels in
   addition to their element colours; UI scale and reduced motion are settings.
   Audit every future element VFX and colour-only state against those cues; key
