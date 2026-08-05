@@ -334,6 +334,14 @@ extract unit composition to `ui/dungeon_view/room_art/units.rs` and transient
 visuals to `ui/dungeon_view/room_art/effects.rs`; do not drive the file toward
 the 800-line gate.
 
+Shipped: room tiles now compose defender sprites on the left and invader
+sprites on the right, with compact HP bars, element marks, rival rings/names,
+and an explicit overflow count. Stable unit ids phase cosmetic bobbing without
+touching simulation state. Idle rooms use the idle pose, fights use attack, and
+corridor parties use the walk pose in a three-unit formation. The remaining
+work in this subsection is the named file extraction before more room art is
+added.
+
 - Replace the current defender and adventurer discs with sprites: defenders on
   the left, invaders on the right, facing the room centre. Retain compact health
   bars, monster element cues, rival rings/names and the `+N` overflow rule.
@@ -361,6 +369,14 @@ On each `resolve_combat` tick:
    must remain readable throughout.
 5. Later layer element-distinct colours and trap cues over this same event path
    without changing combat timing or damage rules.
+
+Shipped: `MeleeDust` and side-anchored `HitSpark` are transient effect kinds
+with independent lifetimes; combat emits them alongside its existing damage
+text. Reward paths carry a casualty identity into `MonsterDown` and
+`AdventurerDown`, letting the renderer play the correct death pose before
+falling back to a conspicuous coloured puff. All effects remain unsaved and
+are rendered from room anchors, so neither layout changes nor cosmetics can
+change combat outcomes.
 
 #### Capture, verification and completion gate
 

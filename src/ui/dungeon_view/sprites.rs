@@ -96,21 +96,16 @@ impl DungeonSprites {
         size: f32,
         elapsed: f32,
         flip_x: bool,
+        fighting: bool,
     ) -> bool {
+        let clip = if fighting { &self.attack } else { &self.idle };
         if let Some(frame) = animated_monster_frame(name) {
-            return self.draw_monster_animated_frame(frame, center, size, flip_x, &self.idle);
+            return self.draw_monster_animated_frame(frame, center, size, flip_x, clip);
         }
         if let Some(frame) = animated_full_monster_frame(name) {
-            return self.draw_full_monster_frame(frame, center, size, flip_x, &self.idle);
+            return self.draw_full_monster_frame(frame, center, size, flip_x, clip);
         }
-        self.draw_frame(
-            monster_frame(name),
-            center,
-            size,
-            elapsed,
-            flip_x,
-            &self.idle,
-        )
+        self.draw_frame(monster_frame(name), center, size, elapsed, flip_x, clip)
     }
 
     pub fn draw_adventurer(
@@ -121,8 +116,15 @@ impl DungeonSprites {
         elapsed: f32,
         flip_x: bool,
         walking: bool,
+        fighting: bool,
     ) -> bool {
-        let clip = if walking { &self.walk } else { &self.attack };
+        let clip = if walking {
+            &self.walk
+        } else if fighting {
+            &self.attack
+        } else {
+            &self.idle
+        };
         if let Some(frame) = animated_adventurer_frame(class_name) {
             return self.draw_animated_frame(frame, center, size, elapsed, flip_x, clip);
         }

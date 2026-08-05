@@ -237,6 +237,7 @@ fn draw_room_units(
                     radius * 2.3,
                     phase,
                     false,
+                    fighting,
                 );
             if !drawn_sprite {
                 draw_icon_disc(vec2(x, cy), radius, color, &initial);
@@ -288,6 +289,7 @@ fn draw_room_units(
                 phase,
                 true,
                 false,
+                fighting,
             );
             if !drawn_sprite {
                 draw_icon_disc(vec2(x, cy), radius, WARNING, &initial);
@@ -646,6 +648,7 @@ pub(super) fn draw_party_transit(
             16.0,
             get_time() as f32 + member.id as f32 * 0.173,
             true,
+            false,
             true,
         ) {
             draw_icon_disc(center, 6.5, WARNING, "A");
