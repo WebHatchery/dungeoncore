@@ -91,7 +91,10 @@ pub fn spawn_party(state: &mut GameState) {
         return;
     }
 
-    let spawn_chance = ADVENTURER_SPAWN_CHANCE * state.difficulty.profile().spawn_chance_mult;
+    let visitor_quality = state.visitor_quality();
+    let spawn_chance = ADVENTURER_SPAWN_CHANCE
+        * state.difficulty.profile().spawn_chance_mult
+        * visitor_quality.spawn_chance_mult;
     if !macroquad_toolkit::rng::chance(spawn_chance) {
         return;
     }
@@ -104,6 +107,8 @@ pub fn spawn_party(state: &mut GameState) {
 
     // Higher threat means fewer but stronger parties (see threat_party_shape).
     let (party_size, level_min, level_max) = threat_party_shape(state);
+    let level_min = (level_min + visitor_quality.level_bonus).max(1);
+    let level_max = (level_max + visitor_quality.level_bonus).max(level_min);
     let mut members = Vec::with_capacity(party_size);
 
     // Some slots are filled by veterans returning for another delve.
@@ -116,8 +121,9 @@ pub fn spawn_party(state: &mut GameState) {
     macroquad_toolkit::rng::shuffle(&mut returning);
 
     for slot in 0..party_size {
-        // Roughly half the slots prefer a returning veteran, if any remain.
-        let use_veteran = slot % 2 == 0 && !returning.is_empty();
+        // Reputation controls how strongly a party prefers known veterans.
+        let use_veteran =
+            slot % visitor_quality.returning_slot_stride == 0 && !returning.is_empty();
         if use_veteran {
             let hero_id = returning.pop().unwrap();
             let day = state.day;
@@ -201,8 +207,11 @@ pub fn spawn_party(state: &mut GameState) {
     state.current_raid = Some(Default::default());
 
     state.add_log(LogEntry::adventure(format!(
-        "New adventurer party enters! ({} members)",
-        party.members.len()
+        "{} visitors enter: {} members, levels {}–{}.",
+        state.reputation_band().name(),
+        party.members.len(),
+        level_min,
+        level_max
     )));
 
     // Random entry quote
@@ -433,6 +442,21 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
     let party_size = member_ids.len() as i32;
     let survivors = member_ids.iter().filter(|(_, alive)| *alive).count() as i32;
     let slain = party_size - survivors;
+    let returning_survivors = member_ids
+        .iter()
+        .filter(|(id, alive)| {
+            *alive
+                && state
+                    .known_adventurers
+                    .iter()
+                    .find(|hero| hero.id == *id)
+                    .is_some_and(|hero| hero.delves > 1)
+        })
+        .count() as i32;
+    let raid_loot = state.adventurer_parties[party_idx].loot;
+    let reputation_change =
+        state.apply_raid_reputation(party_floor, survivors, raid_loot, returning_survivors);
+    let reputation_after = state.reputation;
     let tally = state.current_raid.take().unwrap_or_default();
     state.last_raid_summary = Some(crate::game_state::RaidSummary {
         outcome: if survivors == 0 {
@@ -447,7 +471,21 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
         souls_gained: tally.souls_gained,
         gold_gained: tally.gold_gained,
         defenders_lost: tally.defenders_lost,
+        reputation_change,
+        reputation_after,
     });
+    state.add_log(LogEntry::adventure(format!(
+        "Reputation {}{} → {} ({}) — {}.",
+        if reputation_change >= 0 { "+" } else { "" },
+        reputation_change,
+        reputation_after,
+        state.reputation_band().name(),
+        if survivors == 0 {
+            "a wipe makes the dungeon look like a shallow deathtrap"
+        } else {
+            "survivors carry its tale beyond the depths"
+        }
+    )));
 
     for (id, alive) in member_ids {
         if alive {

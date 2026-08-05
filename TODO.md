@@ -223,6 +223,52 @@ The dungeon is still a linear room queue. The edge model (`Room::exits`,
   board and in the log so the fork decision is legible.
 - Tutorial beat teaching the fork; balance pass on choke-point value.
 
+## Reputation & visitor quality — *done*
+
+The existing threat track records how many adventurers the dungeon kills, but
+it does not yet describe what the wider realm thinks of a dungeon that lets
+some parties escape with tales and treasure. Add a separate, player-visible
+**reputation** score that governs the calibre and value of future visitors.
+
+Shipped: `GameState.reputation` is a bounded, backwards-compatible score with
+four named bands (Shunned, Unknown, Noted, Renowned), explicitly independent
+from the death-driven threat/siege meter. At raid settlement a pure outcome
+calculation rewards deep, lucrative escapes and returning witnesses, while a
+shallow wipe hurts standing; the exact signed change, new score and band appear
+in both the raid report and log. The band deterministically changes visitor
+levels, entry frequency and veteran preference before the normal random party
+roll, so no band can lock the dungeon out of visitors. HEROES now says the
+current band, next threshold and concrete visitor effects alongside a plain
+threat distinction. Pure tests pin the outcome and every band profile.
+
+Balance tuning against real play remains the only follow-up.
+
+- Persist a bounded reputation value with an explicit save default and derive a
+  small set of readable bands (for example: Unknown, Noted, Renowned,
+  Infamous). Keep it independent from `total_deaths` / threat: threat measures
+  the realm's immediate hostility and still culminates in a siege; reputation
+  measures whether worthwhile adventurers choose to visit.
+- Update reputation only when a raid concludes. Escapes that reached deeper
+  rooms, carried loot, or include returning heroes increase it; shallow,
+  instant wipes decrease it. The exact result should be shown in the raid
+  summary and written to the log, so players can understand why the next
+  visitors changed.
+- Feed the reputation band into `spawn_party` deterministically: better bands
+  bias parties toward higher levels, stronger gear, and greater potential
+  presence income/loot, while poor reputation reduces visit frequency or sends
+  weak, low-value parties. Never make it a hard lock that leaves the dungeon
+  with no visitors.
+- Make the trade-off intentional: rapid kills bank the current death payout
+  but end presence income, raise siege threat, and harm the long-term visitor
+  pool; a deep, dangerous escape builds reputation and draws more rewarding
+  future raids.
+- Surface the current band, its next threshold, and the incoming-party preview
+  in the resource panel or HEROES tab. The wording must distinguish reputation
+  from the existing threat meter and say which concrete spawn effects it has.
+- Add pure simulation tests for reputation changes at raid resolution and for
+  party-level/frequency bias at each band. Tune against all difficulty presets
+  after the existing mana-positive-visit and room-capacity balance passes.
+
 ## Art
 
 ### Little creatures fighting — *planned next*

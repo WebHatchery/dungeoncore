@@ -14,7 +14,7 @@ use macroquad_toolkit::colors::with_alpha;
 /// dismissed.
 pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
     let w = 300.0_f32.min(area.w - 24.0);
-    let h = 184.0;
+    let h = 202.0;
     let x = area.x + (area.w - w) * 0.5;
     let y = area.y + 16.0;
     let card = Rect::new(x, y, w, h);
@@ -70,6 +70,18 @@ pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
                 DANGER
             } else {
                 TEXT_MUTED
+            },
+        ),
+        (
+            "Reputation",
+            format!(
+                "{:+} · {}",
+                summary.reputation_change, summary.reputation_after
+            ),
+            if summary.reputation_change >= 0 {
+                EMERALD
+            } else {
+                DANGER
             },
         ),
     ];

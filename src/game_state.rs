@@ -5,9 +5,11 @@ use std::collections::HashMap;
 mod effects;
 mod floor;
 pub(crate) mod heroes;
+mod reputation;
 pub use effects::{EffectAnchor, EffectKind, RoomEffect};
 pub use floor::Floor;
 pub use heroes::{Adventurer, AdventurerParty, Condition, Equipment, HeroRecord, HeroStatus};
+pub use reputation::{ReputationBand, VisitorQuality, REPUTATION_MAX, REPUTATION_MIN};
 
 /// A ready (zero-duration) cooldown, used as the `#[serde(skip)]` default for
 /// transient fields — `Cooldown` has no `Default` impl of its own.
@@ -224,6 +226,8 @@ pub struct RaidSummary {
     pub souls_gained: i32,
     pub gold_gained: i32,
     pub defenders_lost: i32,
+    pub reputation_change: i32,
+    pub reputation_after: i32,
 }
 
 /// Log entry type
@@ -297,6 +301,10 @@ pub struct GameState {
     pub threat_warned: i32,
     #[serde(default)]
     pub raids_completed: i32,
+    /// What the realm expects from a visit. Unlike threat, it is earned from
+    /// raid outcomes and changes who chooses to enter rather than siege timing.
+    #[serde(default)]
+    pub reputation: i32,
 
     // Endgame: the core, sieges, and prestige
     #[serde(default = "default_core_hp")]
@@ -402,6 +410,7 @@ impl GameState {
             total_deaths: 0,
             threat_warned: 0,
             raids_completed: 0,
+            reputation: 0,
             core_hp: 500,
             core_max_hp: 500,
             siege_active: false,
@@ -554,6 +563,29 @@ impl GameState {
             d if d >= 10 => 1,
             _ => 0,
         }
+    }
+
+    /// Readable realm standing, separate from the death-driven threat meter.
+    pub fn reputation_band(&self) -> ReputationBand {
+        reputation::band(self.reputation)
+    }
+
+    /// Deterministic adjustments for the next visitor party.
+    pub fn visitor_quality(&self) -> VisitorQuality {
+        reputation::visitor_quality(self.reputation)
+    }
+
+    /// Apply a concluded raid's standing change and keep the value bounded.
+    pub fn apply_raid_reputation(
+        &mut self,
+        floor: i32,
+        survivors: i32,
+        loot: i32,
+        returning_survivors: i32,
+    ) -> i32 {
+        let change = reputation::raid_change(floor, survivors, loot, returning_survivors);
+        self.reputation = (self.reputation + change).clamp(REPUTATION_MIN, REPUTATION_MAX);
+        change
     }
 
     /// Get the deepest floor

@@ -27,11 +27,48 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
 
     draw_section_title(rect, "HEROES", "Everyone who has delved.");
 
+    let quality = state.visitor_quality();
+    let band = state.reputation_band();
+    let next = band
+        .next_threshold()
+        .map(|score| format!("next at {score}"))
+        .unwrap_or_else(|| "highest band".to_string());
+    draw_card(
+        Rect::new(rect.x, rect.y + 54.0, rect.w, 32.0),
+        with_alpha(WARNING, 0.08),
+        with_alpha(WARNING, 0.28),
+    );
+    draw_text_fit(
+        &format!(
+            "REPUTATION: {} ({}) · {}",
+            band.name(),
+            state.reputation,
+            next
+        ),
+        rect.x + 8.0,
+        rect.y + 67.0,
+        rect.w - 16.0,
+        10.0,
+        WARNING,
+    );
+    draw_text_fit(
+        &format!(
+            "Visitors: L{:+}, {:.0}% frequency · threat still measures siege danger",
+            quality.level_bonus,
+            quality.spawn_chance_mult * 100.0
+        ),
+        rect.x + 8.0,
+        rect.y + 80.0,
+        rect.w - 16.0,
+        9.0,
+        TEXT_MUTED,
+    );
+
     if state.known_adventurers.is_empty() {
         draw_text_fit(
             "No adventurers have entered yet. Open the dungeon to draw them in.",
             rect.x,
-            rect.y + 80.0,
+            rect.y + 100.0,
             rect.w,
             12.0,
             TEXT_DIM,
@@ -58,7 +95,7 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
     draw_text_fit(
         &format!("Inside {}  Free {}  Fallen {}", inside, alive, dead),
         rect.x,
-        rect.y + 66.0,
+        rect.y + 104.0,
         rect.w,
         11.0,
         TEXT_MUTED,
@@ -79,7 +116,7 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
             .then(hb.delves.cmp(&ha.delves))
     });
 
-    let list_top = rect.y + 86.0;
+    let list_top = rect.y + 116.0;
     let list_h = (rect.y + rect.h - list_top).max(0.0);
     let row_h = 44.0;
     let visible = (list_h / row_h) as usize;

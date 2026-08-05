@@ -555,6 +555,8 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                 souls_gained: 1,
                 gold_gained: 0,
                 defenders_lost: 1,
+                reputation_change: -12,
+                reputation_after: -12,
             });
         }
         _ => {
