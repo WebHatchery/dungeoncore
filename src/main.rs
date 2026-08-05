@@ -76,6 +76,11 @@ async fn main() {
             ANIMATED_MONSTER_SHEET_PATH,
             "animated monster",
         ),
+        (
+            ANIMATED_FULL_MONSTER_SHEET_KEY,
+            ANIMATED_FULL_MONSTER_SHEET_PATH,
+            "full animated monster",
+        ),
     ] {
         if let Err(e) = assets
             .load_texture_with_filter(key, path, FilterMode::Nearest)

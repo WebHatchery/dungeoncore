@@ -295,10 +295,11 @@ transient and absent from saves.
   sheets merely to achieve coverage.
 - Give each sheet small `idle`, `walk`, `attack` and `death` clips. The first
   vertical slice is now shipped: alpha-ready 4×4 Goblin/Warrior/Rogue/Mage and
-  Cleric/Ranger/Paladin/Alchemist atlases supply all four poses. The complete
-  adventurer roster now resolves to a pose atlas; monster species beyond the
-  two current sheets retain their existing pose/fallback path until their art
-  slices arrive.
+  Cleric/Ranger/Paladin/Alchemist, Slime/Undead/Beast/Demon and
+  Goblinoid/Draconic/Elemental/Construct atlases supply all four poses. Every
+  current adventurer class and monster species now resolves to a pose atlas;
+  evolved forms intentionally share their species silhouette with palette,
+  equipment, and scale variation.
 - Keep the existing coloured initial discs as a conspicuous missing-asset
   fallback. A broken mapping must log clearly and never make a combatant
   invisible.
