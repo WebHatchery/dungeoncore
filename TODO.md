@@ -222,7 +222,8 @@ room construction keeps those routes intact.
   chosen edge instead of `position → position + 1`. — *done*
 - Surface the party's chosen route and its reason (loot bait vs. beeline) on the
   board and in the log so the fork decision is legible. — *done*
-- Tutorial beat teaching the fork; balance pass on choke-point value.
+- Tutorial beat teaching the fork — *done*. Balance pass on choke-point value
+  remains open for playtesting.
 
 ## Reputation & visitor quality — *done*
 

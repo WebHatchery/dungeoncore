@@ -20,7 +20,7 @@ struct StepDef {
     anchor: TutorialAnchor,
 }
 
-const STEPS: [StepDef; 6] = [
+const STEPS: [StepDef; 7] = [
     StepDef {
         title: "Build a room",
         instruction: "Open the BUILD tab on the left (or click the glowing room on the map) to add a combat room.",
@@ -40,6 +40,11 @@ const STEPS: [StepDef; 6] = [
         title: "Set a trap",
         instruction: "Select a room, then apply a Trap upgrade from the right panel.",
         anchor: TutorialAnchor::Board,
+    },
+    StepDef {
+        title: "Split the route",
+        instruction: "With the dungeon safe, select a room with one exit and use Branch from here in BUILD. Loot can bait a party down one route while defenders wait on the other.",
+        anchor: TutorialAnchor::Drawer,
     },
     StepDef {
         title: "Open the dungeon",
@@ -93,14 +98,21 @@ fn step_complete(state: &GameState, step_idx: usize) -> bool {
             .iter()
             .flat_map(|floor| &floor.rooms)
             .any(|room| room.has_upgrade_type(RoomUpgradeType::Trap)),
+        // Branch any route: a fork is a deliberate build choice, not a new
+        // combat rule, so it is taught after the basic trap lever.
+        4 => state
+            .floors
+            .iter()
+            .flat_map(|floor| &floor.rooms)
+            .any(|room| room.exits.len() > 1),
         // Open the dungeon: it is open, has visitors, or a raid already ran.
-        4 => {
+        5 => {
             state.status == DungeonStatus::Open
                 || !state.adventurer_parties.is_empty()
                 || state.raids_completed >= 1
         }
         // Survive a raid: at least one party has come and gone.
-        5 => state.raids_completed >= 1,
+        6 => state.raids_completed >= 1,
         _ => true,
     }
 }
