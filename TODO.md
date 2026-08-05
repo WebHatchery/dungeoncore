@@ -400,8 +400,9 @@ change combat outcomes.
 
 #### Later art following the creature pass
 
-- Trap, upgrade and attunement art; themed room interiors with floor-depth
-  theming; the core room as a visual centrepiece.
+- Trap, upgrade and attunement art remain open. Room interiors now gain a
+  gradual cool arcane wash by floor depth while retaining their room-type cue;
+  the core remains the visual centrepiece.
 - Element-distinct VFX beyond the melee slice (fire, frost, poison, trap
   triggers, siege arrival and prestige).
 - Cohesive UI kit replacing the programmer-art panels and emoji glyphs.

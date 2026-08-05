@@ -489,6 +489,18 @@ fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, ic
         Color::new(0.0, 0.0, 0.0, 0.18),
     );
 
+    // Depth is a visual material change, not a stat or simulation effect:
+    // shallow halls keep their stone, while the lower dungeon gradually takes
+    // on the Core's cool arcane light.
+    let depth = ((room.floor_number - 1).max(0) as f32 / 19.0).clamp(0.0, 1.0);
+    let depth_tint = Color::new(
+        0.10 + depth * 0.17,
+        0.16 + depth * 0.03,
+        0.28 + depth * 0.30,
+        depth * 0.26,
+    );
+    draw_rectangle(wall.x, wall.y, wall.w, wall.h, depth_tint);
+
     let brick = Color::new(0.20, 0.22, 0.25, 0.13);
     let mut by = wall.y + 8.0;
     while by < wall.y + wall.h - 8.0 {
