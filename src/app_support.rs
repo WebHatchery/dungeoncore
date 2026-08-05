@@ -18,6 +18,7 @@ pub enum AppScreen {
     ConfirmSlotOverwrite,
     NewGameSetup,
     Settings,
+    Keybindings,
     Playing,
 }
 

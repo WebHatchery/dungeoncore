@@ -82,6 +82,7 @@ pub fn apply_title_settings_action(
             };
             Some(format!("New-run speed: {}x.", settings.default_speed))
         }
+        TitleSettingsAction::OpenKeybindings => return (None, false),
         TitleSettingsAction::Back => return (None, true),
         TitleSettingsAction::None => return (None, false),
     };

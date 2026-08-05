@@ -405,7 +405,10 @@ On each `resolve_combat` tick:
 
 - Settings now persists fullscreen, UI scale, reduced motion and autosave
   cadence, default run speed, and audio preferences through
-  `macroquad-toolkit::settings::GameSettings`. Key rebinding remains open.
+  `macroquad-toolkit::settings::GameSettings`. Keyboard bindings for pause,
+  room navigation, Smite, and all overlays persist separately across native and
+  WebGL, can be reassigned from Settings, swap cleanly on conflicts, and fall
+  back safely from malformed saved values. — *done*
 - Save hardening: three title-screen slots now carry the saved day, difficulty,
   deepest floor, prestige, and open/closed state; the wrapper records the Cargo
   version and a new run confirms before replacing an occupied slot. A valid

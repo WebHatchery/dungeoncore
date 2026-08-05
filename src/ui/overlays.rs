@@ -328,7 +328,11 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
 
 /// Keyboard and pointer reference, kept in the game so a keeper never has to
 /// leave a running dungeon to rediscover its controls.
-pub fn draw_controls_reference(sw: f32, sh: f32) -> bool {
+pub fn draw_controls_reference(
+    sw: f32,
+    sh: f32,
+    bindings: &crate::keybindings::KeyBindings,
+) -> bool {
     draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.72));
     let card = Rect::new((sw - 480.0) * 0.5, (sh - 380.0) * 0.5, 480.0, 380.0);
     draw_panel(card, Some("Controls"), ARCANE);
@@ -340,14 +344,27 @@ pub fn draw_controls_reference(sw: f32, sh: f32) -> bool {
         14.0,
         TEXT,
     );
+    use crate::keybindings::BindingAction;
     let shortcuts = [
-        ("Space", "Pause / resume the dungeon"),
+        (
+            bindings.label(BindingAction::Pause),
+            "Pause / resume the dungeon",
+        ),
         ("Arrow keys", "Inspect connected rooms and nearby floors"),
-        ("Q", "Cast Core Smite"),
-        ("C", "Open the element Codex"),
-        ("K", "Open the goals track"),
-        ("P", "Open Core Powers"),
-        ("H / Esc", "Close this reference"),
+        (bindings.label(BindingAction::Smite), "Cast Core Smite"),
+        (
+            bindings.label(BindingAction::Codex),
+            "Open the element Codex",
+        ),
+        (bindings.label(BindingAction::Goals), "Open the goals track"),
+        (
+            bindings.label(BindingAction::CorePowers),
+            "Open Core Powers",
+        ),
+        (
+            bindings.label(BindingAction::Help),
+            "Close this reference (Esc also works)",
+        ),
     ];
     let mut y = card.y + 82.0;
     for (key, action) in shortcuts {
@@ -371,12 +388,15 @@ pub fn draw_controls_reference(sw: f32, sh: f32) -> bool {
         TEXT_DIM,
     );
     draw_centered_text(
-        "Press H or Esc to return",
+        &format!(
+            "Press {} or Esc to return",
+            bindings.label(BindingAction::Help)
+        ),
         Rect::new(card.x + 22.0, card.y + 326.0, card.w - 44.0, 26.0),
         11.0,
         TEXT_MUTED,
     );
-    is_key_pressed(KeyCode::H) || is_key_pressed(KeyCode::Escape)
+    bindings.pressed(BindingAction::Help) || is_key_pressed(KeyCode::Escape)
 }
 
 /// Full-screen "the core has fallen" overlay. Returns true when the player

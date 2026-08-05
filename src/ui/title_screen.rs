@@ -32,6 +32,7 @@ pub enum TitleSettingsAction {
     ToggleReducedMotion,
     AdjustAutosave(i8),
     AdjustDefaultSpeed,
+    OpenKeybindings,
     Back,
 }
 
@@ -302,9 +303,9 @@ pub fn draw_title_settings_screen(
     let panel_w = sw.min(1280.0) * 0.32;
     let panel = Rect::new(
         (sw - panel_w.clamp(320.0, 430.0)) * 0.5,
-        (sh - 674.0) * 0.5,
+        (sh - 728.0) * 0.5,
         panel_w.clamp(320.0, 430.0),
-        674.0,
+        728.0,
     );
     draw_title_panel(panel);
 
@@ -401,7 +402,15 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustDefaultSpeed;
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 554.0, button_w, 48.0),
+        Rect::new(button_x, panel.y + 536.0, button_w, 42.0),
+        "Keyboard bindings",
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::OpenKeybindings;
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 590.0, button_w, 48.0),
         "Back",
         true,
         ButtonTone::Ghost,
