@@ -1,6 +1,7 @@
 //! BUILD tab: next-room summary, the build button, and soul-bought core powers.
 
 use macroquad::prelude::*;
+use macroquad_toolkit::input::is_hovered_rect;
 
 use crate::data::constants::{get_room_cost, MAX_ROOMS_PER_FLOOR};
 use crate::game_state::{GameState, RoomType};
@@ -59,15 +60,26 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
         12.0,
         if can_build { EMERALD } else { TEXT_DIM },
     );
+    if is_hovered_rect(card) {
+        macroquad_toolkit::ui::draw_tooltip(
+            &format!(
+                "{}\n{}\nCost: {cost} mana. Rooms can only be built between raids.",
+                label, detail
+            ),
+            vec2(card.x, card.y + card.h),
+        );
+    }
 
-    let build_clicked = draw_command_button(
-        Rect::new(rect.x, card.y + card.h + 16.0, rect.w, 42.0),
-        "Build",
-        ButtonTone::Arcane,
-        can_build,
-    );
+    let build_rect = Rect::new(rect.x, card.y + card.h + 16.0, rect.w, 42.0);
+    let build_clicked = draw_command_button(build_rect, "Build", ButtonTone::Arcane, can_build);
     if build_clicked {
         return BuildTabAction::Build;
+    }
+    if is_hovered_rect(build_rect) {
+        macroquad_toolkit::ui::draw_tooltip(
+            "Build the next room shown above. A boss chamber appears at the end of each floor; the next build then opens a deeper floor.",
+            vec2(build_rect.x, build_rect.y + build_rect.h),
+        );
     }
 
     let branch = state.selected_room.and_then(|(floor, room)| {
@@ -77,13 +89,20 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
     });
     let branch_y = card.y + card.h + 66.0;
     if let Some(((floor, room), branch_cost)) = branch {
+        let branch_rect = Rect::new(rect.x, branch_y, rect.w, 34.0);
         if draw_command_button(
-            Rect::new(rect.x, branch_y, rect.w, 34.0),
+            branch_rect,
             &format!("Branch from room {room} · {branch_cost} mana"),
             ButtonTone::Primary,
             state.mana >= branch_cost,
         ) {
             return BuildTabAction::Branch;
+        }
+        if is_hovered_rect(branch_rect) {
+            macroquad_toolkit::ui::draw_tooltip(
+                "Create a parallel route that rejoins the selected room's successor. Adventurers can choose between the two paths; reshaping is blocked during a raid.",
+                vec2(branch_rect.x, branch_rect.y + branch_rect.h),
+            );
         }
         draw_text_fit(
             &format!("Parallel route on floor {floor}; both paths rejoin ahead."),
@@ -129,13 +148,20 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
         11.0,
         TEXT_MUTED,
     );
+    let powers_rect = Rect::new(rect.x, y + 26.0, rect.w, 40.0);
     if draw_command_button(
-        Rect::new(rect.x, y + 26.0, rect.w, 40.0),
+        powers_rect,
         "Core Power Tree  [P]",
         ButtonTone::Arcane,
         true,
     ) {
         return BuildTabAction::OpenCorePowers;
+    }
+    if is_hovered_rect(powers_rect) {
+        macroquad_toolkit::ui::draw_tooltip(
+            "Spend souls earned from bosses on permanent Core Powers. Their effects survive a siege and reshape the long-term dungeon.",
+            vec2(powers_rect.x, powers_rect.y + powers_rect.h),
+        );
     }
 
     // Ongoing gold sink + mana safety-valve: channel surplus gold into mana.
@@ -158,13 +184,20 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
             11.0,
             TEXT_MUTED,
         );
+        let channel_rect = Rect::new(rect.x, cy + 26.0, rect.w, 40.0);
         if draw_command_button(
-            Rect::new(rect.x, cy + 26.0, rect.w, 40.0),
+            channel_rect,
             "Channel Gold -> Mana",
             ButtonTone::Primary,
             can_channel_gold(state),
         ) {
             return BuildTabAction::ChannelGold;
+        }
+        if is_hovered_rect(channel_rect) {
+            macroquad_toolkit::ui::draw_tooltip(
+                "Convert 100 gold into 20 mana. This is an inefficient emergency reserve: adventurers and room income remain the main mana source.",
+                vec2(channel_rect.x, channel_rect.y + channel_rect.h),
+            );
         }
     }
 

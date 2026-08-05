@@ -421,8 +421,9 @@ On each `resolve_combat` tick:
 - HUD resource/threat/prestige cards and Core Smite now explain themselves on
   hover through the shared tooltip primitive. Monster and upgrade drawer rows
   also explain their costs, effects/traits, placement rules, and unavailable
-  state. Extend coverage to the remaining drawer icons, compact stats, and
-  abbreviations.
+  state. Build controls now explain room progression, branching, Core Powers,
+  and gold conversion. Extend coverage to the remaining drawer icons, compact
+  stats, and abbreviations.
 - Large-dungeon hardening: an open inspector now collapses the drawer rail on
   narrower desktops so the board retains usable room width. Dungeon-view
   scroll/zoom, full-roster drawer performance, and 20-floor legibility remain
