@@ -428,7 +428,8 @@ On each `resolve_combat` tick:
   startup asset or save work begins; browser panics retain their console trace.
 - Seeded per-run RNG for reproducible bug reports and seeded challenge runs.
 - Release pipeline on top of the existing fmt/clippy/test CI: per-platform
-  builds, versioned artifacts, a build stamp visible on the title screen.
+  builds, versioned artifacts, and a title-screen Cargo version stamp are now
+  present; wire the checks into a release pipeline.
 
 ## QA, balance & business
 

@@ -10,6 +10,7 @@ use macroquad_toolkit::colors::with_alpha;
 
 pub const TITLE_BACKGROUND_KEY: &str = "title_background";
 pub const TITLE_BACKGROUND_PATH: &str = "assets/title_screen.png";
+const BUILD_STAMP: &str = concat!("Dungeon Core v", env!("CARGO_PKG_VERSION"));
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TitleAction {
@@ -118,6 +119,7 @@ pub fn draw_title_screen(
     if let Some(message) = notice {
         draw_title_notice(message, sw, sh);
     }
+    draw_text_fit(BUILD_STAMP, 18.0, sh - 16.0, 180.0, 10.0, TEXT_DIM);
 
     TitleAction::None
 }
