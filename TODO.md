@@ -503,20 +503,6 @@ change combat outcomes.
   them to generated GitHub release notes. The title screen already carries the
   Cargo version stamp.
 
-## QA, balance & business
-
-- Compatibility matrix: min spec, multiple GPU vendors, high-DPI, ultrawide,
-  60/144 Hz tick behaviour.
-- Positioning and pricing; Steam page live early for wishlists; trailer; demo
-  build.
-- Name check — "Dungeon Core" is generic and heavily used in LitRPG; search
-  Steam and the trademark registers before spending on marketing.
-- Legal/admin: entity and tax setup, EULA, privacy policy if telemetry ships,
-  third-party licence audit including fonts and generated-art tool terms,
-  age-rating questionnaires.
-- Post-launch plan: patch cadence, community channel, a native bug-report path
-  to match the web widget, and a 1.x content roadmap.
-
 ## Testing & code health
 
 - Input-state tests: the authoritative pause/capture simulation gate now has a
