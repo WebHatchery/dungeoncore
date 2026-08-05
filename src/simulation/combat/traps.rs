@@ -198,7 +198,7 @@ pub(super) fn resolve_trap(
 
 /// Re-arm disarmed traps between raids; each costs a quarter of its
 /// original mana price. Unaffordable traps stay down until next time.
-pub fn rearm_traps(state: &mut GameState) {
+pub fn rearm_traps(state: &mut GameState) -> i32 {
     let mut rearmed: Vec<(String, i32)> = Vec::new();
     for floor_idx in 0..state.floors.len() {
         for room_idx in 0..state.floors[floor_idx].rooms.len() {
@@ -222,10 +222,12 @@ pub fn rearm_traps(state: &mut GameState) {
             }
         }
     }
+    let spent = rearmed.iter().map(|(_, cost)| *cost).sum();
     for (name, cost) in rearmed {
         state.add_log(LogEntry::building(format!(
             "Re-armed {} for {} mana.",
             name, cost
         )));
     }
+    spent
 }

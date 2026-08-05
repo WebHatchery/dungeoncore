@@ -416,8 +416,11 @@ fn handle_retreating_parties(state: &mut GameState) {
 
     // Respawn monsters and re-arm sprung traps once the dungeon is clear
     if state.adventurer_parties.is_empty() {
-        super::monsters::respawn_monsters(state);
-        super::combat::rearm_traps(state);
+        let recovery_cost =
+            super::monsters::respawn_monsters(state) + super::combat::rearm_traps(state);
+        if let Some(summary) = &mut state.last_raid_summary {
+            summary.mana_recovery_cost = recovery_cost;
+        }
     }
 }
 
@@ -469,6 +472,7 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
         slain,
         survivors,
         mana_gained: tally.mana_gained,
+        mana_recovery_cost: 0,
         souls_gained: tally.souls_gained,
         gold_gained: tally.gold_gained,
         defenders_lost: tally.defenders_lost,

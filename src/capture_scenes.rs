@@ -552,6 +552,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                 slain: 4,
                 survivors: 0,
                 mana_gained: 60,
+                mana_recovery_cost: 15,
                 souls_gained: 1,
                 gold_gained: 0,
                 defenders_lost: 1,

@@ -54,9 +54,8 @@ Still open:
 - The `.min(state.max_mana)` clamp is kept — overflow is lost by design, which
   is what makes a cap upgrade a real choice. Revisit only if tuning shows the
   early cap eating a meaningful share of a raid's income.
-- The raid report still shows only "Mana earned"; it never shows what the raid
-  *cost* in respawns and re-arms, so the player cannot yet see the net. Worth a
-  pass once the rates settle.
+- The raid report now shows mana earned, recovery cost (respawns + re-arms),
+  and the resulting net. — *done*
 
 ### Adventurer journal (follow the NPCs) — *done*
 

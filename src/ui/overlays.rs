@@ -14,7 +14,7 @@ use macroquad_toolkit::colors::with_alpha;
 /// dismissed.
 pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
     let w = 300.0_f32.min(area.w - 24.0);
-    let h = 202.0;
+    let h = 218.0;
     let x = area.x + (area.w - w) * 0.5;
     let y = area.y + 16.0;
     let card = Rect::new(x, y, w, h);
@@ -57,6 +57,24 @@ pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
     // Income the dungeon banked, plus what it cost in defenders.
     let rows = [
         ("Mana earned", format!("+{}", summary.mana_gained), MANA),
+        (
+            "Recovery cost",
+            format!("-{}", summary.mana_recovery_cost),
+            if summary.mana_recovery_cost > 0 {
+                DANGER
+            } else {
+                TEXT_MUTED
+            },
+        ),
+        (
+            "Mana net",
+            format!("{:+}", summary.mana_gained - summary.mana_recovery_cost),
+            if summary.mana_gained >= summary.mana_recovery_cost {
+                EMERALD
+            } else {
+                DANGER
+            },
+        ),
         ("Gold banked", format!("+{}", summary.gold_gained), TREASURE),
         (
             "Souls harvested",

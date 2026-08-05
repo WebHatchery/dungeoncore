@@ -223,6 +223,8 @@ pub struct RaidSummary {
     pub slain: i32,
     pub survivors: i32,
     pub mana_gained: i32,
+    /// Mana paid after the raid to restore dead defenders and sprung traps.
+    pub mana_recovery_cost: i32,
     pub souls_gained: i32,
     pub gold_gained: i32,
     pub defenders_lost: i32,

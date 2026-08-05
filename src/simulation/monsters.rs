@@ -178,9 +178,9 @@ pub fn remove_monster(
 }
 
 /// Respawn all dead monsters (only when no adventurers present)
-pub fn respawn_monsters(state: &mut GameState) {
+pub fn respawn_monsters(state: &mut GameState) -> i32 {
     if !state.adventurer_parties.is_empty() {
-        return;
+        return 0;
     }
 
     // Undead identity: the undead rise again for free and whole; the living must
@@ -217,6 +217,7 @@ pub fn respawn_monsters(state: &mut GameState) {
             }
         }
     }
+    let spent = state.mana - mana;
     state.mana = mana;
 
     let total = free + paid + wounded;
@@ -235,6 +236,7 @@ pub fn respawn_monsters(state: &mut GameState) {
         msg.push('.');
         state.add_log(LogEntry::system(msg));
     }
+    spent
 }
 
 /// Unlock a monster species
