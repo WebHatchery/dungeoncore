@@ -114,10 +114,8 @@ pub(super) fn draw_room_tile(
             // A combat room refusing the armed thing says which kind of "no"
             // it is: out of slots, or already carrying one of these.
             if room.room_type == RoomType::Normal || room.room_type == RoomType::Boss {
-                let refusal = if state.selected_monster.is_some()
-                    && crate::data::constants::room_is_full(room)
-                {
-                    Some("Full")
+                let refusal = if let Some(monster) = &state.selected_monster {
+                    crate::simulation::monsters::monster_placement_refusal(room, monster)
                 } else if state
                     .selected_upgrade
                     .as_deref()

@@ -501,8 +501,10 @@ fn placement_state(state: &GameState, room: &Room) -> PlacementState {
 
     // A monster wants an empty slot; an upgrade wants a room that does not
     // already hold one of its kind. Both light up the same way.
-    if state.selected_monster.is_some() {
-        return if combat_room && !crate::data::constants::room_is_full(room) {
+    if let Some(monster) = &state.selected_monster {
+        return if combat_room
+            && crate::simulation::monsters::monster_placement_refusal(room, monster).is_none()
+        {
             PlacementState::Valid
         } else {
             PlacementState::Invalid

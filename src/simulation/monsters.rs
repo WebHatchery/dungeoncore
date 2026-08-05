@@ -6,6 +6,36 @@ use std::collections::BTreeMap;
 mod swap;
 pub use swap::{plan_swap, swap_monster, SwapKind};
 
+/// Why an armed monster cannot take a free room slot. Boss rooms reserve their
+/// final ordinary slot for one boss-only defender until that throne is filled.
+pub fn monster_placement_refusal(
+    room: &crate::game_state::Room,
+    monster_name: &str,
+) -> Option<&'static str> {
+    let template = get_monster_template(monster_name)?;
+    let is_boss_room = room.room_type == RoomType::Boss;
+    if template.boss_only && !is_boss_room {
+        return Some("Boss only");
+    }
+    let capacity = crate::data::constants::room_capacity(room);
+    let has_boss = room.monsters.iter().any(|monster| {
+        get_monster_template(&monster.type_name)
+            .map(|occupant| occupant.boss_only)
+            .unwrap_or(false)
+    });
+    if template.boss_only && has_boss {
+        return Some("Boss set");
+    }
+    if is_boss_room
+        && !template.boss_only
+        && !has_boss
+        && room.monsters.len() >= capacity.saturating_sub(1)
+    {
+        return Some("Reserved");
+    }
+    (room.monsters.len() >= capacity).then_some("Full")
+}
+
 /// Place a monster in a room
 pub fn place_monster(
     state: &mut GameState,
@@ -56,11 +86,13 @@ pub fn place_monster(
         ));
     }
 
-    // Slots are scarce and only depth buys more. A full room can still be
-    // improved — by replacing an occupant — but it cannot be added to.
-    if crate::data::constants::room_is_full(room) {
+    // Slots are scarce and a boss room keeps its final ordinary slot vacant
+    // until a boss-only defender claims the throne.
+    if let Some(refusal) = monster_placement_refusal(room, monster_name) {
         return Err(format!(
-            "This room is full ({} of {} slots). Dig deeper or replace a defender.",
+            "This room cannot take {} ({}; {} of {} slots).",
+            monster_name,
+            refusal.to_lowercase(),
             room.monsters.len(),
             crate::data::constants::room_capacity(room)
         ));
@@ -448,6 +480,24 @@ mod tests {
         let err = place_monster(&mut s, 1, 1, "Goblin").expect_err("room is full");
         assert!(err.contains("full"), "{err}");
         assert_eq!(s.floors[0].rooms[1].monsters.len(), capacity);
+    }
+
+    #[test]
+    fn boss_rooms_hold_one_throne_slot_for_a_boss_unique() {
+        let mut s = dungeon_with_a_combat_room();
+        let room = &mut s.floors[0].rooms[1];
+        room.room_type = RoomType::Boss;
+        // Use a scaled floor so this throne has two total slots: one guard and
+        // one reserved unique. The fixture need not alter the floor graph.
+        room.floor_number = 3;
+        let king = crate::data::monsters::get_monster_template("Goblin King").unwrap();
+        s.unlocked_monsters.push(king.name.clone());
+
+        place_monster(&mut s, 1, 1, "Goblin").expect("one ordinary guard fits");
+        let reserved = place_monster(&mut s, 1, 1, "Goblin").expect_err("throne held open");
+        assert!(reserved.contains("reserved"), "{reserved}");
+        place_monster(&mut s, 1, 1, "Goblin King").expect("unique claims throne");
+        assert_eq!(s.floors[0].rooms[1].monsters.len(), 2);
     }
 
     #[test]

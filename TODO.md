@@ -199,8 +199,9 @@ Still open:
   build resource, so adding a floor competes with improving what is placed.
   Check the siege and threat curves still hold when the early dungeon fields two
   defenders per room instead of an unbounded pile.
-- Whether boss rooms should reserve one of their slots for a boss-only monster,
-  rather than just being one slot smaller.
+- Boss rooms now reserve their final ordinary slot for exactly one boss-only
+  defender. The board says "Reserved" until the throne is claimed, then opens
+  the remaining capacity normally; a second boss-only defender says "Boss set".
 - Capacity gates *player placement* only. `SplitOnDeath`
   (`src/simulation/combat.rs:149`) still spawns over the cap mid-fight, which is
   the trait working as intended — revisit only if a split-heavy room gets
