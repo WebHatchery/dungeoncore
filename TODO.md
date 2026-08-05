@@ -424,7 +424,8 @@ On each `resolve_combat` tick:
 
 - Performance: soak-test a max-size dungeon at 4× speed, profile the per-tick
   sim, long-session leak check.
-- Top-level panic hook that writes a crash log and preserves the save.
+- Top-level panic hook now writes a native crash log beside the save before
+  startup asset or save work begins; browser panics retain their console trace.
 - Seeded per-run RNG for reproducible bug reports and seeded challenge runs.
 - Release pipeline on top of the existing fmt/clippy/test CI: per-platform
   builds, versioned artifacts, a build stamp visible on the title screen.

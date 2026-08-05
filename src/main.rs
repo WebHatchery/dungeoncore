@@ -60,6 +60,10 @@ fn reset_timers(last_time_advance: &mut f64, last_adventure_tick: &mut f64, last
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    // Install before loading assets or saves so even startup failures leave a
+    // report beside the player's untouched save file on native builds.
+    macroquad_toolkit::crash::install_crash_log("dungeon_core");
+
     let mut assets = AssetManager::new();
     let _ = assets.load_asset_pack("assets.zip").await;
     if let Err(e) = assets
