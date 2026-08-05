@@ -7,7 +7,7 @@ use macroquad::audio::{
 use macroquad_toolkit::synth::{render_wav, SynthConfig, Voice, Wave};
 use std::cell::Cell;
 
-use crate::game_state::{GameState, SoundEvent};
+use crate::game_state::{EffectKind, GameState, SoundEvent};
 
 #[derive(Clone, Copy)]
 pub enum SoundCue {
@@ -220,6 +220,13 @@ impl GameAudio {
     /// Select and loop the appropriate renderer-owned music layer. Nothing in
     /// this method feeds back into the simulation or its saved state.
     pub fn update_music(&self, state: &GameState, volume: f32) {
+        // Effects are renderer-only but let us make space for impacts without
+        // touching combat timing or the player's independent volume choices.
+        let combat_duck = state
+            .effects
+            .iter()
+            .any(|effect| matches!(effect.kind, EffectKind::MeleeDust | EffectKind::HitSpark));
+        let music_volume = volume * if combat_duck { 0.62 } else { 1.0 };
         let wanted = if state.game_over {
             None
         } else if state.adventurer_parties.iter().any(|party| party.sieging) {
@@ -229,8 +236,8 @@ impl GameAudio {
         } else {
             Some(MusicLayer::Raid)
         };
-        self.set_music(wanted, volume);
-        self.update_ambience(state, volume * 0.55);
+        self.set_music(wanted, music_volume);
+        self.update_ambience(state, music_volume * 0.55);
     }
 
     /// Title audio waits for the first real key or pointer gesture. Browsers

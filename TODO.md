@@ -423,7 +423,9 @@ change combat outcomes.
 - A low-volume procedural room ambience loop now runs under music, changing
   from upper-hall air to a deeper rumble at floor six without affecting combat
   or saves. More location-specific ambience remains open.
-- Mixing, ducking, and per-channel volume (needs the settings menu).
+- Music and ambience now duck to 62% while transient melee/impact cues are
+  active, making room for combat SFX while retaining the persisted master,
+  music, and SFX channels. Further mix tuning remains open.
 - Verify macroquad audio on native *and* WASM early — web audio needs an
   unlock-on-first-input path.
 
