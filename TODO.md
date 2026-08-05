@@ -431,9 +431,10 @@ On each `resolve_combat` tick:
   and gold conversion. Extend coverage to the remaining drawer icons, compact
   stats, and abbreviations.
 - Large-dungeon hardening: an open inspector now collapses the drawer rail on
-  narrower desktops so the board retains usable room width. Dungeon-view
-  scroll/zoom, full-roster drawer performance, and 20-floor legibility remain
-  open. The event log now keeps a bounded scrollback with All/Combat/
+  narrower desktops so the board retains usable room width. The dungeon board
+  now wheel-scrolls its floor rows through a transient bounded viewport and
+  shows its scroll position; zoom, full-roster drawer performance, and 20-floor
+  legibility remain open. The event log now keeps a bounded scrollback with All/Combat/
   Adventure/Build/System filters, anchored to the newest matching event until
   the player scrolls upward. — *done*
 - An in-game `[H]` controls reference now documents the live keyboard and

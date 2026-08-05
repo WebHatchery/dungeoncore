@@ -108,7 +108,7 @@ struct BuildPreview {
 
 /// Draw the production-style dungeon board and return the selected board action.
 pub fn draw_dungeon_board(
-    state: &GameState,
+    state: &mut GameState,
     rect: Rect,
     sprites: &DungeonSprites,
 ) -> DungeonAction {
@@ -137,23 +137,43 @@ pub fn draw_dungeon_board(
     let content = Rect::new(rect.x + 10.0, rect.y + 76.0, rect.w - 20.0, rect.h - 86.0);
     draw_board_surface(content);
 
-    let sorted_floors = sorted_floors(state);
-    if sorted_floors.is_empty() {
+    if state.floors.is_empty() {
         draw_centered_text("No dungeon mapped", content, 18.0, TEXT_MUTED);
         return action;
     }
 
     let gap = 14.0;
-    let floor_count = sorted_floors.len() as f32;
-    let row_h = ((content.h - gap * (sorted_floors.len().saturating_sub(1) as f32)) / floor_count)
+    let floor_len = state.floors.len();
+    let floor_count = floor_len as f32;
+    let row_h = ((content.h - gap * (floor_len.saturating_sub(1) as f32)) / floor_count)
         .clamp(150.0, 224.0);
-    let used_h = row_h * floor_count + gap * (sorted_floors.len().saturating_sub(1) as f32);
-    let mut row_y = content.y + ((content.h - used_h) * 0.5).max(14.0);
+    let used_h = row_h * floor_count + gap * (floor_len.saturating_sub(1) as f32);
+    let max_scroll = (used_h - content.h + 28.0).max(0.0);
+    if content.contains(vec2(mouse_position().0, mouse_position().1)) {
+        let (_, wheel_y) = mouse_wheel();
+        state.board_scroll = (state.board_scroll - wheel_y * 48.0).clamp(0.0, max_scroll);
+    }
+    let mut row_y = content.y + ((content.h - used_h) * 0.5).max(14.0) - state.board_scroll;
+    if max_scroll > 0.0 {
+        draw_text_fit(
+            &format!(
+                "Scroll floors  {:.0}%",
+                state.board_scroll / max_scroll * 100.0
+            ),
+            rect.x + rect.w - 150.0,
+            rect.y + 28.0,
+            132.0,
+            11.0,
+            TEXT_DIM,
+        );
+    }
     let preview = next_build_preview(state);
+    let sorted_floors = sorted_floors(state);
 
     for floor in sorted_floors {
-        if row_y + row_h > content.y + content.h - 2.0 {
-            break;
+        if row_y + row_h < content.y || row_y > content.y + content.h {
+            row_y += row_h + gap;
+            continue;
         }
 
         let row_rect = Rect::new(content.x + 18.0, row_y, content.w - 36.0, row_h);
