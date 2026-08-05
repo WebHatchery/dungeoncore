@@ -464,8 +464,9 @@ change combat outcomes.
   hover through the shared tooltip primitive. Monster and upgrade drawer rows
   also explain their costs, effects/traits, placement rules, and unavailable
   state. Build controls now explain room progression, branching, Core Powers,
-  and gold conversion. Extend coverage to the remaining drawer icons, compact
-  stats, and abbreviations.
+  and gold conversion. The selected-monster inspector now explains its compact
+  HP/ATK/DEF/cost line on hover. Extend coverage to the remaining drawer icons
+  and abbreviations.
 - Large-dungeon hardening: an open inspector now collapses the drawer rail on
   narrower desktops so the board retains usable room width. The dungeon board
   now wheel-scrolls its floor rows through a transient bounded viewport and

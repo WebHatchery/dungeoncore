@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use macroquad_toolkit::input::was_clicked_rect;
+use macroquad_toolkit::input::{is_hovered_rect, was_clicked_rect};
 
 use crate::data::monsters::{get_monster_template, get_species_display_name};
 use crate::data::upgrades::get_all_upgrades;
@@ -139,14 +139,15 @@ fn draw_selected_monster(
             12.0,
             TEXT_MUTED,
         );
+        let stats_rect = Rect::new(rect.x + 12.0, rect.y + 61.0, rect.w - 24.0, 20.0);
         draw_text_fit(
             &format!(
                 "HP {}  ATK {}  DEF {}  Cost {} mana",
                 template.hp, template.attack, template.defense, template.base_cost
             ),
-            rect.x + 12.0,
+            stats_rect.x,
             rect.y + 75.0,
-            rect.w - 24.0,
+            stats_rect.w,
             12.0,
             if state.mana >= template.base_cost {
                 MANA
@@ -154,6 +155,12 @@ fn draw_selected_monster(
                 DANGER
             },
         );
+        if is_hovered_rect(stats_rect) {
+            macroquad_toolkit::ui::draw_tooltip(
+                "HP = health. ATK = damage before defense. DEF reduces incoming damage. Cost is mana to summon.",
+                vec2(stats_rect.x, stats_rect.y + stats_rect.h + 4.0),
+            );
+        }
         if !compact {
             draw_text_fit(
                 &format!("Traits: {}", template_trait_summary(&template.traits)),
