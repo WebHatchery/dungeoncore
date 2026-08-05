@@ -154,6 +154,9 @@ pub fn draw_dungeon_board(
         * state.board_zoom;
     let used_h = row_h * floor_count + gap * (floor_len.saturating_sub(1) as f32);
     let max_scroll = (used_h - content.h + 28.0).max(0.0);
+    // Scroll is transient rather than saved, but capture scenes and a future
+    // viewport restore may set it before this board knows its current extent.
+    state.board_scroll = state.board_scroll.clamp(0.0, max_scroll);
     if content.contains(vec2(mouse_position().0, mouse_position().1)) {
         let (_, wheel_y) = mouse_wheel();
         state.board_scroll = (state.board_scroll - wheel_y * 48.0).clamp(0.0, max_scroll);

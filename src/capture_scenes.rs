@@ -7,6 +7,8 @@ use macroquad_toolkit::timing::Cooldown;
 use crate::game_state::{self, GameState, PARTY_MOVE_SECONDS};
 use crate::simulation;
 
+mod deep_board;
+
 /// First species flagged as a starter, used to seed capture scenes.
 pub fn first_starter_species() -> Option<String> {
     crate::data::monsters::get_all_species()
@@ -43,6 +45,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
     state.gold = 500;
 
     match scene {
+        "deep_board" => deep_board::seed(state),
         "combat_sprites" => {
             // Reuse the representative raid, then widen it into a focused art
             // proof: different silhouettes, wounds, a central dust cloud,

@@ -457,7 +457,9 @@ change combat outcomes.
   shows its scroll position. Visible − / Zoom / + controls transiently scale
   room rows from 70% to 130%, with reset on the percentage, so deep floors can
   trade density for readability without touching saves. Full-roster drawer
-  performance and a dedicated 20-floor legibility pass remain open. The event log now keeps a bounded scrollback with All/Combat/
+  performance remains open. A deterministic `deep_board` capture now builds a
+  real 20-floor dungeon, starts at the deepest row, and uses the compact zoom
+  setting to exercise the bounded viewport. The event log now keeps a bounded scrollback with All/Combat/
   Adventure/Build/System filters, anchored to the newest matching event until
   the player scrolls upward. — *done*
 - An in-game `[H]` controls reference now documents the live keyboard and
