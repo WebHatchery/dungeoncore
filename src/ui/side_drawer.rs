@@ -159,6 +159,16 @@ fn draw_tab_rail(
     if draw_small_tab(toggle, if *open { "<" } else { ">" }, ARCANE, true) {
         *open = !*open;
     }
+    if is_hovered_rect(toggle) {
+        macroquad_toolkit::ui::draw_tooltip(
+            if *open {
+                "Collapse the drawer to give the dungeon board more room."
+            } else {
+                "Expand the drawer to build rooms, place defenders, and inspect progress."
+            },
+            vec2(toggle.x + toggle.w, toggle.y + toggle.h),
+        );
+    }
 
     let mut y = rect.y + 54.0;
     for (tab, icon, label, color) in [
@@ -172,6 +182,18 @@ fn draw_tab_rail(
         if draw_rail_tab(tab_rect, icon, label, color, *active_tab == tab) {
             *active_tab = tab;
             *open = true;
+        }
+        if is_hovered_rect(tab_rect) {
+            let help = match tab {
+                DrawerTab::Monsters => "Choose defenders to place in a selected room.",
+                DrawerTab::Traps => "Choose traps, treasure, buffs, and attunements to install.",
+                DrawerTab::Build => "Extend the dungeon, branch routes, and spend permanent souls.",
+                DrawerTab::Evolution => "Track shared monster-line XP and unlocked variants.",
+                DrawerTab::Heroes => {
+                    "Review adventurer records, rival bounties, and dungeon reputation."
+                }
+            };
+            macroquad_toolkit::ui::draw_tooltip(help, vec2(tab_rect.x + tab_rect.w, tab_rect.y));
         }
         y += 60.0;
     }
@@ -193,10 +215,27 @@ fn draw_tab_rail(
         10.0,
         color,
     );
+    if is_hovered_rect(chip_rect) {
+        macroquad_toolkit::ui::draw_tooltip(
+            if state.adventurer_parties.is_empty() {
+                "No adventurers are currently inside. It is safe to reorganize the dungeon."
+            } else {
+                "An adventuring party is inside. Room construction and defender changes wait until the raid ends."
+            },
+            vec2(chip_rect.x + chip_rect.w, chip_rect.y),
+        );
+    }
 
     // Reset control lives quietly at the bottom of the rail.
     let reset_rect = Rect::new(rect.x + 9.0, rect.y + rect.h - 46.0, rail_w - 18.0, 34.0);
-    draw_small_tab(reset_rect, "RESET", DANGER, false)
+    let reset = draw_small_tab(reset_rect, "RESET", DANGER, false);
+    if is_hovered_rect(reset_rect) {
+        macroquad_toolkit::ui::draw_tooltip(
+            "Start a new dungeon. A confirmation keeps this destructive action reversible until you approve it.",
+            vec2(reset_rect.x + reset_rect.w, reset_rect.y),
+        );
+    }
+    reset
 }
 
 fn draw_section_title(rect: Rect, title: &str, subtitle: &str) {

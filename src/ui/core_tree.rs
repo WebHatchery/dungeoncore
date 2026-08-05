@@ -126,7 +126,8 @@ fn draw_node(state: &GameState, power: &CorePower, rect: Rect) -> Option<String>
     } else {
         BORDER
     };
-    let hovered = available && is_hovered_rect(rect);
+    let pointer_hovered = is_hovered_rect(rect);
+    let hovered = available && pointer_hovered;
     let clicked = hovered && is_mouse_button_released(MouseButton::Left);
 
     let fill_alpha = if owned {
@@ -211,6 +212,22 @@ fn draw_node(state: &GameState, power: &CorePower, rect: Rect) -> Option<String>
             rect.w - 24.0,
             9.5,
             TEXT_DIM,
+        );
+    }
+
+    if pointer_hovered {
+        let status = if owned {
+            "Already awakened; this permanent power survives prestige."
+        } else if !unlocked {
+            "Locked until its prerequisite Core Power is awakened."
+        } else if !affordable {
+            "Unlocked, but more souls are needed before it can be awakened."
+        } else {
+            "Click to spend souls and awaken this permanent power."
+        };
+        macroquad_toolkit::ui::draw_tooltip(
+            &format!("{} {}", power.description, status),
+            vec2(rect.x, rect.y + rect.h),
         );
     }
 
