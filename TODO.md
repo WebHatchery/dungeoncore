@@ -368,11 +368,6 @@ On each `resolve_combat` tick:
 
 ## Platform & technical
 
-- Platform decision (Steam primary, itch secondary, keep the WASM build as a
-  demo funnel) and Steamworks integration: achievements seeded from the
-  milestone ids, cloud saves, store plumbing.
-- Windows packaging: icon/version metadata, code-signing decision, installer.
-- macOS/Linux support-tier decision.
 - Performance: soak-test a max-size dungeon at 4× speed, profile the per-tick
   sim, long-session leak check.
 - Top-level panic hook that writes a crash log and preserves the save.
@@ -382,11 +377,6 @@ On each `resolve_combat` tick:
 
 ## QA, balance & business
 
-- External playtest program (10–20 testers) with a feedback form and a build
-  channel; validate the first hour lands a "my combo crushed a party" moment.
-- Balance instrumentation: log per-run income curves, pick rates, death causes,
-  and time-to-first-prestige to a local file so passes are data-driven.
-- Full balance pass across all species and difficulty presets.
 - Compatibility matrix: min spec, multiple GPU vendors, high-DPI, ultrawide,
   60/144 Hz tick behaviour.
 - Positioning and pricing; Steam page live early for wishlists; trailer; demo
