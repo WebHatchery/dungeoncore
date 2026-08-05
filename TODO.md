@@ -401,8 +401,12 @@ On each `resolve_combat` tick:
 - Settings now persists fullscreen, UI scale, reduced motion and autosave
   cadence, default run speed, and audio preferences through
   `macroquad-toolkit::settings::GameSettings`. Key rebinding remains open.
-- Save hardening: multiple slots with metadata, explicit save-version discipline,
-  corrupt-save backup/recovery that never panics or silently resets.
+- Save hardening: three title-screen slots now carry the saved day and
+  difficulty, write the Cargo version into the slot wrapper, and confirm before
+  a new run replaces an occupied slot. A valid legacy single save migrates to
+  Slot 1; an unreadable slot can only be recovered by quarantining its bytes,
+  never silently reset. Add richer player-facing slot metadata and a formal
+  migration registry as the save schema grows.
 - True pause is now a first-class persisted state with a Space shortcut, HUD
   control, dedicated pause menu and simulation gate. Pause-on-focus-loss
   remains open.

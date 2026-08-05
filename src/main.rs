@@ -24,6 +24,8 @@ const CAPTURE_PREFIX: &str = "DUNGEON_CORE";
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum AppScreen {
     Title,
+    SaveSlots,
+    ConfirmSlotOverwrite,
     NewGameSetup,
     Settings,
     Playing,
@@ -137,6 +139,7 @@ async fn main() {
                     &mut t2,
                     true,
                     30.0,
+                    persistence::DEFAULT_SLOT,
                     &sprites,
                 );
             })
@@ -161,6 +164,7 @@ async fn main() {
                     &mut t2,
                     false,
                     30.0,
+                    persistence::DEFAULT_SLOT,
                     &sprites,
                 );
             })
@@ -169,10 +173,15 @@ async fn main() {
         return;
     }
 
-    let mut state = persistence::load_game()
-        .unwrap_or_else(|_| create_new_game(data::difficulty::Difficulty::default(), 1));
+    let legacy_notice = match persistence::migrate_legacy_save() {
+        Ok(true) => Some("Legacy save moved to Slot 1.".to_string()),
+        Ok(false) => None,
+        Err(error) => Some(format!("Legacy save was left untouched: {error}")),
+    };
+    let mut state = create_new_game(data::difficulty::Difficulty::default(), 1);
+    let mut active_slot = persistence::DEFAULT_SLOT;
     let mut screen = AppScreen::Title;
-    let mut title_notice: Option<String> = None;
+    let mut title_notice: Option<String> = legacy_notice;
     let mut settings = macroquad_toolkit::settings::GameSettings::load("dungeon_core");
     settings.sanitize();
     settings.apply_display();
@@ -198,28 +207,15 @@ async fn main() {
             AppScreen::Title => {
                 match draw_title_screen(
                     &assets,
-                    persistence::save_exists(),
+                    persistence::SAVE_SLOTS.iter().any(|slot| {
+                        !matches!(persistence::slot_state(slot), persistence::SlotState::Empty)
+                    }),
                     title_notice.as_deref(),
                 ) {
-                    TitleAction::NewGame => {
+                    TitleAction::NewGame | TitleAction::LoadGame => {
                         title_notice = None;
-                        screen = AppScreen::NewGameSetup;
+                        screen = AppScreen::SaveSlots;
                     }
-                    TitleAction::LoadGame => match persistence::load_game() {
-                        Ok(loaded_state) => {
-                            state = loaded_state;
-                            reset_timers(
-                                &mut last_time_advance,
-                                &mut last_adventure_tick,
-                                &mut last_save,
-                            );
-                            title_notice = None;
-                            screen = AppScreen::Playing;
-                        }
-                        Err(e) => {
-                            title_notice = Some(format!("Load failed: {}", e));
-                        }
-                    },
                     TitleAction::Settings => {
                         title_notice = None;
                         screen = AppScreen::Settings;
@@ -233,11 +229,58 @@ async fn main() {
                 next_frame().await;
                 continue;
             }
+            AppScreen::SaveSlots => {
+                let states = std::array::from_fn(|index| {
+                    persistence::slot_state(persistence::SAVE_SLOTS[index])
+                });
+                match draw_save_slots_screen(&assets, &states, title_notice.as_deref()) {
+                    SaveSlotAction::Load(slot) => match persistence::load_game(slot) {
+                        Ok(loaded_state) => {
+                            active_slot = slot;
+                            state = loaded_state;
+                            reset_timers(&mut last_time_advance, &mut last_adventure_tick, &mut last_save);
+                            title_notice = None;
+                            screen = AppScreen::Playing;
+                        }
+                        Err(error) => title_notice = Some(format!("Could not load {slot}: {error}")),
+                    },
+                    SaveSlotAction::New(slot) => {
+                        active_slot = slot;
+                        if matches!(persistence::slot_state(slot), persistence::SlotState::Ready { .. }) {
+                            screen = AppScreen::ConfirmSlotOverwrite;
+                        } else {
+                            screen = AppScreen::NewGameSetup;
+                        }
+                    }
+                    SaveSlotAction::Recover(slot) => match persistence::recover_corrupt_slot(slot) {
+                        Ok(()) => title_notice = Some(format!("{slot} was set aside as a corrupt save. You can start a new run there.")),
+                        Err(error) => title_notice = Some(format!("Could not preserve {slot}: {error}")),
+                    },
+                    SaveSlotAction::Back => {
+                        title_notice = None;
+                        screen = AppScreen::Title;
+                    }
+                    SaveSlotAction::None => {}
+                }
+                next_frame().await;
+                continue;
+            }
+            AppScreen::ConfirmSlotOverwrite => {
+                if let Some(confirmed) = draw_slot_overwrite_confirmation(&assets, active_slot) {
+                    screen = if confirmed {
+                        AppScreen::NewGameSetup
+                    } else {
+                        AppScreen::SaveSlots
+                    };
+                }
+                next_frame().await;
+                continue;
+            }
             AppScreen::NewGameSetup => {
                 match draw_new_game_setup(&assets, title_notice.as_deref()) {
                     NewGameSetupAction::Start(difficulty) => {
                         state = create_new_game(difficulty, settings.default_speed);
-                        if let Err(e) = persistence::save_game(&state) {
+                        if let Err(e) = persistence::save_game(active_slot, &state) {
                             eprintln!("Failed to save new game: {}", e);
                         }
                         reset_timers(
@@ -291,6 +334,7 @@ async fn main() {
             &mut last_save,
             true,
             settings.autosave_interval as f64,
+            active_slot,
             &sprites,
         );
 
@@ -321,6 +365,7 @@ fn render_playing_frame(
     last_save: &mut f64,
     simulate: bool,
     autosave_interval: f64,
+    save_slot: &str,
     sprites: &DungeonSprites,
 ) {
     let now = get_time();
@@ -364,7 +409,7 @@ fn render_playing_frame(
 
         // Auto-save every 30 seconds
         if now - *last_save > autosave_interval {
-            if let Err(e) = persistence::save_game(state) {
+            if let Err(e) = persistence::save_game(save_slot, state) {
                 eprintln!("Failed to save: {}", e);
             }
             *last_save = now;
@@ -377,7 +422,7 @@ fn render_playing_frame(
         if draw_game_over_overlay(state, sw, sh) {
             // A fresh dungeon keeps the fallen run's chosen difficulty.
             *state = create_new_game(state.difficulty, 1);
-            let _ = persistence::save_game(state);
+            let _ = persistence::save_game(save_slot, state);
             reset_timers(last_time_advance, last_adventure_tick, last_save);
         }
         return;
@@ -675,7 +720,7 @@ fn render_playing_frame(
             ConfirmationChoice::Confirm => match action {
                 game_state::PendingConfirmation::ResetRun => {
                     *state = create_new_game(state.difficulty, 1);
-                    let _ = persistence::save_game(state);
+                    let _ = persistence::save_game(save_slot, state);
                     reset_timers(last_time_advance, last_adventure_tick, last_save);
                 }
                 game_state::PendingConfirmation::DismissMonster {

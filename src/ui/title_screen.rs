@@ -365,7 +365,7 @@ pub fn draw_title_settings_screen(
     TitleSettingsAction::None
 }
 
-fn draw_title_background(assets: &AssetManager, sw: f32, sh: f32) {
+pub(super) fn draw_title_background(assets: &AssetManager, sw: f32, sh: f32) {
     clear_background(BG_DEEP);
 
     if let Some(texture) = assets.get_texture(TITLE_BACKGROUND_KEY) {
@@ -399,7 +399,7 @@ fn draw_title_background(assets: &AssetManager, sw: f32, sh: f32) {
     );
 }
 
-fn draw_title_panel(rect: Rect) {
+pub(super) fn draw_title_panel(rect: Rect) {
     draw_card(
         rect,
         Color::new(0.018, 0.020, 0.034, 0.72),
@@ -408,7 +408,7 @@ fn draw_title_panel(rect: Rect) {
     draw_rectangle(rect.x, rect.y, 3.0, rect.h, with_alpha(SOUL, 0.68));
 }
 
-fn draw_title_button(rect: Rect, text: &str, enabled: bool, tone: ButtonTone) -> bool {
+pub(super) fn draw_title_button(rect: Rect, text: &str, enabled: bool, tone: ButtonTone) -> bool {
     let hovered = enabled && is_hovered_rect(rect);
     let pressed = hovered && is_mouse_button_down(MouseButton::Left);
     let clicked = enabled && was_clicked_rect(rect);
@@ -445,7 +445,7 @@ fn draw_title_button(rect: Rect, text: &str, enabled: bool, tone: ButtonTone) ->
     clicked
 }
 
-fn draw_title_notice(message: &str, sw: f32, sh: f32) {
+pub(super) fn draw_title_notice(message: &str, sw: f32, sh: f32) {
     let rect = Rect::new((sw - 430.0) * 0.5, sh - 76.0, 430.0, 42.0);
     draw_card(
         rect,
