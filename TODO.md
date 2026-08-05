@@ -330,18 +330,16 @@ toolkit unit tests.
 
 #### Room unit presentation
 
-`ui/dungeon_view/room_art.rs` is already substantial. Before expanding it,
-extract unit composition to `ui/dungeon_view/room_art/units.rs` and transient
-visuals to `ui/dungeon_view/room_art/effects.rs`; do not drive the file toward
-the 800-line gate.
+`ui/dungeon_view/room_art.rs` is kept as tile composition and chamber art.
+Unit composition now lives in `ui/dungeon_view/room_art/units.rs` and
+transient visuals in `ui/dungeon_view/room_art/effects.rs`, keeping each
+responsibility comfortably below the source-size gate.
 
 Shipped: room tiles now compose defender sprites on the left and invader
 sprites on the right, with compact HP bars, element marks, rival rings/names,
 and an explicit overflow count. Stable unit ids phase cosmetic bobbing without
 touching simulation state. Idle rooms use the idle pose, fights use attack, and
-corridor parties use the walk pose in a three-unit formation. The remaining
-work in this subsection is the named file extraction before more room art is
-added.
+corridor parties use the walk pose in a three-unit formation.
 
 - Replace the current defender and adventurer discs with sprites: defenders on
   the left, invaders on the right, facing the room centre. Retain compact health
