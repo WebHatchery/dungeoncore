@@ -392,8 +392,9 @@ On each `resolve_combat` tick:
   death, presence-income, threat, siege, core-damage, and prestige SFX now
   load without external assets and honor master×SFX volume on native and WebGL
   builds. Simulation queues semantic audio events for the renderer, so sound
-  remains cosmetic and capture-safe. Expand toward per-element hits and richer
-  event-specific variation.
+  remains cosmetic and capture-safe. Combat, trap, and death cues rotate among
+  deterministic-in-the-renderer sample variations; expand next toward
+  per-element hits and richer event-specific variation.
 - Music: build theme, raid tension layer, siege track, title; adaptive layering.
 - Room ambience that deepens with floor depth.
 - Mixing, ducking, and per-channel volume (needs the settings menu).

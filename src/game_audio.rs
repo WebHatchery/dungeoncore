@@ -3,6 +3,7 @@
 
 use macroquad::audio::{load_sound_from_bytes, play_sound, PlaySoundParams, Sound};
 use macroquad_toolkit::synth::{render_wav, SynthConfig, Voice, Wave};
+use std::cell::Cell;
 
 use crate::game_state::SoundEvent;
 
@@ -25,9 +26,12 @@ pub struct GameAudio {
     ui: Option<Sound>,
     place: Option<Sound>,
     smite: Option<Sound>,
-    combat: Option<Sound>,
-    trap: Option<Sound>,
-    death: Option<Sound>,
+    combat: Vec<Sound>,
+    trap: Vec<Sound>,
+    death: Vec<Sound>,
+    combat_variant: Cell<usize>,
+    trap_variant: Cell<usize>,
+    death_variant: Cell<usize>,
     income: Option<Sound>,
     threat: Option<Sound>,
     siege: Option<Sound>,
@@ -63,31 +67,34 @@ impl GameAudio {
                 3,
             )
             .await,
-            combat: load_effect(
+            combat: load_effect_variants(
                 &[
                     Voice::tone(0.0, 0.06, 210.0, 0.16).wave(Wave::Noise),
                     Voice::tone(0.0, 0.05, 480.0, 0.12).wave(Wave::Square),
                 ],
-                4,
+                4..=6,
             )
             .await,
-            trap: load_effect(
+            trap: load_effect_variants(
                 &[
                     Voice::tone(0.0, 0.10, 720.0, 0.22)
                         .glide(280.0)
                         .wave(Wave::Triangle),
                     Voice::tone(0.02, 0.06, 1400.0, 0.10).wave(Wave::Noise),
                 ],
-                5,
+                7..=9,
             )
             .await,
-            death: load_effect(
+            death: load_effect_variants(
                 &[Voice::tone(0.0, 0.16, 360.0, 0.24)
                     .glide(90.0)
                     .wave(Wave::Triangle)],
-                6,
+                10..=12,
             )
             .await,
+            combat_variant: Cell::new(0),
+            trap_variant: Cell::new(0),
+            death_variant: Cell::new(0),
             income: load_effect(
                 &[Voice::tone(0.0, 0.11, 520.0, 0.16)
                     .glide(790.0)
@@ -138,9 +145,9 @@ impl GameAudio {
             SoundCue::Ui => self.ui.as_ref(),
             SoundCue::Place => self.place.as_ref(),
             SoundCue::Smite => self.smite.as_ref(),
-            SoundCue::Combat => self.combat.as_ref(),
-            SoundCue::Trap => self.trap.as_ref(),
-            SoundCue::Death => self.death.as_ref(),
+            SoundCue::Combat => Self::next_variant(&self.combat, &self.combat_variant),
+            SoundCue::Trap => Self::next_variant(&self.trap, &self.trap_variant),
+            SoundCue::Death => Self::next_variant(&self.death, &self.death_variant),
             SoundCue::Income => self.income.as_ref(),
             SoundCue::Threat => self.threat.as_ref(),
             SoundCue::Siege => self.siege.as_ref(),
@@ -156,6 +163,17 @@ impl GameAudio {
                 },
             );
         }
+    }
+
+    /// Rotate only cosmetic samples. The cursor deliberately lives outside the
+    /// simulation, so save/load and capture frames cannot change game RNG.
+    fn next_variant<'a>(sounds: &'a [Sound], cursor: &Cell<usize>) -> Option<&'a Sound> {
+        let index = cursor.get();
+        let sound = sounds.get(index % sounds.len().max(1));
+        if sound.is_some() {
+            cursor.set(index.wrapping_add(1));
+        }
+        sound
     }
 }
 
@@ -177,4 +195,17 @@ impl From<SoundEvent> for SoundCue {
 async fn load_effect(voices: &[Voice], seed: u64) -> Option<Sound> {
     let bytes = render_wav(voices, &SynthConfig::default(), seed);
     load_sound_from_bytes(&bytes).await.ok()
+}
+
+async fn load_effect_variants(
+    voices: &[Voice],
+    seeds: std::ops::RangeInclusive<u64>,
+) -> Vec<Sound> {
+    let mut effects = Vec::new();
+    for seed in seeds {
+        if let Some(effect) = load_effect(voices, seed).await {
+            effects.push(effect);
+        }
+    }
+    effects
 }
