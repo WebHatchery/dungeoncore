@@ -4,8 +4,35 @@ use macroquad_toolkit::{colors::dark, ui::*};
 use crate::game_state::GameState;
 use macroquad_toolkit::ui::draw_ui_text;
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResourcePanelData {
+    pub mana_label: String,
+    pub mana_fraction: f32,
+    pub regen_label: String,
+    pub gold_label: String,
+    pub souls_label: String,
+}
+
+/// Compute the panel's player-facing values without drawing. Keeping the cap
+/// clamp here prevents a malformed or migrated state from overflowing a bar.
+pub fn resource_panel_data(state: &GameState) -> ResourcePanelData {
+    let mana_fraction = if state.max_mana > 0 {
+        (state.mana as f32 / state.max_mana as f32).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    ResourcePanelData {
+        mana_label: format!("{}/{}", state.mana, state.max_mana),
+        mana_fraction,
+        regen_label: format!("(+{:.1}/tick)", state.mana_regen),
+        gold_label: format!("💰 Gold: {}", state.gold),
+        souls_label: format!("👻 Souls: {}", state.souls),
+    }
+}
+
 /// Draw the resource panel showing mana, gold, souls
 pub fn draw_resource_panel(state: &GameState, x: f32, y: f32, w: f32) {
+    let data = resource_panel_data(state);
     let h = 130.0;
     panel(x, y, w, h, Some("Resources"));
 
@@ -20,28 +47,22 @@ pub fn draw_resource_panel(state: &GameState, x: f32, y: f32, w: f32) {
         y + 45.0,
         inner_w,
         20.0,
-        state.mana as f32,
-        state.max_mana as f32,
+        data.mana_fraction,
+        1.0,
         Color::from_hex(0x2E86AB),
     );
     draw_ui_text(
-        &format!("{}/{}", state.mana, state.max_mana),
+        &data.mana_label,
         inner_x + inner_w - 60.0,
         y + 60.0,
         14.0,
         dark::TEXT_BRIGHT,
     );
-    draw_ui_text(
-        &format!("(+{:.1}/tick)", state.mana_regen),
-        inner_x,
-        y + 72.0,
-        12.0,
-        dark::TEXT_DIM,
-    );
+    draw_ui_text(&data.regen_label, inner_x, y + 72.0, 12.0, dark::TEXT_DIM);
 
     // Gold
     draw_ui_text(
-        &format!("💰 Gold: {}", state.gold),
+        &data.gold_label,
         inner_x,
         y + 95.0,
         18.0,
@@ -50,12 +71,37 @@ pub fn draw_resource_panel(state: &GameState, x: f32, y: f32, w: f32) {
 
     // Souls
     draw_ui_text(
-        &format!("👻 Souls: {}", state.souls),
+        &data.souls_label,
         inner_x,
         y + 118.0,
         18.0,
         Color::from_hex(0x9B59B6),
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resource_values_handle_zero_capacity_and_zero_income() {
+        let mut state = GameState::new();
+        state.mana = 0;
+        state.max_mana = 0;
+        state.mana_regen = 0.0;
+        let data = resource_panel_data(&state);
+        assert_eq!(data.mana_fraction, 0.0);
+        assert_eq!(data.mana_label, "0/0");
+        assert_eq!(data.regen_label, "(+0.0/tick)");
+    }
+
+    #[test]
+    fn capped_mana_fills_but_never_overflows_the_bar() {
+        let mut state = GameState::new();
+        state.mana = 250;
+        state.max_mana = 200;
+        assert_eq!(resource_panel_data(&state).mana_fraction, 1.0);
+    }
 }
 
 /// Draw time display

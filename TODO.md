@@ -458,8 +458,8 @@ On each `resolve_combat` tick:
 - Input-state tests: the authoritative pause/capture simulation gate now has a
   pure truth-table test. Focus loss, tooltip blocking, resource-panel updates,
   and log-message ordering remain open.
-- Move resource-panel calculations into pure helpers with fixtures for zero
-  income and capped resources.
+- Resource-panel values now come from a pure helper with fixtures for zero
+  income, zero capacity, and capped resources. — *done*
 - Small dungeon-run scenarios that verify controls, log output, and theme-driven
   UI states together.
 - Extract repeated drawing constants into toolkit-backed theme helpers shared by
