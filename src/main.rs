@@ -337,7 +337,7 @@ fn render_playing_frame(
         }
     }
 
-    if simulate && !state.paused {
+    if simulation_active(simulate, state.paused) {
         // Age transient combat effects and party-travel animations each frame,
         // and recharge the Core Smite lever in real time.
         state.decay_effects(get_frame_time());

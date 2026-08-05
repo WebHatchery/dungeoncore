@@ -21,6 +21,12 @@ pub enum ControlAction {
     ToggleDungeon,
 }
 
+/// The simulation may advance only for an interactive, unpaused frame.
+/// Capture scenes deliberately render with `simulate` false, as do paused runs.
+pub fn simulation_active(simulate: bool, paused: bool) -> bool {
+    simulate && !paused
+}
+
 /// Draw the top HUD (resources, time, threat) plus the primary controls
 /// (speed and dungeon open/close). Returns any control action triggered.
 pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
@@ -460,5 +466,21 @@ fn adventurer_status(state: &GameState) -> (&'static str, Color, &'static str) {
         ("ADVENTURERS APPROACHING", WARNING, "!")
     } else {
         ("PARTY INSIDE", WARNING, "!")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::simulation_active;
+
+    #[test]
+    fn simulation_requires_an_interactive_unpaused_frame() {
+        assert!(simulation_active(true, false));
+        assert!(
+            !simulation_active(false, false),
+            "captures must not advance"
+        );
+        assert!(!simulation_active(true, true), "pause must freeze the run");
+        assert!(!simulation_active(false, true));
     }
 }
