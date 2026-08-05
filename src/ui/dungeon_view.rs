@@ -21,8 +21,9 @@ use layout::layout_floor;
 use macroquad_toolkit::colors::with_alpha;
 use room_art::{draw_connector, draw_future_room_tile, draw_party_transit, draw_room_tile};
 pub use sprites::{
-    DungeonSprites, ANIMATED_UNIT_SHEET_KEY, ANIMATED_UNIT_SHEET_PATH, UNIT_SHEET_KEY,
-    UNIT_SHEET_PATH,
+    DungeonSprites, ANIMATED_ADVENTURER_SHEET_KEY, ANIMATED_ADVENTURER_SHEET_PATH,
+    ANIMATED_MONSTER_SHEET_KEY, ANIMATED_MONSTER_SHEET_PATH, ANIMATED_UNIT_SHEET_KEY,
+    ANIMATED_UNIT_SHEET_PATH, UNIT_SHEET_KEY, UNIT_SHEET_PATH,
 };
 
 const BASE_ROOM_W: f32 = 156.0;

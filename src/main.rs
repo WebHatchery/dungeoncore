@@ -65,6 +65,25 @@ async fn main() {
             e
         );
     }
+    for (key, path, label) in [
+        (
+            ANIMATED_ADVENTURER_SHEET_KEY,
+            ANIMATED_ADVENTURER_SHEET_PATH,
+            "animated adventurer",
+        ),
+        (
+            ANIMATED_MONSTER_SHEET_KEY,
+            ANIMATED_MONSTER_SHEET_PATH,
+            "animated monster",
+        ),
+    ] {
+        if let Err(e) = assets
+            .load_texture_with_filter(key, path, FilterMode::Nearest)
+            .await
+        {
+            eprintln!("Failed to load {label} sprite sheet; using fallbacks: {e}");
+        }
+    }
     let sprites = DungeonSprites::from_assets(&assets);
     let audio = GameAudio::new().await;
 

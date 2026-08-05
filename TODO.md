@@ -294,10 +294,11 @@ transient and absent from saves.
   scale. Do not make 47 unrelated monster sheets or 28 unrelated adventurer
   sheets merely to achieve coverage.
 - Give each sheet small `idle`, `walk`, `attack` and `death` clips. The first
-  vertical slice is now shipped: an alpha-ready 4×4 Goblin/Warrior/Rogue/Mage
-  atlas supplies all four poses and is loaded as an optional second atlas, so
-  uncovered units retain their existing pose/fallback path. Fill the remaining
-  roster before calling the creature pass complete.
+  vertical slice is now shipped: alpha-ready 4×4 Goblin/Warrior/Rogue/Mage and
+  Cleric/Ranger/Paladin/Alchemist atlases supply all four poses. The complete
+  adventurer roster now resolves to a pose atlas; monster species beyond the
+  two current sheets retain their existing pose/fallback path until their art
+  slices arrive.
 - Keep the existing coloured initial discs as a conspicuous missing-asset
   fallback. A broken mapping must log clearly and never make a combatant
   invisible.
