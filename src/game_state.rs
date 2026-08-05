@@ -444,6 +444,9 @@ pub struct GameState {
     /// Dungeon-board vertical viewport, kept outside saved game state.
     #[serde(skip)]
     pub board_scroll: f32,
+    /// Player-controlled room-row scale for dense dungeon boards.
+    #[serde(skip)]
+    pub board_zoom: f32,
 
     // Log
     pub log: Vec<LogEntry>,
@@ -515,6 +518,7 @@ impl GameState {
             log_scroll: 0,
             log_filter: LogFilter::All,
             board_scroll: 0.0,
+            board_zoom: 1.0,
             log: vec![LogEntry::system(
                 "Welcome to Dungeon Core! Choose a starter race to awaken your first defenders.",
             )],

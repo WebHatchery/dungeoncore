@@ -451,8 +451,10 @@ change combat outcomes.
 - Large-dungeon hardening: an open inspector now collapses the drawer rail on
   narrower desktops so the board retains usable room width. The dungeon board
   now wheel-scrolls its floor rows through a transient bounded viewport and
-  shows its scroll position; zoom, full-roster drawer performance, and 20-floor
-  legibility remain open. The event log now keeps a bounded scrollback with All/Combat/
+  shows its scroll position. Visible − / Zoom / + controls transiently scale
+  room rows from 70% to 130%, with reset on the percentage, so deep floors can
+  trade density for readability without touching saves. Full-roster drawer
+  performance and a dedicated 20-floor legibility pass remain open. The event log now keeps a bounded scrollback with All/Combat/
   Adventure/Build/System filters, anchored to the newest matching event until
   the player scrolls upward. — *done*
 - An in-game `[H]` controls reference now documents the live keyboard and

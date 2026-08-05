@@ -19,6 +19,7 @@ mod sprites;
 use backdrop::{draw_board_surface, draw_floor_rail, draw_room_route_backplate};
 use layout::layout_floor;
 use macroquad_toolkit::colors::with_alpha;
+use macroquad_toolkit::input::was_clicked_rect;
 use room_art::{draw_connector, draw_future_room_tile, draw_party_transit, draw_room_tile};
 pub use sprites::{
     DungeonSprites, ANIMATED_ADVENTURER_SHEET_KEY, ANIMATED_ADVENTURER_SHEET_PATH,
@@ -135,6 +136,7 @@ pub fn draw_dungeon_board(
         draw_placement_badge(state, monster, rect);
     }
     draw_route_choice(state, rect);
+    draw_board_zoom_controls(state, rect);
 
     let content = Rect::new(rect.x + 10.0, rect.y + 76.0, rect.w - 20.0, rect.h - 86.0);
     draw_board_surface(content);
@@ -148,7 +150,8 @@ pub fn draw_dungeon_board(
     let floor_len = state.floors.len();
     let floor_count = floor_len as f32;
     let row_h = ((content.h - gap * (floor_len.saturating_sub(1) as f32)) / floor_count)
-        .clamp(150.0, 224.0);
+        .clamp(150.0, 224.0)
+        * state.board_zoom;
     let used_h = row_h * floor_count + gap * (floor_len.saturating_sub(1) as f32);
     let max_scroll = (used_h - content.h + 28.0).max(0.0);
     if content.contains(vec2(mouse_position().0, mouse_position().1)) {
@@ -214,6 +217,32 @@ pub fn draw_dungeon_board(
     }
 
     action
+}
+
+/// Keep dense boards readable without changing layout or save data. Zoom is
+/// deliberately transient, like scroll position, and uses obvious controls so
+/// a player never needs to discover a modifier-wheel gesture.
+fn draw_board_zoom_controls(state: &mut GameState, rect: Rect) {
+    let zoom = Rect::new(rect.x + rect.w - 148.0, rect.y + 22.0, 126.0, 24.0);
+    let minus = Rect::new(zoom.x, zoom.y, 26.0, zoom.h);
+    let reset = Rect::new(zoom.x + 29.0, zoom.y, 66.0, zoom.h);
+    let plus = Rect::new(zoom.x + 98.0, zoom.y, 26.0, zoom.h);
+    draw_card(zoom, with_alpha(BG_DEEP, 0.90), with_alpha(BORDER, 0.60));
+    draw_centered_text("−", minus, 16.0, TEXT);
+    draw_centered_text(
+        &format!("Zoom {:.0}%", state.board_zoom * 100.0),
+        reset,
+        9.0,
+        TEXT_MUTED,
+    );
+    draw_centered_text("+", plus, 16.0, TEXT);
+    if was_clicked_rect(minus) {
+        state.board_zoom = (state.board_zoom - 0.15).max(0.70);
+    } else if was_clicked_rect(plus) {
+        state.board_zoom = (state.board_zoom + 0.15).min(1.30);
+    } else if was_clicked_rect(reset) {
+        state.board_zoom = 1.0;
+    }
 }
 
 /// Make the active fork's decision readable without opening the log. The
