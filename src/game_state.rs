@@ -1,3 +1,4 @@
+use macroquad_toolkit::rng::SeededRng;
 use macroquad_toolkit::timing::Cooldown;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -15,6 +16,14 @@ pub use reputation::{ReputationBand, VisitorQuality, REPUTATION_MAX, REPUTATION_
 /// transient fields — `Cooldown` has no `Default` impl of its own.
 pub(crate) fn ready_cooldown() -> Cooldown {
     Cooldown::new(0.0)
+}
+
+fn legacy_run_seed() -> u64 {
+    0
+}
+
+fn legacy_run_rng() -> SeededRng {
+    SeededRng::new(legacy_run_seed())
 }
 
 /// Cumulative adventurer deaths that push the realm to peak threat (tier 4) and
@@ -297,6 +306,15 @@ pub struct GameState {
     #[serde(default)]
     pub paused: bool,
 
+    /// The initial seed lets a keeper include a reproducible run identifier in
+    /// a bug report. `run_rng` below carries the exact mid-run stream state.
+    #[serde(default = "legacy_run_seed")]
+    pub run_seed: u64,
+    /// All gameplay randomness comes from this saved stream, so loading a run
+    /// continues with the same future as the moment it was saved.
+    #[serde(default = "legacy_run_rng")]
+    pub run_rng: SeededRng,
+
     // Dungeon
     pub status: DungeonStatus,
     pub floors: Vec<Floor>,
@@ -404,6 +422,7 @@ impl Default for GameState {
 
 impl GameState {
     pub fn new() -> Self {
+        let run_seed = macroquad_toolkit::rng::random_u64();
         // Create initial floor with entrance and core rooms
         let mut floor1 = Floor::new(1, 1, true);
         floor1.rooms.push(Room::new(1, RoomType::Entrance, 0, 1));
@@ -420,6 +439,8 @@ impl GameState {
             hour: 6,
             speed: 1,
             paused: false,
+            run_seed,
+            run_rng: SeededRng::new(run_seed),
             status: DungeonStatus::Closed,
             floors: vec![floor1],
             total_floors: 1,
@@ -744,5 +765,18 @@ mod tests {
         assert_eq!(f.room_at(0).unwrap().exits, vec![1]);
         assert_eq!(f.room_at(1).unwrap().exits, vec![2]);
         assert!(f.room_at(2).unwrap().exits.is_empty());
+    }
+
+    #[test]
+    fn saved_run_rng_continues_the_same_future() {
+        let mut original = GameState::new();
+        original.run_seed = 0xC0DE_CAFE;
+        original.run_rng = SeededRng::new(original.run_seed);
+        let _already_drawn = original.run_rng.next_u64();
+
+        let serialized = serde_json::to_string(&original).expect("state serializes");
+        let mut restored: GameState = serde_json::from_str(&serialized).expect("state restores");
+        assert_eq!(restored.run_seed, original.run_seed);
+        assert_eq!(restored.run_rng.next_u64(), original.run_rng.next_u64());
     }
 }

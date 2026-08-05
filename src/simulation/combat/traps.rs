@@ -27,7 +27,7 @@ pub(super) fn resolve_trap(
     else {
         return;
     };
-    if trap.disarmed || !macroquad_toolkit::rng::chance(TRAP_TRIGGER_CHANCE) {
+    if trap.disarmed || !state.run_rng.chance(TRAP_TRIGGER_CHANCE) {
         return;
     }
 
@@ -39,7 +39,7 @@ pub(super) fn resolve_trap(
         .members
         .iter()
         .any(|a| a.alive && a.class_name == "Rogue");
-    if has_rogue && macroquad_toolkit::rng::chance(ROGUE_DISARM_CHANCE) {
+    if has_rogue && state.run_rng.chance(ROGUE_DISARM_CHANCE) {
         if let Some(installed) = state.floors[floor_idx].rooms[room_idx]
             .upgrades
             .iter_mut()
@@ -67,7 +67,7 @@ pub(super) fn resolve_trap(
             let power = (trap.multiplier * attune_boost).round().max(1.0) as i32;
             let victim_name = {
                 let party = &mut state.adventurer_parties[party_idx];
-                random_alive_idx(party).map(|idx| {
+                random_alive_idx(&mut state.run_rng, party).map(|idx| {
                     let victim = &mut party.members[idx];
                     victim.conditions.push(Condition {
                         kind: trap.effect_kind.clone(),
@@ -153,7 +153,7 @@ pub(super) fn resolve_trap(
             };
             let hit = {
                 let party = &mut state.adventurer_parties[party_idx];
-                random_alive_idx(party).map(|idx| {
+                random_alive_idx(&mut state.run_rng, party).map(|idx| {
                     let victim = &mut party.members[idx];
                     let elem_mult =
                         element_multiplier(&trap_element, &adventurer_element(&victim.class_name));

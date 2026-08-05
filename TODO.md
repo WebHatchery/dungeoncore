@@ -430,7 +430,9 @@ On each `resolve_combat` tick:
   sim, long-session leak check.
 - Top-level panic hook now writes a native crash log beside the save before
   startup asset or save work begins; browser panics retain their console trace.
-- Seeded per-run RNG for reproducible bug reports and seeded challenge runs.
+- Gameplay randomness now comes from a serializable per-run seeded stream, so
+  save/load resumes the exact future and the run seed can identify a bug report.
+  Add a player-entered seed/challenge picker when challenge runs are designed.
 - Release pipeline on top of the existing fmt/clippy/test CI: per-platform
   builds, versioned artifacts, and a title-screen Cargo version stamp are now
   present; wire the checks into a release pipeline.

@@ -109,7 +109,7 @@ pub fn place_monster(
         .collect();
 
     let monster = Monster {
-        id: macroquad_toolkit::rng::random_u64(),
+        id: state.run_rng.next_u64(),
         type_name: monster_name.into(),
         hp: scaled.hp,
         max_hp: scaled.hp,
@@ -382,7 +382,7 @@ mod tests {
 
     fn dead_monster(type_name: &str, max_hp: i32) -> Monster {
         Monster {
-            id: macroquad_toolkit::rng::random_u64(),
+            id: 1,
             type_name: type_name.to_string(),
             hp: 0,
             max_hp,

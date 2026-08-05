@@ -71,7 +71,7 @@ pub fn add_room(state: &mut GameState, target_floor: Option<i32>) -> Result<(), 
         next_pos
     };
     let new_room = Room::new(
-        macroquad_toolkit::rng::random_u64(),
+        state.run_rng.next_u64(),
         room_type.clone(),
         new_position,
         floor_num,
@@ -185,7 +185,7 @@ pub fn branch_from(state: &mut GameState, floor_num: i32, source_pos: usize) -> 
     state.mana -= cost;
     let floor = &mut state.floors[floor_idx];
     floor.rooms.push(Room::new(
-        macroquad_toolkit::rng::random_u64(),
+        state.run_rng.next_u64(),
         RoomType::Normal,
         next_pos,
         floor_num,
@@ -235,21 +235,21 @@ fn create_new_floor(state: &mut GameState) -> Result<(), String> {
     }
 
     // Create new floor
-    let mut new_floor = Floor::new(macroquad_toolkit::rng::random_u64(), new_floor_num, true);
+    let mut new_floor = Floor::new(state.run_rng.next_u64(), new_floor_num, true);
     new_floor.rooms.push(Room::new(
-        macroquad_toolkit::rng::random_u64(),
+        state.run_rng.next_u64(),
         RoomType::Entrance,
         0,
         new_floor_num,
     ));
     new_floor.rooms.push(Room::new(
-        macroquad_toolkit::rng::random_u64(),
+        state.run_rng.next_u64(),
         RoomType::Normal,
         1,
         new_floor_num,
     ));
     new_floor.rooms.push(Room::new(
-        macroquad_toolkit::rng::random_u64(),
+        state.run_rng.next_u64(),
         RoomType::Core,
         2,
         new_floor_num,

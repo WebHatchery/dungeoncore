@@ -163,7 +163,9 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                 monster_kills.push((monster.type_name.clone(), monster.is_boss));
                 kill_credits.push((*attacker_id, monster.type_name.clone()));
                 if has_passive(monster, "SplitOnDeath") {
-                    if let Some(spawn) = split_spawn(&monster.type_name, floor_num) {
+                    if let Some(spawn) =
+                        split_spawn(&mut state.run_rng, &monster.type_name, floor_num)
+                    {
                         split_spawns.push(spawn.type_name.clone());
                         room.monsters.push(spawn);
                     }
@@ -280,7 +282,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             if alive_idxs.is_empty() {
                 break;
             }
-            let victim_idx = alive_idxs[macroquad_toolkit::rng::gen_range(0, alive_idxs.len())];
+            let victim_idx = alive_idxs[state.run_rng.below(alive_idxs.len())];
             let victim = &mut party.members[victim_idx];
             let elem_mult =
                 element_multiplier(&strike.element, &adventurer_element(&victim.class_name));

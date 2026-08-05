@@ -2,6 +2,7 @@
 
 use crate::data::traits::get_trait;
 use crate::game_state::{ActiveTrait, AdventurerParty, Monster};
+use macroquad_toolkit::rng::SeededRng;
 
 /// Whether a monster has a passive trait with the given effect type.
 pub(super) fn has_passive(monster: &Monster, effect_type: &str) -> bool {
@@ -30,7 +31,7 @@ pub(super) fn target_monster_idx(monsters: &[Monster]) -> Option<usize> {
 }
 
 /// Build the tier-1 monster a slain splitter breaks into (half HP).
-pub(super) fn split_spawn(parent_type: &str, floor: i32) -> Option<Monster> {
+pub(super) fn split_spawn(rng: &mut SeededRng, parent_type: &str, floor: i32) -> Option<Monster> {
     let parent = crate::data::monsters::get_monster_template(parent_type)?;
     let candidates: Vec<_> = crate::data::monsters::get_monster_templates()
         .into_iter()
@@ -53,7 +54,7 @@ pub(super) fn split_spawn(parent_type: &str, floor: i32) -> Option<Monster> {
     );
 
     Some(Monster {
-        id: macroquad_toolkit::rng::random_u64(),
+        id: rng.next_u64(),
         type_name: template.name.clone(),
         hp: (scaled.hp / 2).max(1),
         max_hp: scaled.hp,
@@ -138,7 +139,7 @@ pub(super) fn monster_attack_value(
 }
 
 /// Index of a random living party member.
-pub(super) fn random_alive_idx(party: &AdventurerParty) -> Option<usize> {
+pub(super) fn random_alive_idx(rng: &mut SeededRng, party: &AdventurerParty) -> Option<usize> {
     let alive: Vec<usize> = party
         .members
         .iter()
@@ -149,6 +150,6 @@ pub(super) fn random_alive_idx(party: &AdventurerParty) -> Option<usize> {
     if alive.is_empty() {
         None
     } else {
-        Some(alive[macroquad_toolkit::rng::gen_range(0, alive.len())])
+        Some(alive[rng.below(alive.len())])
     }
 }

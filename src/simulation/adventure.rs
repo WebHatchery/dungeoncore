@@ -61,14 +61,18 @@ fn build_adventurer(
 /// Party size and adventurer level range for the current threat/floor state.
 /// Low threat sends larger bands of weaker heroes; high threat sends smaller,
 /// far more dangerous elites.
-fn threat_party_shape(state: &GameState) -> (usize, i32, i32) {
+fn threat_party_shape(state: &mut GameState) -> (usize, i32, i32) {
     let tier = state.threat_tier();
     let deepest = state.total_floors.max(1);
     let level_min = 1 + tier;
     let level_max = (3 + tier + deepest / 2).max(level_min);
     let size = match tier {
-        0 => macroquad_toolkit::rng::gen_range(MIN_PARTY_SIZE, MAX_PARTY_SIZE + 1),
-        1 | 2 => macroquad_toolkit::rng::gen_range(MIN_PARTY_SIZE, MAX_PARTY_SIZE),
+        0 => state
+            .run_rng
+            .range_i32(MIN_PARTY_SIZE as i32, (MAX_PARTY_SIZE + 1) as i32) as usize,
+        1 | 2 => state
+            .run_rng
+            .range_i32(MIN_PARTY_SIZE as i32, MAX_PARTY_SIZE as i32) as usize,
         _ => MIN_PARTY_SIZE,
     };
     (size.max(1), level_min, level_max)
@@ -95,7 +99,7 @@ pub fn spawn_party(state: &mut GameState) {
     let spawn_chance = ADVENTURER_SPAWN_CHANCE
         * state.difficulty.profile().spawn_chance_mult
         * visitor_quality.spawn_chance_mult;
-    if !macroquad_toolkit::rng::chance(spawn_chance) {
+    if !state.run_rng.chance(spawn_chance) {
         return;
     }
 
@@ -118,7 +122,7 @@ pub fn spawn_party(state: &mut GameState) {
         .filter(|h| h.status == HeroStatus::Alive)
         .map(|h| h.id)
         .collect();
-    macroquad_toolkit::rng::shuffle(&mut returning);
+    state.run_rng.shuffle(&mut returning);
 
     for slot in 0..party_size {
         // Reputation controls how strongly a party prefers known veterans.
@@ -147,13 +151,14 @@ pub fn spawn_party(state: &mut GameState) {
 
         // Fresh recruit: roll identity and register a new ledger entry.
         let classes = get_adventurer_classes();
-        let class = macroquad_toolkit::rng::choose(&classes).unwrap();
-        let name = macroquad_toolkit::rng::choose(&names).unwrap().clone();
-        let race = macroquad_toolkit::rng::choose(&races)
+        let class = classes[state.run_rng.below(classes.len())].clone();
+        let name = names[state.run_rng.below(names.len())].clone();
+        let race = races
+            .get(state.run_rng.below(races.len()))
             .cloned()
             .unwrap_or_else(|| "Human".to_string());
-        let level = macroquad_toolkit::rng::gen_range(level_min, level_max + 1);
-        let id = macroquad_toolkit::rng::random_u64();
+        let level = state.run_rng.range_i32(level_min, level_max + 1);
+        let id = state.run_rng.next_u64();
         state.known_adventurers.push(HeroRecord {
             id,
             name: name.clone(),
@@ -186,7 +191,7 @@ pub fn spawn_party(state: &mut GameState) {
     let target_floor = state.floors.len().min(2) as i32;
 
     let party = AdventurerParty {
-        id: macroquad_toolkit::rng::random_u64(),
+        id: state.run_rng.next_u64(),
         members,
         current_floor: 1,
         current_room: 0,
@@ -215,8 +220,8 @@ pub fn spawn_party(state: &mut GameState) {
     )));
 
     // Random entry quote
-    if macroquad_toolkit::rng::chance(0.3) && !entry_quotes.is_empty() {
-        let quote = macroquad_toolkit::rng::choose(&entry_quotes).unwrap();
+    if state.run_rng.chance(0.3) && !entry_quotes.is_empty() {
+        let quote = &entry_quotes[state.run_rng.below(entry_quotes.len())];
         let name = &party.members[0].name;
         state.add_log(LogEntry::adventure(format!("{} says: \"{}\"", name, quote)));
     }
@@ -360,8 +365,8 @@ fn advance_party(state: &mut GameState, party_idx: usize) {
 
             // Exit quote
             let exit_quotes = get_exit_quotes();
-            if macroquad_toolkit::rng::chance(0.4) && !exit_quotes.is_empty() {
-                let quote = macroquad_toolkit::rng::choose(&exit_quotes).unwrap();
+            if state.run_rng.chance(0.4) && !exit_quotes.is_empty() {
+                let quote = &exit_quotes[state.run_rng.below(exit_quotes.len())];
                 if let Some(adv) = state.adventurer_parties[party_idx]
                     .members
                     .iter()

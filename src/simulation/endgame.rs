@@ -309,12 +309,13 @@ pub fn maybe_launch_siege(state: &mut GameState) {
     let size = 5usize;
     let mut members = Vec::with_capacity(size);
     for _ in 0..size {
-        let class = macroquad_toolkit::rng::choose(&classes).unwrap();
-        let name = macroquad_toolkit::rng::choose(&names).unwrap().clone();
-        let race = macroquad_toolkit::rng::choose(&races)
+        let class = classes[state.run_rng.below(classes.len())].clone();
+        let name = names[state.run_rng.below(names.len())].clone();
+        let race = races
+            .get(state.run_rng.below(races.len()))
             .cloned()
             .unwrap_or_else(|| "Human".to_string());
-        let id = macroquad_toolkit::rng::random_u64();
+        let id = state.run_rng.next_u64();
 
         // Register siege champions in the ledger like anyone else.
         state.known_adventurers.push(HeroRecord {
@@ -359,7 +360,7 @@ pub fn maybe_launch_siege(state: &mut GameState) {
     }
 
     state.adventurer_parties.push(AdventurerParty {
-        id: macroquad_toolkit::rng::random_u64(),
+        id: state.run_rng.next_u64(),
         members,
         current_floor: 1,
         current_room: 0,

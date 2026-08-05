@@ -55,8 +55,8 @@ pub(super) fn reward_monster_kills(
 
     // Victory quote
     let victory_quotes = get_victory_quotes();
-    if macroquad_toolkit::rng::chance(0.2) && !victory_quotes.is_empty() {
-        let quote = &victory_quotes[macroquad_toolkit::rng::gen_range(0, victory_quotes.len())];
+    if state.run_rng.chance(0.2) && !victory_quotes.is_empty() {
+        let quote = &victory_quotes[state.run_rng.below(victory_quotes.len())];
         if let Some(adv) = state.adventurer_parties[party_idx]
             .members
             .iter()
