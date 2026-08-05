@@ -111,5 +111,12 @@ pub fn draw_core_spell_button(state: &GameState, rect: Rect) -> bool {
         );
     }
 
+    if hovered {
+        macroquad_toolkit::ui::draw_tooltip(
+            "Core Smite spends mana to strike the deepest invading party. It can only fire while recharged.",
+            vec2(rect.x, rect.y + rect.h),
+        );
+    }
+
     clicked
 }

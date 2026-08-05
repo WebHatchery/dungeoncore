@@ -413,7 +413,9 @@ On each `resolve_combat` tick:
 - Confirmations now guard reset run and defender dismissal through a transient,
   cancel-safe overlay. Save-slot overwrite confirmation remains tied to the
   future multi-slot save work.
-- Tooltips on every stat, cost, icon, and abbreviation.
+- HUD resource/threat/prestige cards and Core Smite now explain themselves on
+  hover through the shared tooltip primitive. Extend coverage to every drawer
+  cost, icon, stat, and abbreviation.
 - Large-dungeon hardening: an open inspector now collapses the drawer rail on
   narrower desktops so the board retains usable room width. Dungeon-view
   scroll/zoom, log scrollback and filtering, full-roster drawer performance,

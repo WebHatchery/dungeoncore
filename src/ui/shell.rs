@@ -310,6 +310,17 @@ fn draw_top_stat(
             None,
         );
     }
+    if rect.contains(vec2(mouse_position().0, mouse_position().1)) {
+        let text = match label {
+            "Mana" => "Mana powers rooms, summons, upgrades, respawns, and Core Smite. The bar is your current capacity.",
+            "Gold" => "Gold pays room upgrades and variant swaps. Adventurers bank it when they escape.",
+            "Souls" => "Souls come from boss kills and buy permanent Core Powers.",
+            label if label.starts_with("Threat") => "Threat rises with adventurer deaths. At the final tier, the realm sends a siege.",
+            "CORE UNDER SIEGE" => "The core must survive this siege. Defeat or repel the invading party before its health reaches zero.",
+            _ => "This shows your prestige rank and the current dungeon day and hour.",
+        };
+        macroquad_toolkit::ui::draw_tooltip(text, vec2(rect.x, rect.y + rect.h));
+    }
 }
 
 fn draw_speed_segments(rect: Rect, speed: i32) -> bool {
