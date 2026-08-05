@@ -408,7 +408,9 @@ change combat outcomes.
   roster; the `combat_sprites` capture pins a Fire example. Dedicated poison,
   siege-arrival, and prestige VFX remain open.
 - Cohesive UI kit replacing the programmer-art panels and emoji glyphs.
-- Title, game-over, and prestige screens at shipping quality.
+- Title and prestige screens still need a shipping-quality pass. The game-over
+  overlay now has a shattered-Core emblem, a renewed-descent coda, and a fixed
+  `gameover` capture scene for visual review.
 
 ## Audio
 

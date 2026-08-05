@@ -403,40 +403,120 @@ pub fn draw_controls_reference(
 /// clicks to begin a new dungeon.
 pub fn draw_game_over_overlay(state: &GameState, sw: f32, sh: f32) -> bool {
     let w = 520.0_f32.min(sw - 40.0);
-    let h = 300.0_f32.min(sh - 40.0);
+    let h = 330.0_f32.min(sh - 40.0);
     let x = (sw - w) / 2.0;
     let y = (sh - h) / 2.0;
     let panel = Rect::new(x, y, w, h);
     draw_panel(panel, None, DANGER);
+    draw_shattered_core(vec2(x + w - 92.0, y + 108.0), 48.0);
 
-    draw_centered_text(
+    draw_text_fit(
         "THE CORE HAS FALLEN",
-        Rect::new(x, y + 40.0, w, 30.0),
+        x + 26.0,
+        y + 62.0,
+        w - 176.0,
         30.0,
         DANGER,
     );
-    draw_centered_text(
+    draw_text_fit(
         "The realm's army has shattered your dungeon heart.",
-        Rect::new(x, y + 96.0, w, 20.0),
+        x + 28.0,
+        y + 108.0,
+        w - 170.0,
         14.0,
         TEXT,
     );
-    draw_centered_text(
+    draw_text_fit(
         &format!(
             "You survived {} days and repelled {} sieges.",
             state.day, state.prestige
         ),
-        Rect::new(x, y + 130.0, w, 20.0),
+        x + 28.0,
+        y + 142.0,
+        w - 170.0,
         13.0,
         TEXT_MUTED,
     );
-    draw_centered_text(
+    draw_text_fit(
         &format!("Adventurers slain across the run: {}", state.total_deaths),
-        Rect::new(x, y + 156.0, w, 20.0),
+        x + 28.0,
+        y + 168.0,
+        w - 170.0,
         12.0,
         TEXT_MUTED,
     );
 
-    let btn = Rect::new(x + w / 2.0 - 110.0, y + h - 70.0, 220.0, 44.0);
+    draw_text_fit(
+        "Its shards will seed the next descent.",
+        x + w * 0.5 - 112.0,
+        y + h - 96.0,
+        224.0,
+        12.0,
+        with_alpha(SOUL, 0.82),
+    );
+    let btn = Rect::new(x + w / 2.0 - 110.0, y + h - 62.0, 220.0, 44.0);
     draw_command_button(btn, "Raise a New Dungeon", ButtonTone::Primary, true)
+}
+
+/// A fixed, renderer-only loss emblem. The cracked heart and orbiting shards
+/// give the game-over state a focal image without needing a separate asset.
+fn draw_shattered_core(center: Vec2, radius: f32) {
+    let pulse = (get_time() as f32 * 1.7).sin() * 0.04 + 0.20;
+    draw_circle(center.x, center.y, radius * 1.32, with_alpha(DANGER, pulse));
+    draw_circle_lines(
+        center.x,
+        center.y,
+        radius * 1.05,
+        1.2,
+        with_alpha(SOUL, 0.44),
+    );
+
+    for (angle, distance, size) in [
+        (-2.35_f32, 1.36, 0.23),
+        (-0.88, 1.44, 0.18),
+        (0.32, 1.34, 0.21),
+        (1.58, 1.42, 0.16),
+        (2.70, 1.33, 0.20),
+    ] {
+        let direction = vec2(angle.cos(), angle.sin());
+        let point = center + direction * radius * distance;
+        let tangent = vec2(-direction.y, direction.x) * radius * size;
+        let tip = point + direction * radius * size * 1.35;
+        draw_triangle(
+            point - tangent,
+            tip,
+            point + tangent,
+            with_alpha(SOUL, 0.72),
+        );
+        draw_triangle(
+            point - tangent * 0.70,
+            tip,
+            point + tangent * 0.70,
+            with_alpha(DANGER, 0.48),
+        );
+    }
+
+    let top = vec2(center.x, center.y - radius * 0.62);
+    let left = vec2(center.x - radius * 0.54, center.y);
+    let bottom = vec2(center.x, center.y + radius * 0.64);
+    let right = vec2(center.x + radius * 0.54, center.y);
+    draw_triangle(top, left, bottom, with_alpha(SOUL, 0.62));
+    draw_triangle(top, right, bottom, with_alpha(DANGER, 0.66));
+    draw_line(top.x, top.y, bottom.x - radius * 0.11, bottom.y, 2.4, TEXT);
+    draw_line(
+        center.x + radius * 0.08,
+        center.y - radius * 0.32,
+        center.x - radius * 0.18,
+        center.y + radius * 0.18,
+        1.8,
+        BLACK,
+    );
+    draw_line(
+        center.x - radius * 0.18,
+        center.y + radius * 0.18,
+        center.x + radius * 0.14,
+        center.y + radius * 0.38,
+        1.8,
+        BLACK,
+    );
 }
