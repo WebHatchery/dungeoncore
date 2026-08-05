@@ -280,6 +280,10 @@ pub struct GameState {
     pub day: i32,
     pub hour: i32,
     pub speed: i32,
+    /// A deliberate player pause. Persisted so loading a paused dungeon never
+    /// advances it before the player has a chance to review the board.
+    #[serde(default)]
+    pub paused: bool,
 
     // Dungeon
     pub status: DungeonStatus,
@@ -401,6 +405,7 @@ impl GameState {
             day: 1,
             hour: 6,
             speed: 1,
+            paused: false,
             status: DungeonStatus::Closed,
             floors: vec![floor1],
             total_floors: 1,

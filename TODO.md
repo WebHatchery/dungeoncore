@@ -402,7 +402,9 @@ On each `resolve_combat` tick:
   autosave interval, colourblind mode, reduced motion, key rebinding.
 - Save hardening: multiple slots with metadata, explicit save-version discipline,
   corrupt-save backup/recovery that never panics or silently resets.
-- True pause as a first-class state (pause-on-focus-loss, pause menu).
+- True pause is now a first-class persisted state with a Space shortcut, HUD
+  control, dedicated pause menu and simulation gate. Pause-on-focus-loss
+  remains open.
 - Confirmations on destructive actions (reset run, dismiss monster, overwrite).
 - Tooltips on every stat, cost, icon, and abbreviation.
 - Large-dungeon hardening: dungeon-view scroll/zoom, log scrollback and

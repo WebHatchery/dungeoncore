@@ -16,6 +16,7 @@ pub const SIDE_PANEL_WIDTH: f32 = 274.0;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ControlAction {
     None,
+    TogglePause,
     ToggleSpeed,
     ToggleDungeon,
 }
@@ -66,11 +67,26 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
     // Right-hand control cluster: speed selector + dungeon toggle.
     let dungeon_w = 150.0_f32.min(rect.w * 0.14).max(120.0);
     let speed_w = 138.0_f32.min(rect.w * 0.13).max(112.0);
+    let pause_w = 78.0;
     let cluster_gap = 10.0;
     let control_h = 42.0;
     let control_y = rect.y + (rect.h - control_h) * 0.5;
     let dungeon_x = rect.x + rect.w - 14.0 - dungeon_w;
     let speed_x = dungeon_x - cluster_gap - speed_w;
+    let pause_x = speed_x - cluster_gap - pause_w;
+
+    if draw_command_button(
+        Rect::new(pause_x, control_y, pause_w, control_h),
+        if state.paused { "Resume" } else { "Pause" },
+        if state.paused {
+            ButtonTone::Primary
+        } else {
+            ButtonTone::Ghost
+        },
+        true,
+    ) {
+        action = ControlAction::TogglePause;
+    }
 
     if draw_speed_segments(
         Rect::new(speed_x, control_y, speed_w, control_h),
@@ -95,7 +111,7 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
 
     // Resource + status stats fill the space between the title and controls.
     let stats_x = title_rect.x + title_rect.w + 16.0;
-    let stats_w = speed_x - stats_x - 16.0;
+    let stats_w = pause_x - stats_x - 16.0;
     let stat_w = (stats_w / 5.0).clamp(90.0, 156.0);
     let y = rect.y + 14.0;
     let stat_h = rect.h - 28.0;
@@ -169,6 +185,31 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
     );
 
     action
+}
+
+/// A visible frozen-state marker. The board remains inspectable beneath it;
+/// only the authoritative simulation has stopped.
+pub fn draw_pause_overlay(rect: Rect) -> bool {
+    let card = Rect::new(rect.x + (rect.w - 260.0) * 0.5, rect.y + 18.0, 260.0, 94.0);
+    draw_card(card, with_alpha(DANGER, 0.20), with_alpha(DANGER, 0.68));
+    draw_centered_text(
+        "PAUSED",
+        Rect::new(card.x, card.y + 10.0, card.w, 20.0),
+        15.0,
+        TEXT,
+    );
+    draw_centered_text(
+        "The dungeon is frozen. Inspect or plan freely.",
+        Rect::new(card.x, card.y + 32.0, card.w, 18.0),
+        10.0,
+        TEXT_MUTED,
+    );
+    draw_command_button(
+        Rect::new(card.x + 42.0, card.y + 58.0, card.w - 84.0, 26.0),
+        "Resume  [Space]",
+        ButtonTone::Primary,
+        true,
+    )
 }
 
 /// Threat readout derived from accumulated adventurer deaths.

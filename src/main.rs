@@ -328,7 +328,16 @@ fn render_playing_frame(
     let sh = screen_height();
     draw_game_background(sw, sh);
 
-    if simulate {
+    // A pause is a first-class simulation state: the UI remains available for
+    // inspection, but no time, raids, transient effects, or cooldowns advance.
+    if simulate && is_key_pressed(KeyCode::Space) {
+        state.paused = !state.paused;
+        if !state.paused {
+            reset_timers(last_time_advance, last_adventure_tick, last_save);
+        }
+    }
+
+    if simulate && !state.paused {
         // Age transient combat effects and party-travel animations each frame,
         // and recharge the Core Smite lever in real time.
         state.decay_effects(get_frame_time());
@@ -409,6 +418,12 @@ fn render_playing_frame(
         HUD_HEIGHT,
     );
     match draw_top_hud(state, hud_rect) {
+        ControlAction::TogglePause => {
+            state.paused = !state.paused;
+            if !state.paused {
+                reset_timers(last_time_advance, last_adventure_tick, last_save);
+            }
+        }
         ControlAction::ToggleSpeed => simulation::toggle_speed(state),
         ControlAction::ToggleDungeon => simulation::toggle_dungeon_status(state),
         _ => {}
@@ -538,6 +553,13 @@ fn render_playing_frame(
             }
         }
         DungeonAction::None => {}
+    }
+
+    if state.paused {
+        if draw_pause_overlay(dungeon_rect) {
+            state.paused = false;
+            reset_timers(last_time_advance, last_adventure_tick, last_save);
+        }
     }
 
     // Inspector panel (room, monster, and upgrade context)
