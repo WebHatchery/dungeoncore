@@ -1,11 +1,13 @@
 //! Small procedural feedback set for actions where visual confirmation alone
 //! is easy to miss. Generated WAVs keep native and WebGL packaging asset-free.
 
-use macroquad::audio::{load_sound_from_bytes, play_sound, PlaySoundParams, Sound};
+use macroquad::audio::{
+    load_sound_from_bytes, play_sound, set_sound_volume, stop_sound, PlaySoundParams, Sound,
+};
 use macroquad_toolkit::synth::{render_wav, SynthConfig, Voice, Wave};
 use std::cell::Cell;
 
-use crate::game_state::SoundEvent;
+use crate::game_state::{GameState, SoundEvent};
 
 #[derive(Clone, Copy)]
 pub enum SoundCue {
@@ -20,6 +22,13 @@ pub enum SoundCue {
     Siege,
     CoreDamage,
     Prestige,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MusicLayer {
+    Build,
+    Raid,
+    Siege,
 }
 
 pub struct GameAudio {
@@ -37,6 +46,10 @@ pub struct GameAudio {
     siege: Option<Sound>,
     core_damage: Option<Sound>,
     prestige: Option<Sound>,
+    build_music: Option<Sound>,
+    raid_music: Option<Sound>,
+    siege_music: Option<Sound>,
+    active_music: Cell<Option<MusicLayer>>,
 }
 
 impl GameAudio {
@@ -137,6 +150,79 @@ impl GameAudio {
                 11,
             )
             .await,
+            build_music: load_effect(
+                &[
+                    Voice::tone(0.0, 3.6, 146.8, 0.10).wave(Wave::Triangle),
+                    Voice::tone(0.0, 3.6, 220.0, 0.05).wave(Wave::Triangle),
+                ],
+                31,
+            )
+            .await,
+            raid_music: load_effect(
+                &[
+                    Voice::tone(0.0, 2.4, 98.0, 0.10).wave(Wave::Square),
+                    Voice::tone(0.0, 2.4, 147.0, 0.07).wave(Wave::Triangle),
+                    Voice::tone(0.0, 0.18, 720.0, 0.05).wave(Wave::Noise),
+                ],
+                32,
+            )
+            .await,
+            siege_music: load_effect(
+                &[
+                    Voice::tone(0.0, 2.0, 65.4, 0.14).wave(Wave::Square),
+                    Voice::tone(0.0, 2.0, 98.0, 0.09).wave(Wave::Triangle),
+                    Voice::tone(0.0, 0.24, 180.0, 0.09).wave(Wave::Noise),
+                ],
+                33,
+            )
+            .await,
+            active_music: Cell::new(None),
+        }
+    }
+
+    /// Select and loop the appropriate renderer-owned music layer. Nothing in
+    /// this method feeds back into the simulation or its saved state.
+    pub fn update_music(&self, state: &GameState, volume: f32) {
+        let wanted = if state.game_over {
+            None
+        } else if state.adventurer_parties.iter().any(|party| party.sieging) {
+            Some(MusicLayer::Siege)
+        } else if state.adventurer_parties.is_empty() {
+            Some(MusicLayer::Build)
+        } else {
+            Some(MusicLayer::Raid)
+        };
+        if self.active_music.get() != wanted {
+            for sound in [&self.build_music, &self.raid_music, &self.siege_music]
+                .into_iter()
+                .flatten()
+            {
+                stop_sound(sound);
+            }
+            if let Some(layer) = wanted {
+                if let Some(sound) = self.music_sound(layer) {
+                    play_sound(
+                        sound,
+                        PlaySoundParams {
+                            looped: true,
+                            volume: volume.clamp(0.0, 1.0),
+                        },
+                    );
+                }
+            }
+            self.active_music.set(wanted);
+        } else if let Some(layer) = wanted {
+            if let Some(sound) = self.music_sound(layer) {
+                set_sound_volume(sound, volume.clamp(0.0, 1.0));
+            }
+        }
+    }
+
+    fn music_sound(&self, layer: MusicLayer) -> Option<&Sound> {
+        match layer {
+            MusicLayer::Build => self.build_music.as_ref(),
+            MusicLayer::Raid => self.raid_music.as_ref(),
+            MusicLayer::Siege => self.siege_music.as_ref(),
         }
     }
 

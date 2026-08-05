@@ -415,7 +415,10 @@ change combat outcomes.
   remains cosmetic and capture-safe. Combat, trap, and death cues rotate among
   deterministic-in-the-renderer sample variations; expand next toward
   per-element hits and richer event-specific variation.
-- Music: build theme, raid tension layer, siege track, title; adaptive layering.
+- Procedural looping music now selects a build theme, raid-tension theme, or
+  siege track from live game state and honors the persisted master×music gain;
+  capture frames stay silent. Title music and genuinely layered/cross-faded
+  arrangements remain open.
 - Room ambience that deepens with floor depth.
 - Mixing, ducking, and per-channel volume (needs the settings menu).
 - Verify macroquad audio on native *and* WASM early — web audio needs an

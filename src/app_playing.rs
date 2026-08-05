@@ -38,6 +38,7 @@ pub fn render_playing_frame(
     sprites: &DungeonSprites,
     audio: &GameAudio,
     sfx_volume: f32,
+    music_volume: f32,
     keybindings: &KeyBindings,
 ) {
     let now = get_time();
@@ -91,6 +92,7 @@ pub fn render_playing_frame(
     // Simulations enqueue semantic effects; only a live interactive frame
     // consumes them, keeping capture runs silent and deterministic.
     if simulate {
+        audio.update_music(state, music_volume);
         for event in state.take_sound_events() {
             audio.play(event.into(), sfx_volume);
         }

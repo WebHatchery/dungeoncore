@@ -149,6 +149,7 @@ async fn main() {
                     &sprites,
                     &audio,
                     0.0,
+                    0.0,
                     &KeyBindings::default(),
                 );
             })
@@ -177,6 +178,7 @@ async fn main() {
                     persistence::DEFAULT_SLOT,
                     &sprites,
                     &audio,
+                    0.0,
                     0.0,
                     &KeyBindings::default(),
                 );
@@ -384,6 +386,7 @@ async fn main() {
             &sprites,
             &audio,
             settings.effective_sfx_volume(),
+            settings.effective_music_volume(),
             &keybindings,
         );
 
