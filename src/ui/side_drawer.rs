@@ -69,6 +69,7 @@ impl UpgradeSection {
 pub enum DrawerAction {
     None,
     BuildRoom,
+    BranchRoom,
     SelectMonster(String),
     SelectUpgrade(String),
     UnlockSpecies(String),
@@ -84,6 +85,7 @@ pub enum DrawerAction {
 pub enum BuildTabAction {
     None,
     Build,
+    Branch,
     OpenCorePowers,
     ChannelGold,
 }
@@ -118,6 +120,7 @@ pub fn draw_side_drawer(
     match active_tab {
         DrawerTab::Build => match draw_build_tab(state, content) {
             BuildTabAction::Build => action = DrawerAction::BuildRoom,
+            BuildTabAction::Branch => action = DrawerAction::BranchRoom,
             BuildTabAction::OpenCorePowers => action = DrawerAction::OpenCorePowers,
             BuildTabAction::ChannelGold => action = DrawerAction::ChannelGold,
             BuildTabAction::None => {}

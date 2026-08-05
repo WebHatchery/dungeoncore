@@ -462,6 +462,13 @@ fn render_playing_frame(
                 state.add_log(game_state::LogEntry::system(e));
             }
         }
+        DrawerAction::BranchRoom => {
+            if let Some((floor, room)) = state.selected_room {
+                if let Err(e) = simulation::branch_from(state, floor, room) {
+                    state.add_log(game_state::LogEntry::system(e));
+                }
+            }
+        }
         DrawerAction::UnlockSpecies(species) => {
             if let Err(e) = simulation::unlock_species(state, &species) {
                 state.add_log(game_state::LogEntry::system(e));

@@ -12,10 +12,12 @@ use super::theme::*;
 
 mod backdrop;
 mod icons;
+mod layout;
 mod room_art;
 mod sprites;
 
 use backdrop::{draw_board_surface, draw_floor_rail, draw_room_route_backplate};
+use layout::layout_floor;
 use macroquad_toolkit::colors::with_alpha;
 use room_art::{draw_connector, draw_future_room_tile, draw_party_transit, draw_room_tile};
 pub use sprites::{DungeonSprites, UNIT_SHEET_KEY, UNIT_SHEET_PATH};
@@ -142,6 +144,13 @@ fn draw_floor_rooms(
     preview: Option<&BuildPreview>,
     sprites: &DungeonSprites,
 ) -> Option<DungeonAction> {
+    if floor
+        .rooms
+        .iter()
+        .any(|room| room.room_type != RoomType::Core && room.exits.len() != 1)
+    {
+        return draw_graph_rooms(state, floor, area, sprites);
+    }
     let mut action = None;
     let rooms = sorted_rooms(&floor.rooms);
     let future_in_floor = preview.filter(|plan| plan.floor == floor.number);
@@ -195,7 +204,12 @@ fn draw_floor_rooms(
             let connector = Rect::new(x, tile_y + tile_h * 0.36, connector_w, tile_h * 0.28);
             draw_connector(connector, false);
             // A party crossing this corridor rides the connector between rooms.
-            if let Some(party) = party_in_transit(state, floor.number, room.position) {
+            if let Some(party) = party_in_transit(
+                state,
+                floor.number,
+                room.position,
+                room.exits.first().copied().unwrap_or(room.position + 1),
+            ) {
                 draw_party_transit(
                     connector,
                     party.move_anim.fraction_elapsed(),
@@ -216,6 +230,90 @@ fn draw_floor_rooms(
         }
     }
 
+    action
+}
+
+/// Draw a branching floor as columns of graph depth and rows of fork lanes.
+/// Connectors are drawn first so rooms and units retain a crisp foreground.
+fn draw_graph_rooms(
+    state: &GameState,
+    floor: &crate::game_state::Floor,
+    area: Rect,
+    sprites: &DungeonSprites,
+) -> Option<DungeonAction> {
+    let layout = layout_floor(floor);
+    let max_depth = layout.iter().map(|node| node.depth).max().unwrap_or(0);
+    let max_lane = layout.iter().map(|node| node.lane).max().unwrap_or(0) as usize;
+    let cols = max_depth + 1;
+    let rows = max_lane + 1;
+    let step_x = area.w / cols.max(1) as f32;
+    let step_y = area.h / rows.max(1) as f32;
+    let scale = (step_x / (BASE_ROOM_W + BASE_CONNECTOR_W))
+        .min(step_y / (BASE_ROOM_H + 20.0))
+        .clamp(0.46, 0.82);
+    let tile_w = BASE_ROOM_W * scale;
+    let tile_h = BASE_ROOM_H * scale;
+    let label_h = 32.0 * scale;
+    let center = |depth: usize, lane: i32| {
+        vec2(
+            area.x + step_x * (depth as f32 + 0.5),
+            area.y + step_y * (lane as f32 + 0.5),
+        )
+    };
+    let node_at = |position: usize| layout.iter().find(|node| node.position == position);
+
+    for room in &floor.rooms {
+        let Some(from) = node_at(room.position) else {
+            continue;
+        };
+        let from_center = center(from.depth, from.lane);
+        for &exit in &room.exits {
+            let Some(to) = node_at(exit) else { continue };
+            let to_center = center(to.depth, to.lane);
+            draw_line(
+                from_center.x + tile_w * 0.42,
+                from_center.y,
+                to_center.x - tile_w * 0.42,
+                to_center.y,
+                3.0 * scale,
+                with_alpha(TREASURE, 0.52),
+            );
+            if let Some(party) = party_in_transit(state, floor.number, room.position, exit) {
+                let progress = party.move_anim.fraction_elapsed();
+                let point = from_center.lerp(to_center, progress);
+                draw_party_transit(
+                    Rect::new(
+                        point.x - tile_w * 0.22,
+                        point.y - tile_h * 0.12,
+                        tile_w * 0.44,
+                        tile_h * 0.24,
+                    ),
+                    progress,
+                    &party.members,
+                    sprites,
+                );
+            }
+        }
+    }
+    let mut action = None;
+    for node in layout {
+        let room = floor.room_at(node.position)?;
+        let point = center(node.depth, node.lane);
+        let rect = Rect::new(
+            point.x - tile_w * 0.5,
+            point.y - tile_h * 0.5,
+            tile_w,
+            tile_h,
+        );
+        let placement = placement_state(state, room);
+        if draw_room_tile(state, room, rect, placement, sprites) {
+            action = Some(DungeonAction::RoomSelected(
+                room.floor_number,
+                room.position,
+            ));
+        }
+    }
+    let _ = label_h; // Room art owns its label plate; retain the scale relationship above.
     action
 }
 
@@ -326,12 +424,13 @@ fn party_in_transit<'a>(
     state: &'a GameState,
     floor_number: i32,
     from_pos: usize,
+    to_pos: usize,
 ) -> Option<&'a crate::game_state::AdventurerParty> {
     state.adventurer_parties.iter().find_map(|party| {
         if party.current_floor == floor_number
             && !party.move_anim.is_ready()
             && party.prev_room == from_pos
-            && party.current_room == from_pos + 1
+            && party.current_room == to_pos
             && !party.retreating
         {
             Some(party)

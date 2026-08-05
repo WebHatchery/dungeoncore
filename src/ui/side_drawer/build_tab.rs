@@ -70,6 +70,40 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
         return BuildTabAction::Build;
     }
 
+    let branch = state.selected_room.and_then(|(floor, room)| {
+        crate::simulation::rooms::branch_cost(state, floor, room)
+            .ok()
+            .map(|cost| ((floor, room), cost))
+    });
+    let branch_y = card.y + card.h + 66.0;
+    if let Some(((floor, room), branch_cost)) = branch {
+        if draw_command_button(
+            Rect::new(rect.x, branch_y, rect.w, 34.0),
+            &format!("Branch from room {room} · {branch_cost} mana"),
+            ButtonTone::Primary,
+            state.mana >= branch_cost,
+        ) {
+            return BuildTabAction::Branch;
+        }
+        draw_text_fit(
+            &format!("Parallel route on floor {floor}; both paths rejoin ahead."),
+            rect.x,
+            branch_y + 50.0,
+            rect.w,
+            10.0,
+            TEXT_MUTED,
+        );
+    } else {
+        draw_text_fit(
+            "Select a room with one route ahead to branch it.",
+            rect.x,
+            branch_y + 18.0,
+            rect.w,
+            10.0,
+            TEXT_DIM,
+        );
+    }
+
     // Permanent, soul-bought core powers live in their own tree overlay so the
     // branching tech tree has room to breathe. Summarise progress and offer the
     // entry point here.
@@ -78,7 +112,7 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
         .filter(|p| state.has_core_power(p.id))
         .count();
     let total = crate::simulation::endgame::CORE_POWERS.len();
-    let y = card.y + card.h + 78.0;
+    let y = card.y + card.h + 128.0;
     draw_text_fit(
         &format!("CORE POWERS · {} souls", state.souls),
         rect.x,

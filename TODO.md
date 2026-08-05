@@ -209,16 +209,17 @@ Still open:
 
 ## Dungeon graph (branching layouts)
 
-The dungeon is still a linear room queue. The edge model (`Room::exits`,
-`Floor::validate_graph`, save migration) and fork path-selection
-(`simulation/pathing.rs`) are in and tested, but no floor can actually branch yet.
+The edge model (`Room::exits`, `Floor::validate_graph`, save migration), fork
+path-selection (`simulation/pathing.rs`), build operation and layered board are
+now in place. Floors can form safe series-parallel diamonds, and subsequent
+room construction keeps those routes intact.
 
 - Build op: "Branch from here" creates a parallel room that reconverges at the
   selected room's successor (series-parallel diamonds, max 3 exits per room,
-  never orphan the Entrance→Core route).
+  never orphan the Entrance→Core route). — *done*
 - Layered rendering: a new `ui/dungeon_view/layout.rs` computing depth (column)
   and lane (row) from `exits`, per-edge connectors, party token riding the
-  chosen edge instead of `position → position + 1`.
+  chosen edge instead of `position → position + 1`. — *done*
 - Surface the party's chosen route and its reason (loot bait vs. beeline) on the
   board and in the log so the fork decision is legible.
 - Tutorial beat teaching the fork; balance pass on choke-point value.

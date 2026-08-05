@@ -55,16 +55,54 @@ pub fn add_room(state: &mut GameState, target_floor: Option<i32>) -> Result<(), 
     } else {
         RoomType::Normal
     };
+    let has_fork = state.floors[floor_idx]
+        .rooms
+        .iter()
+        .any(|room| room.exits.len() > 1);
+    let new_position = if has_fork {
+        state.floors[floor_idx]
+            .rooms
+            .iter()
+            .map(|room| room.position)
+            .max()
+            .unwrap_or(0)
+            + 1
+    } else {
+        next_pos
+    };
     let new_room = Room::new(
         macroquad_toolkit::rng::random_u64(),
         room_type.clone(),
-        next_pos,
+        new_position,
         floor_num,
     );
 
-    // Insert before core room
+    // A linear floor inserts before (and renumbers) the core as it always did.
+    // A branched floor instead inserts a shared room immediately before the
+    // core by redirecting every reconverging edge, preserving its diamonds.
     let floor = &mut state.floors[floor_idx];
-    if let Some(core_idx) = floor
+    if has_fork {
+        let core_pos = floor
+            .rooms
+            .iter()
+            .find(|room| room.room_type == RoomType::Core)
+            .map(|room| room.position)
+            .ok_or("Floor has no core")?;
+        floor.rooms.push(new_room);
+        for room in &mut floor.rooms {
+            for exit in &mut room.exits {
+                if *exit == core_pos {
+                    *exit = new_position;
+                }
+            }
+        }
+        floor
+            .rooms
+            .iter_mut()
+            .find(|room| room.position == new_position)
+            .expect("new shared room")
+            .exits = vec![core_pos];
+    } else if let Some(core_idx) = floor
         .rooms
         .iter()
         .position(|r| r.room_type == RoomType::Core)
@@ -75,9 +113,10 @@ pub fn add_room(state: &mut GameState, target_floor: Option<i32>) -> Result<(), 
     } else {
         floor.rooms.push(new_room);
     }
-    // Extending the linear chain (Phase A): rewire exits in position order.
-    // (Phase C's fork build op will wire branch edges explicitly instead.)
-    floor.rebuild_linear_exits();
+    if !has_fork {
+        floor.rebuild_linear_exits();
+    }
+    floor.validate_graph()?;
 
     let room_name = if is_boss { "Boss room" } else { "Normal room" };
     state.add_log(LogEntry::building(format!(
@@ -85,6 +124,90 @@ pub fn add_room(state: &mut GameState, target_floor: Option<i32>) -> Result<(), 
         room_name, floor_num, cost
     )));
 
+    Ok(())
+}
+
+/// Cost and validate a parallel room growing from `source_pos`. The new room
+/// joins the source's existing successor, preserving an Entrance-to-Core route
+/// on both sides of the diamond.
+pub fn branch_cost(state: &GameState, floor_num: i32, source_pos: usize) -> Result<i32, String> {
+    if !state.adventurer_parties.is_empty() {
+        return Err("Cannot reshape the dungeon while adventurers are inside!".into());
+    }
+    let floor = state
+        .floors
+        .iter()
+        .find(|floor| floor.number == floor_num)
+        .ok_or("Floor not found")?;
+    let source = floor.room_at(source_pos).ok_or("Room not found")?;
+    if source.exits.len() != 1 {
+        return Err("Choose a room with exactly one route ahead to branch from it.".into());
+    }
+    if source.room_type == RoomType::Core {
+        return Err("The core has no route beyond it to branch.".into());
+    }
+    if floor
+        .rooms
+        .iter()
+        .filter(|room| room.room_type != RoomType::Core)
+        .count()
+        > MAX_ROOMS_PER_FLOOR
+    {
+        return Err("This floor has no room for another branch.".into());
+    }
+    Ok(get_room_cost(state.total_room_count(), false))
+}
+
+/// Create one side of a series-parallel diamond. The source keeps its original
+/// route and gains the new one; the newcomer points to the same successor.
+pub fn branch_from(state: &mut GameState, floor_num: i32, source_pos: usize) -> Result<(), String> {
+    let cost = branch_cost(state, floor_num, source_pos)?;
+    if state.mana < cost {
+        return Err(format!("Not enough mana! Need {cost} mana."));
+    }
+    let floor_idx = state
+        .floors
+        .iter()
+        .position(|floor| floor.number == floor_num)
+        .ok_or("Floor not found")?;
+    let next_pos = state.floors[floor_idx]
+        .rooms
+        .iter()
+        .map(|room| room.position)
+        .max()
+        .unwrap_or(0)
+        + 1;
+    let successor = state.floors[floor_idx]
+        .room_at(source_pos)
+        .and_then(|room| room.exits.first().copied())
+        .ok_or("The chosen room has no route to branch.")?;
+
+    state.mana -= cost;
+    let floor = &mut state.floors[floor_idx];
+    floor.rooms.push(Room::new(
+        macroquad_toolkit::rng::random_u64(),
+        RoomType::Normal,
+        next_pos,
+        floor_num,
+    ));
+    floor
+        .rooms
+        .last_mut()
+        .expect("newly pushed branch room")
+        .exits = vec![successor];
+    floor
+        .rooms
+        .iter_mut()
+        .find(|room| room.position == source_pos)
+        .expect("validated branch source")
+        .exits
+        .push(next_pos);
+    floor.validate_graph()?;
+
+    state.add_log(LogEntry::building(format!(
+        "A parallel room branches from room {} on floor {} for {} mana.",
+        source_pos, floor_num, cost
+    )));
     Ok(())
 }
 
@@ -149,4 +272,42 @@ fn create_new_floor(state: &mut GameState) -> Result<(), String> {
     )));
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_branch_rejoins_the_route_without_orphaning_the_floor() {
+        let mut state = GameState::new();
+        state.mana = 1_000;
+        add_room(&mut state, None).unwrap();
+        branch_from(&mut state, 1, 0).unwrap();
+        let floor = &state.floors[0];
+        let entrance = floor.room_at(0).unwrap();
+        assert_eq!(entrance.exits.len(), 2);
+        let branch = floor.room_at(*entrance.exits.last().unwrap()).unwrap();
+        assert_eq!(branch.exits, vec![1]);
+        assert!(floor.validate_graph().is_ok());
+    }
+
+    #[test]
+    fn a_fork_cannot_be_forked_again_without_a_single_successor() {
+        let mut state = GameState::new();
+        state.mana = 1_000;
+        branch_from(&mut state, 1, 0).unwrap();
+        assert!(branch_from(&mut state, 1, 0).is_err());
+    }
+
+    #[test]
+    fn building_after_a_branch_keeps_both_routes_connected() {
+        let mut state = GameState::new();
+        state.mana = 1_000;
+        branch_from(&mut state, 1, 0).unwrap();
+        add_room(&mut state, None).unwrap();
+        let floor = &state.floors[0];
+        assert_eq!(floor.room_at(0).unwrap().exits.len(), 2);
+        assert!(floor.validate_graph().is_ok());
+    }
 }
