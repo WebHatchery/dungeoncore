@@ -388,8 +388,10 @@ On each `resolve_combat` tick:
 
 ## Audio
 
-- SFX set (~30–50): build/summon, per-element hits, trap triggers, UI, deaths,
-  income ticks, threat stings, siege alarm, core-damage heartbeat, prestige.
+- Procedural UI, room-placement, and Core Smite SFX now load without external
+  assets and honor master×SFX volume on native and WebGL builds. Expand toward
+  the full set: per-element hits, trap triggers, deaths, income ticks, threat
+  stings, siege alarm, core-damage heartbeat, and prestige.
 - Music: build theme, raid tension layer, siege track, title; adaptive layering.
 - Room ambience that deepens with floor depth.
 - Mixing, ducking, and per-channel volume (needs the settings menu).

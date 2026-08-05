@@ -3,9 +3,11 @@
 //!
 //! Migrated from React/TypeScript + PHP to Rust using macroquad.
 
+mod app_actions;
 mod app_support;
 mod capture_scenes;
 mod data;
+mod game_audio;
 mod game_state;
 mod persistence;
 mod simulation;
@@ -16,7 +18,9 @@ use macroquad::prelude::*;
 use macroquad_toolkit::assets::AssetManager;
 use macroquad_toolkit::capture;
 
+use app_actions::apply_drawer_action;
 use app_support::*;
+use game_audio::{GameAudio, SoundCue};
 use game_state::GameState;
 use ui::*;
 
@@ -47,6 +51,7 @@ async fn main() {
         eprintln!("Failed to load unit sprite sheet; using icons: {}", e);
     }
     let sprites = DungeonSprites::from_assets(&assets);
+    let audio = GameAudio::new().await;
 
     // Screenshot capture harness: when DUNGEON_CORE_CAPTURE_PATH is set, seed a
     // scene, render a fixed number of frames, write a PNG, and exit. No input,
@@ -103,6 +108,8 @@ async fn main() {
                     30.0,
                     persistence::DEFAULT_SLOT,
                     &sprites,
+                    &audio,
+                    0.0,
                 );
             })
             .await;
@@ -129,6 +136,8 @@ async fn main() {
                     30.0,
                     persistence::DEFAULT_SLOT,
                     &sprites,
+                    &audio,
+                    0.0,
                 );
             })
             .await;
@@ -308,6 +317,8 @@ async fn main() {
             settings.autosave_interval as f64,
             active_slot,
             &sprites,
+            &audio,
+            settings.effective_sfx_volume(),
         );
 
         next_frame().await;
@@ -340,6 +351,8 @@ fn render_playing_frame(
     autosave_interval: f64,
     save_slot: &str,
     sprites: &DungeonSprites,
+    audio: &GameAudio,
+    sfx_volume: f32,
 ) {
     let now = get_time();
     let sw = screen_width();
@@ -437,13 +450,20 @@ fn render_playing_frame(
     );
     match draw_top_hud(state, hud_rect) {
         ControlAction::TogglePause => {
+            audio.play(SoundCue::Ui, sfx_volume);
             state.paused = !state.paused;
             if !state.paused {
                 reset_timers(last_time_advance, last_adventure_tick, last_save);
             }
         }
-        ControlAction::ToggleSpeed => simulation::toggle_speed(state),
-        ControlAction::ToggleDungeon => simulation::toggle_dungeon_status(state),
+        ControlAction::ToggleSpeed => {
+            audio.play(SoundCue::Ui, sfx_volume);
+            simulation::toggle_speed(state);
+        }
+        ControlAction::ToggleDungeon => {
+            audio.play(SoundCue::Ui, sfx_volume);
+            simulation::toggle_dungeon_status(state);
+        }
         _ => {}
     }
 
@@ -461,62 +481,15 @@ fn render_playing_frame(
     let has_inspector = state.selected_room.is_some() || state.selected_monster.is_some();
     let drawer_w = responsive_drawer_width(has_inspector, *drawer_open, sw);
     let drawer_rect = Rect::new(OUTER_MARGIN, body_top, drawer_w, body_h);
-    match draw_side_drawer(
+    let drawer_action = draw_side_drawer(
         state,
         drawer_rect,
         drawer_tab,
         drawer_open,
         upgrade_section,
         heroes_scroll,
-    ) {
-        DrawerAction::SelectMonster(monster) => {
-            if state.selected_monster.as_ref() == Some(&monster) {
-                state.selected_monster = None;
-            } else {
-                state.selected_room = None;
-                state.selected_upgrade = None;
-                state.selected_monster = Some(monster);
-            }
-        }
-        DrawerAction::SelectUpgrade(upgrade) => {
-            if state.selected_upgrade.as_ref() == Some(&upgrade) {
-                state.selected_upgrade = None;
-            } else {
-                state.selected_room = None;
-                state.selected_monster = None;
-                state.selected_upgrade = Some(upgrade);
-            }
-        }
-        DrawerAction::BuildRoom => {
-            if let Err(e) = simulation::add_room(state, None) {
-                state.add_log(game_state::LogEntry::system(e));
-            }
-        }
-        DrawerAction::BranchRoom => {
-            if let Some((floor, room)) = state.selected_room {
-                if let Err(e) = simulation::branch_from(state, floor, room) {
-                    state.add_log(game_state::LogEntry::system(e));
-                }
-            }
-        }
-        DrawerAction::UnlockSpecies(species) => {
-            if let Err(e) = simulation::unlock_species(state, &species) {
-                state.add_log(game_state::LogEntry::system(e));
-            }
-        }
-        DrawerAction::OpenCorePowers => *show_core_tree = true,
-        DrawerAction::ChannelGold => {
-            if let Err(e) = simulation::economy::channel_gold_to_mana(state) {
-                state.add_log(game_state::LogEntry::system(e));
-            }
-        }
-        DrawerAction::ResetGame => {
-            state.pending_confirmation = Some(game_state::PendingConfirmation::ResetRun);
-        }
-        DrawerAction::OpenHero(id) => state.selected_hero = Some(id),
-        DrawerAction::CloseHero => state.selected_hero = None,
-        DrawerAction::None => {}
-    }
+    );
+    apply_drawer_action(drawer_action, state, show_core_tree, audio, sfx_volume);
 
     let right_panel_w = if has_inspector {
         (sw * 0.21).clamp(270.0, 330.0)
@@ -536,6 +509,7 @@ fn render_playing_frame(
 
     match draw_dungeon_board(state, dungeon_rect, sprites) {
         DungeonAction::RoomSelected(floor_num, room_pos) => {
+            audio.play(SoundCue::Place, sfx_volume);
             if let Some(ref monster_name) = state.selected_monster.clone() {
                 // Selection stays armed on success so more can be placed with
                 // further clicks; it clears on failure (no mana, bad room) or
@@ -560,6 +534,7 @@ fn render_playing_frame(
             }
         }
         DungeonAction::BuildRoom => {
+            audio.play(SoundCue::Place, sfx_volume);
             if let Err(e) = simulation::add_room(state, None) {
                 state.add_log(game_state::LogEntry::system(e));
             }
@@ -670,6 +645,7 @@ fn render_playing_frame(
         );
         let clicked = draw_core_spell_button(state, smite_rect);
         if simulate && (clicked || is_key_pressed(KeyCode::Q)) {
+            audio.play(SoundCue::Smite, sfx_volume);
             if let Err(e) = simulation::core_spell::cast_core_smite(state) {
                 state.add_log(game_state::LogEntry::system(e));
             }
