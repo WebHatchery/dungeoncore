@@ -221,7 +221,7 @@ room construction keeps those routes intact.
   and lane (row) from `exits`, per-edge connectors, party token riding the
   chosen edge instead of `position → position + 1`. — *done*
 - Surface the party's chosen route and its reason (loot bait vs. beeline) on the
-  board and in the log so the fork decision is legible.
+  board and in the log so the fork decision is legible. — *done*
 - Tutorial beat teaching the fork; balance pass on choke-point value.
 
 ## Reputation & visitor quality — *done*

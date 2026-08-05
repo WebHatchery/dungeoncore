@@ -76,6 +76,7 @@ pub fn draw_dungeon_board(
     if let Some(monster) = &state.selected_monster {
         draw_placement_badge(state, monster, rect);
     }
+    draw_route_choice(state, rect);
 
     let content = Rect::new(rect.x + 10.0, rect.y + 76.0, rect.w - 20.0, rect.h - 86.0);
     draw_board_surface(content);
@@ -135,6 +136,35 @@ pub fn draw_dungeon_board(
     }
 
     action
+}
+
+/// Make the active fork's decision readable without opening the log. The
+/// wording comes from the same pure pathing helper that selects its edge.
+fn draw_route_choice(state: &GameState, rect: Rect) {
+    let Some(party) = state
+        .adventurer_parties
+        .iter()
+        .find(|party| !party.retreating)
+    else {
+        return;
+    };
+    let Some(floor) = state
+        .floors
+        .iter()
+        .find(|floor| floor.number == party.current_floor)
+    else {
+        return;
+    };
+    let Some(room) = floor.room_at(party.current_room) else {
+        return;
+    };
+    if room.exits.len() < 2 {
+        return;
+    }
+    let reason = crate::simulation::pathing::choice_reason(state, party, &room.exits);
+    let badge = Rect::new(rect.x + rect.w - 236.0, rect.y + 54.0, 214.0, 24.0);
+    draw_card(badge, with_alpha(WARNING, 0.12), with_alpha(WARNING, 0.42));
+    draw_centered_text(&format!("ROUTE: {reason}"), badge, 10.0, WARNING);
 }
 
 fn draw_floor_rooms(

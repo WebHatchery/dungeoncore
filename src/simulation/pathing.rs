@@ -46,6 +46,16 @@ pub fn is_beelining(state: &GameState, party: &AdventurerParty) -> bool {
     party.sieging || state.threat_tier() >= BEELINE_THREAT_TIER
 }
 
+/// Player-facing reason for the party's next fork choice. This stays derived
+/// from simulation state so it can never disagree with `choose_exit`.
+pub fn choice_reason(state: &GameState, party: &AdventurerParty, exits: &[usize]) -> &'static str {
+    match exits {
+        [] | [_] => "following the only route",
+        _ if is_beelining(state, party) => "beelining for the Core",
+        _ => "following the lure of loot",
+    }
+}
+
 /// How appealing a candidate room is to a *greedy* party: loot pulls them in,
 /// visible defenders push them away, and nearness to the Core gently breaks ties.
 fn appeal(floor: &Floor, pos: usize) -> f32 {
@@ -160,6 +170,22 @@ mod tests {
         let s = GameState::new();
         let floor = forked_floor();
         assert_eq!(choose_exit(&s, &floor, &party(), &[2]), 2);
+    }
+
+    #[test]
+    fn choice_reason_matches_the_two_fork_modes() {
+        let mut state = GameState::new();
+        let floor = forked_floor();
+        assert_eq!(
+            choice_reason(&state, &party(), &[1, 2]),
+            "following the lure of loot"
+        );
+        state.total_deaths = 100;
+        assert_eq!(
+            choice_reason(&state, &party(), &[1, 2]),
+            "beelining for the Core"
+        );
+        assert_eq!(choose_exit(&state, &floor, &party(), &[1, 2]), 1);
     }
 
     #[test]

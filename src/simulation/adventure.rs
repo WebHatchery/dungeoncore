@@ -381,12 +381,13 @@ fn advance_party(state: &mut GameState, party_idx: usize) {
     // so the party visibly walks from its old room to the new one.
     let party = &state.adventurer_parties[party_idx];
     let next = super::pathing::choose_exit(state, floor, party, &exits);
+    let reason = super::pathing::choice_reason(state, party, &exits);
     state.adventurer_parties[party_idx].prev_room = current_room;
     state.adventurer_parties[party_idx].move_anim.trigger();
     state.adventurer_parties[party_idx].current_room = next;
     state.add_log(LogEntry::adventure(format!(
-        "Party advances to room {} on floor {}",
-        next, current_floor
+        "Party chooses room {} on floor {} — {}.",
+        next, current_floor, reason
     )));
 }
 
