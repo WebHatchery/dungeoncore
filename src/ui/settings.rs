@@ -74,6 +74,14 @@ pub fn apply_title_settings_action(
                 settings.autosave_interval
             ))
         }
+        TitleSettingsAction::AdjustDefaultSpeed => {
+            settings.default_speed = if settings.default_speed >= 4 {
+                1
+            } else {
+                settings.default_speed + 1
+            };
+            Some(format!("New-run speed: {}x.", settings.default_speed))
+        }
         TitleSettingsAction::Back => return (None, true),
         TitleSettingsAction::None => return (None, false),
     };

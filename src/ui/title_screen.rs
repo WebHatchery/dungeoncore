@@ -30,6 +30,7 @@ pub enum TitleSettingsAction {
     AdjustUiScale(i8),
     ToggleReducedMotion,
     AdjustAutosave(i8),
+    AdjustDefaultSpeed,
     Back,
 }
 
@@ -247,9 +248,9 @@ pub fn draw_title_settings_screen(
     let panel_w = sw.min(1280.0) * 0.32;
     let panel = Rect::new(
         (sw - panel_w.clamp(320.0, 430.0)) * 0.5,
-        (sh - 620.0) * 0.5,
+        (sh - 674.0) * 0.5,
         panel_w.clamp(320.0, 430.0),
-        620.0,
+        674.0,
     );
     draw_title_panel(panel);
 
@@ -338,7 +339,15 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustAutosave(1);
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 500.0, button_w, 48.0),
+        Rect::new(button_x, panel.y + 482.0, button_w, 42.0),
+        &format!("New-run speed: {}x", settings.default_speed),
+        true,
+        ButtonTone::Ghost,
+    ) {
+        return TitleSettingsAction::AdjustDefaultSpeed;
+    }
+    if draw_title_button(
+        Rect::new(button_x, panel.y + 554.0, button_w, 48.0),
         "Back",
         true,
         ButtonTone::Ghost,

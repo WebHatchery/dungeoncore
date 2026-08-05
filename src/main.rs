@@ -39,7 +39,7 @@ fn window_conf() -> Conf {
     capture::capture_window_conf(CAPTURE_PREFIX, "Dungeon Core", 1280, 720)
 }
 
-fn create_new_game(difficulty: data::difficulty::Difficulty) -> GameState {
+fn create_new_game(difficulty: data::difficulty::Difficulty, default_speed: i32) -> GameState {
     let mut state = GameState::new();
     state.difficulty = difficulty;
     // Scale the starting core so easier runs begin sturdier and harder ones
@@ -47,6 +47,7 @@ fn create_new_game(difficulty: data::difficulty::Difficulty) -> GameState {
     let mult = difficulty.profile().core_hp_mult;
     state.core_max_hp = ((state.core_max_hp as f32 * mult).round() as i32).max(1);
     state.core_hp = state.core_max_hp;
+    state.speed = default_speed.clamp(1, 4);
     state
 }
 
@@ -85,7 +86,7 @@ async fn main() {
     // scene, render a fixed number of frames, write a PNG, and exit. No input,
     // no simulation drift, and the player's save file is left untouched.
     if let Some(config) = capture::CaptureConfig::from_env(CAPTURE_PREFIX) {
-        let mut cap_state = create_new_game(data::difficulty::Difficulty::default());
+        let mut cap_state = create_new_game(data::difficulty::Difficulty::default(), 1);
         capture_scenes::seed_capture_scene(&mut cap_state, &config.scene);
         // Most scenes show the Monsters tab; a couple open the tab they exist
         // to show off.
@@ -165,7 +166,7 @@ async fn main() {
     }
 
     let mut state = persistence::load_game()
-        .unwrap_or_else(|_| create_new_game(data::difficulty::Difficulty::default()));
+        .unwrap_or_else(|_| create_new_game(data::difficulty::Difficulty::default(), 1));
     let mut screen = AppScreen::Title;
     let mut title_notice: Option<String> = None;
     let mut settings = macroquad_toolkit::settings::GameSettings::load("dungeon_core");
@@ -231,7 +232,7 @@ async fn main() {
             AppScreen::NewGameSetup => {
                 match draw_new_game_setup(&assets, title_notice.as_deref()) {
                     NewGameSetupAction::Start(difficulty) => {
-                        state = create_new_game(difficulty);
+                        state = create_new_game(difficulty, settings.default_speed);
                         if let Err(e) = persistence::save_game(&state) {
                             eprintln!("Failed to save new game: {}", e);
                         }
@@ -371,7 +372,7 @@ fn render_playing_frame(
         draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.82));
         if draw_game_over_overlay(state, sw, sh) {
             // A fresh dungeon keeps the fallen run's chosen difficulty.
-            *state = create_new_game(state.difficulty);
+            *state = create_new_game(state.difficulty, 1);
             let _ = persistence::save_game(state);
             reset_timers(last_time_advance, last_adventure_tick, last_save);
         }
@@ -669,7 +670,7 @@ fn render_playing_frame(
         match draw_confirmation_overlay(&action, sw, sh) {
             ConfirmationChoice::Confirm => match action {
                 game_state::PendingConfirmation::ResetRun => {
-                    *state = create_new_game(state.difficulty);
+                    *state = create_new_game(state.difficulty, 1);
                     let _ = persistence::save_game(state);
                     reset_timers(last_time_advance, last_adventure_tick, last_save);
                 }
