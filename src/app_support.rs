@@ -25,7 +25,21 @@ pub fn window_conf() -> Conf {
 }
 
 pub fn create_new_game(difficulty: Difficulty, default_speed: i32) -> GameState {
+    create_new_game_with_seed(
+        difficulty,
+        default_speed,
+        macroquad_toolkit::rng::random_u64(),
+    )
+}
+
+pub fn create_new_game_with_seed(
+    difficulty: Difficulty,
+    default_speed: i32,
+    run_seed: u64,
+) -> GameState {
     let mut state = GameState::new();
+    state.run_seed = run_seed;
+    state.run_rng = macroquad_toolkit::rng::SeededRng::new(run_seed);
     state.difficulty = difficulty;
     let mult = difficulty.profile().core_hp_mult;
     state.core_max_hp = ((state.core_max_hp as f32 * mult).round() as i32).max(1);

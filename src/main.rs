@@ -145,6 +145,7 @@ async fn main() {
     let mut active_slot = persistence::DEFAULT_SLOT;
     let mut screen = AppScreen::Title;
     let mut title_notice: Option<String> = legacy_notice;
+    let mut seed_input = String::new();
     let mut settings = macroquad_toolkit::settings::GameSettings::load("dungeon_core");
     settings.sanitize();
     settings.apply_display();
@@ -210,6 +211,7 @@ async fn main() {
                     },
                     SaveSlotAction::New(slot) => {
                         active_slot = slot;
+                        seed_input.clear();
                         if matches!(persistence::slot_state(slot), persistence::SlotState::Ready { .. }) {
                             screen = AppScreen::ConfirmSlotOverwrite;
                         } else {
@@ -241,9 +243,14 @@ async fn main() {
                 continue;
             }
             AppScreen::NewGameSetup => {
-                match draw_new_game_setup(&assets, title_notice.as_deref()) {
-                    NewGameSetupAction::Start(difficulty) => {
-                        state = create_new_game(difficulty, settings.default_speed);
+                match draw_new_game_setup(&assets, &mut seed_input, title_notice.as_deref()) {
+                    NewGameSetupAction::Start(difficulty, seed) => {
+                        state = match seed {
+                            Some(seed) => {
+                                create_new_game_with_seed(difficulty, settings.default_speed, seed)
+                            }
+                            None => create_new_game(difficulty, settings.default_speed),
+                        };
                         if let Err(e) = persistence::save_game(active_slot, &state) {
                             eprintln!("Failed to save new game: {}", e);
                         }

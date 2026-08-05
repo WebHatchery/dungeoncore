@@ -129,11 +129,15 @@ pub fn draw_title_screen(
 pub enum NewGameSetupAction {
     None,
     Back,
-    Start(Difficulty),
+    Start(Difficulty, Option<u64>),
 }
 
 /// Difficulty-selection screen shown when the player starts a new game.
-pub fn draw_new_game_setup(assets: &AssetManager, notice: Option<&str>) -> NewGameSetupAction {
+pub fn draw_new_game_setup(
+    assets: &AssetManager,
+    seed_input: &mut String,
+    notice: Option<&str>,
+) -> NewGameSetupAction {
     let sw = screen_width();
     let sh = screen_height();
     draw_title_background(assets, sw, sh);
@@ -159,6 +163,20 @@ pub fn draw_new_game_setup(assets: &AssetManager, notice: Option<&str>) -> NewGa
         12.0,
         TEXT_MUTED,
     );
+
+    while let Some(character) = get_char_pressed() {
+        if character.is_ascii_hexdigit() && seed_input.len() < 16 {
+            seed_input.push(character.to_ascii_uppercase());
+        }
+    }
+    if is_key_pressed(KeyCode::Backspace) {
+        seed_input.pop();
+    }
+    let challenge_seed = if seed_input.is_empty() {
+        Some(None)
+    } else {
+        u64::from_str_radix(seed_input, 16).ok().map(Some)
+    };
 
     let mut action = NewGameSetupAction::None;
     let card_x = panel.x + 28.0;
@@ -189,14 +207,48 @@ pub fn draw_new_game_setup(assets: &AssetManager, notice: Option<&str>) -> NewGa
             accent,
         );
         draw_wrapped_blurb(profile.blurb, card.x + 16.0, card.y + 46.0, card.w - 32.0);
-        if was_clicked_rect(card) {
-            action = NewGameSetupAction::Start(diff);
+        if was_clicked_rect(card) && challenge_seed.is_some() {
+            action = NewGameSetupAction::Start(diff, challenge_seed.flatten());
         }
         cy += card_h + gap;
     }
 
+    draw_text_fit(
+        "Challenge seed (hex, optional):",
+        card_x,
+        panel.y + panel.h - 96.0,
+        card_w,
+        11.0,
+        TEXT_MUTED,
+    );
+    draw_card(
+        Rect::new(card_x, panel.y + panel.h - 84.0, card_w, 24.0),
+        CARD,
+        if challenge_seed.is_some() {
+            BORDER
+        } else {
+            DANGER
+        },
+    );
+    draw_text_fit(
+        if seed_input.is_empty() {
+            "Random seed"
+        } else {
+            seed_input
+        },
+        card_x + 10.0,
+        panel.y + panel.h - 68.0,
+        card_w - 20.0,
+        11.0,
+        if seed_input.is_empty() {
+            TEXT_DIM
+        } else {
+            TEXT
+        },
+    );
+
     if draw_title_button(
-        Rect::new(card_x, panel.y + panel.h - 56.0, card_w, 40.0),
+        Rect::new(card_x, panel.y + panel.h - 46.0, card_w, 32.0),
         "Back",
         true,
         ButtonTone::Ghost,
