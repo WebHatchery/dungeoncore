@@ -6,6 +6,7 @@ use macroquad_toolkit::capture;
 
 use crate::data::difficulty::Difficulty;
 use crate::game_state::GameState;
+use crate::ui::{DRAWER_COLLAPSED_WIDTH, DRAWER_OPEN_WIDTH, SIDE_PANEL_WIDTH};
 
 /// Env-var prefix for the screenshot capture harness (DUNGEON_CORE_CAPTURE_*).
 pub const CAPTURE_PREFIX: &str = "DUNGEON_CORE";
@@ -57,4 +58,13 @@ pub fn reset_timers(
     *last_time_advance = now;
     *last_adventure_tick = now;
     *last_save = now;
+}
+
+/// Preserve board space on a narrower desktop while a room inspector is open.
+pub fn responsive_drawer_width(has_inspector: bool, drawer_open: bool, screen_width: f32) -> f32 {
+    if drawer_open && !(has_inspector && screen_width < 1080.0) {
+        SIDE_PANEL_WIDTH.min((screen_width * 0.22).clamp(250.0, DRAWER_OPEN_WIDTH))
+    } else {
+        DRAWER_COLLAPSED_WIDTH
+    }
 }

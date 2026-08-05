@@ -414,8 +414,10 @@ On each `resolve_combat` tick:
   cancel-safe overlay. Save-slot overwrite confirmation remains tied to the
   future multi-slot save work.
 - Tooltips on every stat, cost, icon, and abbreviation.
-- Large-dungeon hardening: dungeon-view scroll/zoom, log scrollback and
-  filtering, drawer performance with the full monster roster, 20-floor legibility.
+- Large-dungeon hardening: an open inspector now collapses the drawer rail on
+  narrower desktops so the board retains usable room width. Dungeon-view
+  scroll/zoom, log scrollback and filtering, full-roster drawer performance,
+  and 20-floor legibility remain open.
 - An in-game `[H]` controls reference now documents the live keyboard and
   pointer interactions. Expand this toward full keyboard navigation and decide
   on gamepad/Steam Deck support.

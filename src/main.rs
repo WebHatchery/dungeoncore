@@ -458,11 +458,8 @@ fn render_playing_frame(
     let body_bottom = log_rect.y - PANEL_GAP;
     let body_h = (body_bottom - body_top).max(220.0);
 
-    let drawer_w = if *drawer_open {
-        SIDE_PANEL_WIDTH.min((sw * 0.22).clamp(250.0, DRAWER_OPEN_WIDTH))
-    } else {
-        DRAWER_COLLAPSED_WIDTH
-    };
+    let has_inspector = state.selected_room.is_some() || state.selected_monster.is_some();
+    let drawer_w = responsive_drawer_width(has_inspector, *drawer_open, sw);
     let drawer_rect = Rect::new(OUTER_MARGIN, body_top, drawer_w, body_h);
     match draw_side_drawer(
         state,
@@ -521,7 +518,6 @@ fn render_playing_frame(
         DrawerAction::None => {}
     }
 
-    let has_inspector = state.selected_room.is_some() || state.selected_monster.is_some();
     let right_panel_w = if has_inspector {
         (sw * 0.21).clamp(270.0, 330.0)
     } else {
