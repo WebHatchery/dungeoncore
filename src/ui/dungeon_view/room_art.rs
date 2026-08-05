@@ -11,6 +11,7 @@ use crate::ui::theme::*;
 use super::icons::{
     draw_combat_art, draw_core_art, draw_dashed_border, draw_entrance_art, draw_room_icon,
 };
+use super::DungeonSprites;
 use super::{adventurers_in_room, BuildPreview, PlacementState};
 
 pub(super) fn draw_room_tile(
@@ -18,6 +19,7 @@ pub(super) fn draw_room_tile(
     room: &Room,
     rect: Rect,
     placement: PlacementState,
+    sprites: &DungeonSprites,
 ) -> bool {
     let hovered = is_hovered_rect(rect);
     let selected = state.selected_room == Some((room.floor_number, room.position));
@@ -159,10 +161,10 @@ pub(super) fn draw_room_tile(
         })
         .map(|a| a.id)
         .collect();
-    draw_room_units(room, strip, &adventurers, fighting, &rival_ids);
+    draw_room_units(room, strip, &adventurers, fighting, &rival_ids, sprites);
 
     // Floating combat feedback (damage numbers, kills) rising over the room.
-    draw_room_effects(state, room, draw_rect);
+    draw_room_effects(state, room, draw_rect, sprites);
 
     was_clicked_rect(rect)
 }
@@ -177,6 +179,7 @@ fn draw_room_units(
     adventurers: &[&Adventurer],
     fighting: bool,
     rival_ids: &[u64],
+    sprites: &DungeonSprites,
 ) {
     let radius = 7.0;
     let step = radius * 2.0 + 3.0;
@@ -213,7 +216,19 @@ fn draw_room_units(
                 .next()
                 .map(|c| c.to_ascii_uppercase().to_string())
                 .unwrap_or_else(|| "?".to_string());
-            draw_icon_disc(vec2(x, cy), radius, color, &initial);
+            let phase = get_time() as f32 + monster.id as f32 * 0.173;
+            let bob = phase.sin() * if monster.alive { 1.5 } else { 0.0 };
+            let drawn_sprite = monster.alive
+                && sprites.draw_monster(
+                    &monster.type_name,
+                    vec2(x, cy + bob),
+                    radius * 2.3,
+                    phase,
+                    false,
+                );
+            if !drawn_sprite {
+                draw_icon_disc(vec2(x, cy), radius, color, &initial);
+            }
             if monster.alive && (fighting || monster.hp < monster.max_hp) {
                 draw_unit_hp_bar(vec2(x, cy), radius, monster.hp, monster.max_hp);
             }
@@ -247,7 +262,19 @@ fn draw_room_units(
                 .map(|c| c.to_ascii_uppercase().to_string())
                 .unwrap_or_else(|| "A".to_string());
             let is_rival = rival_ids.contains(&adventurer.id);
-            draw_icon_disc(vec2(x, cy), radius, WARNING, &initial);
+            let phase = get_time() as f32 + adventurer.id as f32 * 0.173;
+            let bob = phase.sin() * 1.5;
+            let drawn_sprite = sprites.draw_adventurer(
+                &adventurer.class_name,
+                vec2(x, cy + bob),
+                radius * 2.3,
+                phase,
+                true,
+                false,
+            );
+            if !drawn_sprite {
+                draw_icon_disc(vec2(x, cy), radius, WARNING, &initial);
+            }
             if is_rival {
                 // A gold ring and a name plate mark the dungeon's rival.
                 draw_circle_lines(x, cy, radius + 2.5, 1.6, TREASURE);
@@ -312,7 +339,7 @@ fn hp_bar_color(ratio: f32) -> Color {
 /// Render active floating effects anchored to this room, rising and fading out.
 /// Effects stack and rise within their anchor side (defenders left, invaders
 /// right, neutral centre) so a fight reads as two sides trading blows.
-fn draw_room_effects(state: &GameState, room: &Room, rect: Rect) {
+fn draw_room_effects(state: &GameState, room: &Room, rect: Rect, sprites: &DungeonSprites) {
     let mut stack_by_anchor: [i32; 3] = [0, 0, 0];
     for effect in state
         .effects
@@ -328,6 +355,7 @@ fn draw_room_effects(state: &GameState, room: &Room, rect: Rect) {
         stack_by_anchor[anchor_idx] += 1;
 
         let life = effect.life_fraction();
+        draw_room_effect_shape(effect.kind, rect, effect.anchor, life, sprites);
         let rise = (1.0 - life) * 28.0 + stack as f32 * 15.0;
         let color = effect_color(effect.kind);
         let faded = with_alpha(color, life);
@@ -356,6 +384,65 @@ fn effect_color(kind: EffectKind) -> Color {
         EffectKind::MonsterDown => DANGER,
         EffectKind::AdventurerDown => EMERALD,
         EffectKind::Loot => TREASURE,
+        EffectKind::MeleeDust => Color::new(0.78, 0.66, 0.47, 1.0),
+        EffectKind::HitSpark => Color::new(1.0, 0.94, 0.55, 1.0),
+    }
+}
+
+/// Room-anchored cosmetic cues. They read directly from transient effects, so
+/// their lifetime and rendering cannot feed back into the combat simulation.
+fn draw_room_effect_shape(
+    kind: EffectKind,
+    rect: Rect,
+    anchor: EffectAnchor,
+    life: f32,
+    _sprites: &DungeonSprites,
+) {
+    let (cx, cy) = match anchor {
+        EffectAnchor::Defenders => (rect.x + rect.w * 0.34, rect.y + rect.h * 0.48),
+        EffectAnchor::Invaders => (rect.x + rect.w * 0.66, rect.y + rect.h * 0.48),
+        EffectAnchor::Center => (rect.x + rect.w * 0.50, rect.y + rect.h * 0.46),
+    };
+    match kind {
+        EffectKind::MeleeDust => {
+            let radius = 13.0 + (1.0 - life) * 15.0;
+            for (dx, dy, scale) in [(-0.65, 0.35, 0.62), (0.58, 0.28, 0.70), (0.0, -0.18, 1.0)] {
+                draw_circle(
+                    cx + dx * radius,
+                    cy + dy * radius,
+                    radius * scale,
+                    with_alpha(Color::new(0.75, 0.63, 0.45, 1.0), life * 0.55),
+                );
+            }
+        }
+        EffectKind::HitSpark => {
+            let radius = 5.0 + life * 8.0;
+            let color = with_alpha(Color::new(1.0, 0.92, 0.42, 1.0), life);
+            draw_line(cx - radius, cy, cx + radius, cy, 2.0, color);
+            draw_line(cx, cy - radius, cx, cy + radius, 2.0, color);
+            draw_line(
+                cx - radius * 0.7,
+                cy - radius * 0.7,
+                cx + radius * 0.7,
+                cy + radius * 0.7,
+                1.4,
+                color,
+            );
+        }
+        EffectKind::MonsterDown | EffectKind::AdventurerDown => {
+            let color = if kind == EffectKind::MonsterDown {
+                DANGER
+            } else {
+                EMERALD
+            };
+            draw_circle(
+                cx,
+                cy + (1.0 - life) * 8.0,
+                10.0 * life,
+                with_alpha(color, life * 0.55),
+            );
+        }
+        _ => {}
     }
 }
 
@@ -503,12 +590,47 @@ pub(super) fn draw_future_room_tile(state: &GameState, rect: Rect, plan: &BuildP
 
 /// Draw a party marker gliding along a corridor connector at `progress` (0..1),
 /// so a party visibly crosses from one room to the next instead of teleporting.
-pub(super) fn draw_party_transit(connector: Rect, progress: f32) {
+pub(super) fn draw_party_transit(
+    connector: Rect,
+    progress: f32,
+    members: &[Adventurer],
+    sprites: &DungeonSprites,
+) {
     let cx = connector.x + connector.w * progress;
     let cy = connector.y + connector.h * 0.5;
     // A short motion trail behind the marker sells the direction of travel.
     draw_circle(cx - 5.0, cy, 4.0, with_alpha(WARNING, 0.16));
-    draw_icon_disc(vec2(cx, cy), 6.5, WARNING, "A");
+    let shown = members.iter().filter(|member| member.alive).take(3).count();
+    for (index, member) in members
+        .iter()
+        .filter(|member| member.alive)
+        .take(3)
+        .enumerate()
+    {
+        let offset = (index as f32 - (shown.saturating_sub(1) as f32) * 0.5) * 10.0;
+        let center = vec2(cx + offset, cy + (index % 2) as f32 * 5.0 - 2.5);
+        if !sprites.draw_adventurer(
+            &member.class_name,
+            center,
+            16.0,
+            get_time() as f32 + member.id as f32 * 0.173,
+            true,
+            true,
+        ) {
+            draw_icon_disc(center, 6.5, WARNING, "A");
+        }
+    }
+    let alive = members.iter().filter(|member| member.alive).count();
+    if alive > shown {
+        draw_text_fit(
+            &format!("+{}", alive - shown),
+            cx + 14.0,
+            cy + 4.0,
+            22.0,
+            10.0,
+            WARNING,
+        );
+    }
 }
 
 pub(super) fn draw_connector(rect: Rect, ghost: bool) {

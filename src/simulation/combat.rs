@@ -64,6 +64,22 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     let floor_num = state.floors[floor_idx].number;
     let room_pos = state.floors[floor_idx].rooms[room_idx].position;
 
+    // Visual-only combat punctuation. This is deliberately a transient UI
+    // effect; it is neither saved nor consulted by the deterministic resolver.
+    if state.adventurer_parties[party_idx]
+        .members
+        .iter()
+        .any(|member| member.alive)
+    {
+        state.push_effect_at(
+            floor_num,
+            room_pos,
+            "",
+            EffectKind::MeleeDust,
+            EffectAnchor::Center,
+        );
+    }
+
     let reinforcement_mult = state.floors[floor_idx].rooms[room_idx].reinforcement_multiplier();
 
     // Phase 0: lingering afflictions (poison, burn) tick on the party
@@ -116,6 +132,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     let mut kill_credits: Vec<(u64, String)> = Vec::new();
     let mut party_hit_strong = false;
     let mut party_hit_weak = false;
+    let mut damage_to_monsters = 0;
     {
         let room = &mut state.floors[floor_idx].rooms[room_idx];
         for (attacker_id, attack, adv_element) in &adv_attacks {
@@ -139,6 +156,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                 .round()
                 .max(1.0) as i32;
             monster.hp -= damage;
+            damage_to_monsters += damage;
             if monster.hp <= 0 {
                 monster.hp = 0;
                 monster.alive = false;
@@ -155,6 +173,23 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     }
     for (hero_id, monster_name) in kill_credits {
         state.record_hero_kill(hero_id, &monster_name, floor_num);
+    }
+
+    if damage_to_monsters > 0 {
+        state.push_effect_at(
+            floor_num,
+            room_pos,
+            format!("-{}", damage_to_monsters),
+            EffectKind::Damage,
+            EffectAnchor::Defenders,
+        );
+        state.push_effect_at(
+            floor_num,
+            room_pos,
+            "",
+            EffectKind::HitSpark,
+            EffectAnchor::Defenders,
+        );
     }
 
     for spawn_name in &split_spawns {
@@ -319,6 +354,13 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                 if monster_hit_strong { "!" } else { "" }
             ),
             EffectKind::Damage,
+            EffectAnchor::Invaders,
+        );
+        state.push_effect_at(
+            floor_num,
+            room_pos,
+            "",
+            EffectKind::HitSpark,
             EffectAnchor::Invaders,
         );
     }

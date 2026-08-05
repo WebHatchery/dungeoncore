@@ -13,6 +13,8 @@ use super::GameState;
 
 /// Seconds a floating effect stays visible before fully fading.
 const EFFECT_TTL: f32 = 1.6;
+const DUST_TTL: f32 = 0.82;
+const SPARK_TTL: f32 = 0.30;
 
 /// Kind of transient visual effect surfaced over a room
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -22,6 +24,10 @@ pub enum EffectKind {
     MonsterDown,
     AdventurerDown,
     Loot,
+    /// A central brawl cloud, spawned once per resolved combat tick.
+    MeleeDust,
+    /// A very short impact flash on the side that took damage.
+    HitSpark,
 }
 
 /// Which side of the room a floating effect belongs over, so damage/deaths
@@ -82,7 +88,7 @@ impl GameState {
             text: text.into(),
             kind,
             anchor,
-            timer: Timer::new(EFFECT_TTL),
+            timer: Timer::new(effect_ttl(kind)),
         });
         if self.effects.len() > 48 {
             self.effects.remove(0);
@@ -95,5 +101,13 @@ impl GameState {
             effect.timer.tick(dt);
         }
         self.effects.retain(|effect| !effect.timer.finished());
+    }
+}
+
+fn effect_ttl(kind: EffectKind) -> f32 {
+    match kind {
+        EffectKind::MeleeDust => DUST_TTL,
+        EffectKind::HitSpark => SPARK_TTL,
+        _ => EFFECT_TTL,
     }
 }

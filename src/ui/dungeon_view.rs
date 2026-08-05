@@ -13,10 +13,12 @@ use super::theme::*;
 mod backdrop;
 mod icons;
 mod room_art;
+mod sprites;
 
 use backdrop::{draw_board_surface, draw_floor_rail, draw_room_route_backplate};
 use macroquad_toolkit::colors::with_alpha;
 use room_art::{draw_connector, draw_future_room_tile, draw_party_transit, draw_room_tile};
+pub use sprites::{DungeonSprites, UNIT_SHEET_KEY, UNIT_SHEET_PATH};
 
 const BASE_ROOM_W: f32 = 156.0;
 const BASE_ROOM_H: f32 = 122.0;
@@ -47,7 +49,11 @@ struct BuildPreview {
 }
 
 /// Draw the production-style dungeon board and return the selected board action.
-pub fn draw_dungeon_board(state: &GameState, rect: Rect) -> DungeonAction {
+pub fn draw_dungeon_board(
+    state: &GameState,
+    rect: Rect,
+    sprites: &DungeonSprites,
+) -> DungeonAction {
     let mut action = DungeonAction::None;
     draw_card(
         rect,
@@ -117,7 +123,9 @@ pub fn draw_dungeon_board(state: &GameState, rect: Rect) -> DungeonAction {
             row_rect.w - rail.w - 28.0,
             row_rect.h - 16.0,
         );
-        if let Some(row_action) = draw_floor_rooms(state, floor, rooms_area, preview.as_ref()) {
+        if let Some(row_action) =
+            draw_floor_rooms(state, floor, rooms_area, preview.as_ref(), sprites)
+        {
             action = row_action;
         }
 
@@ -132,6 +140,7 @@ fn draw_floor_rooms(
     floor: &crate::game_state::Floor,
     area: Rect,
     preview: Option<&BuildPreview>,
+    sprites: &DungeonSprites,
 ) -> Option<DungeonAction> {
     let mut action = None;
     let rooms = sorted_rooms(&floor.rooms);
@@ -173,7 +182,7 @@ fn draw_floor_rooms(
 
         let rect = Rect::new(x, tile_y, tile_w, tile_h);
         let placement = placement_state(state, room);
-        if draw_room_tile(state, room, rect, placement) {
+        if draw_room_tile(state, room, rect, placement, sprites) {
             action = Some(DungeonAction::RoomSelected(
                 room.floor_number,
                 room.position,
@@ -186,8 +195,13 @@ fn draw_floor_rooms(
             let connector = Rect::new(x, tile_y + tile_h * 0.36, connector_w, tile_h * 0.28);
             draw_connector(connector, false);
             // A party crossing this corridor rides the connector between rooms.
-            if let Some(progress) = party_transit_progress(state, floor.number, room.position) {
-                draw_party_transit(connector, progress);
+            if let Some(party) = party_in_transit(state, floor.number, room.position) {
+                draw_party_transit(
+                    connector,
+                    party.move_anim.fraction_elapsed(),
+                    &party.members,
+                    sprites,
+                );
             }
             x += connector_w;
         }
@@ -308,7 +322,11 @@ fn adventurers_in_room<'a>(
 
 /// If a party is currently travelling the corridor leaving `from_pos` on this
 /// floor, the 0..1 progress of that glide (0 = just left, 1 = arriving).
-fn party_transit_progress(state: &GameState, floor_number: i32, from_pos: usize) -> Option<f32> {
+fn party_in_transit<'a>(
+    state: &'a GameState,
+    floor_number: i32,
+    from_pos: usize,
+) -> Option<&'a crate::game_state::AdventurerParty> {
     state.adventurer_parties.iter().find_map(|party| {
         if party.current_floor == floor_number
             && !party.move_anim.is_ready()
@@ -316,7 +334,7 @@ fn party_transit_progress(state: &GameState, floor_number: i32, from_pos: usize)
             && party.current_room == from_pos + 1
             && !party.retreating
         {
-            Some(party.move_anim.fraction_elapsed())
+            Some(party)
         } else {
             None
         }

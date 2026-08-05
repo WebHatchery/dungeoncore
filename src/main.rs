@@ -71,6 +71,15 @@ async fn main() {
     {
         eprintln!("Failed to load title background: {}", e);
     }
+    if let Err(e) = assets
+        .load_texture_with_filter(UNIT_SHEET_KEY, UNIT_SHEET_PATH, FilterMode::Nearest)
+        .await
+    {
+        // The board retains its icon fallback when a loose or packed art asset
+        // is absent, which is especially useful for partial browser deploys.
+        eprintln!("Failed to load unit sprite sheet; using icons: {}", e);
+    }
+    let sprites = DungeonSprites::from_assets(&assets);
 
     // Screenshot capture harness: when DUNGEON_CORE_CAPTURE_PATH is set, seed a
     // scene, render a fixed number of frames, write a PNG, and exit. No input,
@@ -102,27 +111,54 @@ async fn main() {
         let mut t0 = get_time();
         let mut t1 = t0;
         let mut t2 = t0;
-        capture::run_capture(&config, |_dt| {
-            render_playing_frame(
-                &mut cap_state,
-                &mut drawer_tab,
-                &mut upgrade_section,
-                &mut drawer_open,
-                &mut species_scroll,
-                &mut defender_scroll,
-                &mut heroes_scroll,
-                &mut show_codex,
-                &mut codex_scroll,
-                &mut show_core_tree,
-                &mut show_milestones,
-                &mut milestones_scroll,
-                &mut t0,
-                &mut t1,
-                &mut t2,
-                false,
-            );
-        })
-        .await;
+        let strip = capture::filmstrip::StripConfig::from_env(CAPTURE_PREFIX);
+        if let Some(strip) = strip {
+            capture::filmstrip::run_filmstrip(&config, &strip, |_dt| {
+                render_playing_frame(
+                    &mut cap_state,
+                    &mut drawer_tab,
+                    &mut upgrade_section,
+                    &mut drawer_open,
+                    &mut species_scroll,
+                    &mut defender_scroll,
+                    &mut heroes_scroll,
+                    &mut show_codex,
+                    &mut codex_scroll,
+                    &mut show_core_tree,
+                    &mut show_milestones,
+                    &mut milestones_scroll,
+                    &mut t0,
+                    &mut t1,
+                    &mut t2,
+                    true,
+                    &sprites,
+                );
+            })
+            .await;
+        } else {
+            capture::run_capture(&config, |_dt| {
+                render_playing_frame(
+                    &mut cap_state,
+                    &mut drawer_tab,
+                    &mut upgrade_section,
+                    &mut drawer_open,
+                    &mut species_scroll,
+                    &mut defender_scroll,
+                    &mut heroes_scroll,
+                    &mut show_codex,
+                    &mut codex_scroll,
+                    &mut show_core_tree,
+                    &mut show_milestones,
+                    &mut milestones_scroll,
+                    &mut t0,
+                    &mut t1,
+                    &mut t2,
+                    false,
+                    &sprites,
+                );
+            })
+            .await;
+        }
         return;
     }
 
@@ -256,6 +292,7 @@ async fn main() {
             &mut last_adventure_tick,
             &mut last_save,
             true,
+            &sprites,
         );
 
         next_frame().await;
@@ -284,6 +321,7 @@ fn render_playing_frame(
     last_adventure_tick: &mut f64,
     last_save: &mut f64,
     simulate: bool,
+    sprites: &DungeonSprites,
 ) {
     let now = get_time();
     let sw = screen_width();
@@ -462,7 +500,7 @@ fn render_playing_frame(
         dungeon_h.max(220.0),
     );
 
-    match draw_dungeon_board(state, dungeon_rect) {
+    match draw_dungeon_board(state, dungeon_rect, sprites) {
         DungeonAction::RoomSelected(floor_num, room_pos) => {
             if let Some(ref monster_name) = state.selected_monster.clone() {
                 // Selection stays armed on success so more can be placed with
