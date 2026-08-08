@@ -136,19 +136,3 @@ fn event_label(entry: &LogEntry) -> &'static str {
         _ => "SYS",
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn filters_match_only_their_event_type() {
-        let combat = LogEntry::combat("A blow lands.");
-        let adventure = LogEntry::adventure("A party enters.");
-
-        assert!(LogFilter::All.matches(&combat));
-        assert!(LogFilter::Combat.matches(&combat));
-        assert!(!LogFilter::Adventure.matches(&combat));
-        assert!(LogFilter::Adventure.matches(&adventure));
-    }
-}

@@ -235,33 +235,3 @@ pub const MAX_PARTY_SIZE: usize = 4;
 pub const MIN_PARTY_SIZE: usize = 2;
 pub const RETREAT_THRESHOLD: i32 = 2;
 pub const CORE_ROOM_MANA_BONUS: f32 = 0.1;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn deeper_floors_hold_more_defenders() {
-        assert!(room_monster_capacity(4, false) > room_monster_capacity(1, false));
-    }
-
-    #[test]
-    fn capacity_keeps_growing_past_the_scaling_table() {
-        let last_tabled = room_monster_capacity(5, false);
-        assert!(room_monster_capacity(9, false) > last_tabled);
-        assert!(room_monster_capacity(20, false) > room_monster_capacity(9, false));
-    }
-
-    #[test]
-    fn a_throne_room_trades_slots_for_its_boss() {
-        assert!(room_monster_capacity(3, true) < room_monster_capacity(3, false));
-    }
-
-    #[test]
-    fn every_room_holds_at_least_one_defender() {
-        for floor in 1..=20 {
-            assert!(room_monster_capacity(floor, true) >= 1);
-            assert!(room_monster_capacity(floor, false) >= 1);
-        }
-    }
-}

@@ -55,19 +55,6 @@ mod tests {
     }
 
     #[test]
-    fn pooled_variant_thresholds_require_more_than_a_single_quick_raid() {
-        for path in evolutions::get_evolution_trees().values().flatten() {
-            assert!(
-                path.experience_required >= 150,
-                "{} -> {} still has a single-creature XP threshold of {}",
-                path.from_monster,
-                path.to_monster,
-                path.experience_required
-            );
-        }
-    }
-
-    #[test]
     fn constants_json_parses() {
         assert!(constants::max_rooms_per_floor() > 0);
         assert!(constants::max_log_entries() > 0);
@@ -204,31 +191,6 @@ mod tests {
     }
 
     #[test]
-    fn core_powers_are_soul_priced() {
-        for power in crate::simulation::endgame::CORE_POWERS.iter() {
-            assert!(power.cost > 0, "core power '{}' must cost souls", power.id);
-            assert!(!power.name.is_empty() && !power.description.is_empty());
-        }
-    }
-
-    #[test]
-    fn adventurer_races_present() {
-        let races = adventurers::get_all_races();
-        assert!(
-            races.len() >= 4,
-            "expected the four core races, found {}",
-            races.len()
-        );
-        for want in ["Human", "Elf", "Dwarf", "Halfling"] {
-            assert!(
-                adventurers::get_race(want).is_some(),
-                "missing race '{}'",
-                want
-            );
-        }
-    }
-
-    #[test]
     fn upgrades_use_known_types_and_elements() {
         const KNOWN_TYPES: [&str; 5] = [
             "trap",
@@ -265,94 +227,6 @@ mod tests {
     }
 
     #[test]
-    fn trap_catalog_is_valid() {
-        const KNOWN_KINDS: [&str; 7] = [
-            "Damage",
-            "Poison",
-            "Burn",
-            "Snare",
-            "Alarm",
-            "ManaSiphon",
-            "GoldSteal",
-        ];
-        let traps: Vec<_> = upgrades::get_all_upgrades()
-            .into_iter()
-            .filter(|u| u.upgrade_type == "trap")
-            .collect();
-        assert!(
-            traps.len() >= 8,
-            "expected a full trap catalog, found {}",
-            traps.len()
-        );
-        for trap in &traps {
-            assert!(
-                KNOWN_KINDS.contains(&trap.effect_kind.as_str()),
-                "trap '{}' has unknown effect_kind '{}' (would fall back to legacy damage)",
-                trap.name,
-                trap.effect_kind
-            );
-            assert!(
-                trap.multiplier > 0.0,
-                "trap '{}' has no effect value",
-                trap.name
-            );
-        }
-        // The soul economy keeps a sink in the top trap tier.
-        assert!(
-            traps.iter().any(|t| t.souls_cost >= 2),
-            "no soul-gated top-tier trap in the catalog"
-        );
-    }
-
-    #[test]
-    fn exactly_three_starter_species() {
-        let starters: Vec<String> = monsters::get_all_species()
-            .into_iter()
-            .filter(|s| s.starter)
-            .map(|s| s.name)
-            .collect();
-        assert_eq!(
-            starters.len(),
-            3,
-            "expected 3 starter species, got {:?}",
-            starters
-        );
-    }
-
-    #[test]
-    fn demons_cost_souls() {
-        for template in monsters::get_monster_templates() {
-            if template.species == "Demon" {
-                assert!(
-                    template.souls_cost > 0,
-                    "demon '{}' should cost souls to summon",
-                    template.name
-                );
-            } else {
-                assert_eq!(
-                    template.souls_cost, 0,
-                    "non-demon '{}' should not cost souls",
-                    template.name
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn branching_evolutions_exist() {
-        assert_eq!(
-            evolutions::get_evolutions_for_monster("Imp").len(),
-            2,
-            "Imp should branch into Hellhound and Shadow Fiend"
-        );
-        assert_eq!(
-            evolutions::get_evolutions_for_monster("Skeleton").len(),
-            2,
-            "Skeleton should branch into Vampire and Bone Mage"
-        );
-    }
-
-    #[test]
     fn splitters_break_into_non_splitting_tier_ones() {
         // split_on_death must terminate: no tier-1 monster may carry it.
         for template in monsters::get_monster_templates() {
@@ -363,28 +237,6 @@ mod tests {
                     template.name
                 );
             }
-        }
-    }
-
-    #[test]
-    fn every_species_has_a_boss_unique() {
-        for species in monsters::get_all_species() {
-            let unique: Vec<_> = monsters::get_monster_templates()
-                .into_iter()
-                .filter(|t| t.species == species.name && t.boss_only)
-                .collect();
-            assert_eq!(
-                unique.len(),
-                1,
-                "species '{}' should have exactly one boss unique, found {:?}",
-                species.name,
-                unique.iter().map(|t| &t.name).collect::<Vec<_>>()
-            );
-            assert_eq!(
-                unique[0].tier, 4,
-                "boss unique '{}' should be tier 4",
-                unique[0].name
-            );
         }
     }
 

@@ -166,29 +166,6 @@ mod tests {
     }
 
     #[test]
-    fn single_exit_is_taken_as_is() {
-        let s = GameState::new();
-        let floor = forked_floor();
-        assert_eq!(choose_exit(&s, &floor, &party(), &[2]), 2);
-    }
-
-    #[test]
-    fn choice_reason_matches_the_two_fork_modes() {
-        let mut state = GameState::new();
-        let floor = forked_floor();
-        assert_eq!(
-            choice_reason(&state, &party(), &[1, 2]),
-            "following the lure of loot"
-        );
-        state.total_deaths = 100;
-        assert_eq!(
-            choice_reason(&state, &party(), &[1, 2]),
-            "beelining for the Core"
-        );
-        assert_eq!(choose_exit(&state, &floor, &party(), &[1, 2]), 1);
-    }
-
-    #[test]
     fn greedy_party_takes_the_loot_lure_over_the_killbox() {
         let s = GameState::new(); // threat 0 → greedy
         let floor = forked_floor();

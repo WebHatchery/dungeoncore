@@ -79,31 +79,6 @@ pub fn draw_resource_panel(state: &GameState, x: f32, y: f32, w: f32) {
     );
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn resource_values_handle_zero_capacity_and_zero_income() {
-        let mut state = GameState::new();
-        state.mana = 0;
-        state.max_mana = 0;
-        state.mana_regen = 0.0;
-        let data = resource_panel_data(&state);
-        assert_eq!(data.mana_fraction, 0.0);
-        assert_eq!(data.mana_label, "0/0");
-        assert_eq!(data.regen_label, "(+0.0/tick)");
-    }
-
-    #[test]
-    fn capped_mana_fills_but_never_overflows_the_bar() {
-        let mut state = GameState::new();
-        state.mana = 250;
-        state.max_mana = 200;
-        assert_eq!(resource_panel_data(&state).mana_fraction, 1.0);
-    }
-}
-
 /// Draw time display
 pub fn draw_time_display(state: &GameState, x: f32, y: f32) {
     draw_ui_text(

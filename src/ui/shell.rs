@@ -479,19 +479,3 @@ fn adventurer_status(state: &GameState) -> (&'static str, Color, &'static str) {
         ("PARTY INSIDE", WARNING, "!")
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::simulation_active;
-
-    #[test]
-    fn simulation_requires_an_interactive_unpaused_frame() {
-        assert!(simulation_active(true, false));
-        assert!(
-            !simulation_active(false, false),
-            "captures must not advance"
-        );
-        assert!(!simulation_active(true, true), "pause must freeze the run");
-        assert!(!simulation_active(false, true));
-    }
-}

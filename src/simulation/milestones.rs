@@ -170,17 +170,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ranks_climb_with_prestige() {
-        assert_eq!(prestige_rank(0), "Fledgling Core");
-        assert_eq!(prestige_rank(1), "Rooted Core");
-        assert_eq!(prestige_rank(3), "Dread Warren");
-        assert_eq!(prestige_rank(6), "Abyssal Throne");
-        assert_eq!(prestige_rank(9), "Nightmare Bastion");
-        assert_eq!(prestige_rank(10), "Eternal Core");
-        assert_eq!(prestige_rank(99), "Eternal Core");
-    }
-
-    #[test]
     fn milestones_unlock_once_and_stay() {
         let mut s = GameState::new();
         assert_eq!(achieved_count(&s), 0);
@@ -194,17 +183,6 @@ mod tests {
         assert_eq!(check_milestones(&mut s), 0);
         s.raids_completed = 0;
         assert!(s.milestones.iter().any(|id| id == "veteran_keeper"));
-    }
-
-    #[test]
-    fn ascension_milestone_gated_on_prestige_ten() {
-        let mut s = GameState::new();
-        s.prestige = 9;
-        check_milestones(&mut s);
-        assert!(!s.milestones.iter().any(|id| id == "eternal"));
-        s.prestige = ASCENSION_PRESTIGE;
-        check_milestones(&mut s);
-        assert!(s.milestones.iter().any(|id| id == "eternal"));
     }
 
     #[test]

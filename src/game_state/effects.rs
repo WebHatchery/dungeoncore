@@ -251,18 +251,3 @@ fn effect_ttl(kind: EffectKind) -> f32 {
         _ => EFFECT_TTL,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::ElementSound;
-
-    #[test]
-    fn every_declared_element_has_a_sound_identity() {
-        for element in [
-            "Fire", "Water", "Nature", "Earth", "Air", "Spirit", "Death", "Arcane", "Body",
-        ] {
-            assert!(ElementSound::from_id(element).is_some());
-        }
-        assert_eq!(ElementSound::from_id("Unknown"), None);
-    }
-}

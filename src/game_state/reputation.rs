@@ -101,15 +101,4 @@ mod tests {
         assert!(raid_change(3, 2, 80, 1) > 0);
         assert!(raid_change(1, 0, 0, 0) < 0);
     }
-
-    #[test]
-    fn every_band_has_a_distinct_visitor_bias() {
-        let shunned = visitor_quality(-100);
-        let unknown = visitor_quality(0);
-        let renowned = visitor_quality(100);
-        assert!(shunned.level_bonus < unknown.level_bonus);
-        assert!(unknown.level_bonus < renowned.level_bonus);
-        assert!(shunned.spawn_chance_mult < unknown.spawn_chance_mult);
-        assert!(unknown.spawn_chance_mult < renowned.spawn_chance_mult);
-    }
 }

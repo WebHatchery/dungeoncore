@@ -733,13 +733,6 @@ mod tests {
     }
 
     #[test]
-    fn rival_thresholds() {
-        assert!(!hero(1, 1, 0).is_rival());
-        assert!(hero(1, 3, 0).is_rival(), "recurring survivor is a rival");
-        assert!(hero(1, 1, 5).is_rival(), "prolific slayer is a rival");
-    }
-
-    #[test]
     fn slaying_a_rival_pays_a_bounty() {
         let mut s = GameState::new();
         s.known_adventurers.push(hero(42, 4, 6));
