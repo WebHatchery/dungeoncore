@@ -95,101 +95,103 @@ async fn main() {
     // Screenshot capture harness: when DUNGEON_CORE_CAPTURE_PATH is set, seed a
     // scene, render a fixed number of frames, write a PNG, and exit. No input,
     // no simulation drift, and the player's save file is left untouched.
-    if let Some(config) = capture::CaptureConfig::from_env(CAPTURE_PREFIX) {
-        let mut cap_state = create_new_game(data::difficulty::Difficulty::default(), 1);
-        capture_scenes::seed_capture_scene(&mut cap_state, &config.scene);
-        // Most scenes show the Monsters tab; a couple open the tab they exist
-        // to show off.
-        let mut drawer_tab = match config.scene.as_str() {
-            "build" => DrawerTab::Build,
-            "variants" => DrawerTab::Evolution,
-            "traps" => DrawerTab::Traps,
-            "journal" => DrawerTab::Heroes,
-            _ => DrawerTab::Monsters,
-        };
-        let mut upgrade_section = UpgradeSection::Traps;
-        let mut drawer_open = matches!(
-            config.scene.as_str(),
-            "build" | "variants" | "traps" | "journal"
-        );
-        let mut event_log_expanded = false;
-        let mut species_scroll = 0.0;
-        let mut defender_scroll = 0.0;
-        let mut heroes_scroll = 0.0;
-        let mut show_codex = false;
-        let mut show_controls = false;
-        let mut codex_scroll = 0.0;
-        // The `coretree` scene boots straight into the core-power tree overlay.
-        let mut show_core_tree = config.scene == "coretree";
-        // The `goals` scene boots straight into the milestone overlay.
-        let mut show_milestones = config.scene == "goals";
-        let mut milestones_scroll = 0.0;
-        let mut t0 = get_time();
-        let mut t1 = t0;
-        let mut t2 = t0;
-        let strip = capture::filmstrip::StripConfig::from_env(CAPTURE_PREFIX);
-        if let Some(strip) = strip {
-            capture::filmstrip::run_filmstrip(&config, &strip, |_dt| {
-                render_playing_frame(
-                    &mut cap_state,
-                    &mut drawer_tab,
-                    &mut upgrade_section,
-                    &mut drawer_open,
-                    &mut event_log_expanded,
-                    &mut species_scroll,
-                    &mut defender_scroll,
-                    &mut heroes_scroll,
-                    &mut show_codex,
-                    &mut show_controls,
-                    &mut codex_scroll,
-                    &mut show_core_tree,
-                    &mut show_milestones,
-                    &mut milestones_scroll,
-                    &mut t0,
-                    &mut t1,
-                    &mut t2,
-                    true,
-                    30.0,
-                    persistence::DEFAULT_SLOT,
-                    &sprites,
-                    &audio,
-                    0.0,
-                    0.0,
-                    &KeyBindings::default(),
-                );
-            })
-            .await;
-        } else {
-            capture::run_capture(&config, |_dt| {
-                render_playing_frame(
-                    &mut cap_state,
-                    &mut drawer_tab,
-                    &mut upgrade_section,
-                    &mut drawer_open,
-                    &mut event_log_expanded,
-                    &mut species_scroll,
-                    &mut defender_scroll,
-                    &mut heroes_scroll,
-                    &mut show_codex,
-                    &mut show_controls,
-                    &mut codex_scroll,
-                    &mut show_core_tree,
-                    &mut show_milestones,
-                    &mut milestones_scroll,
-                    &mut t0,
-                    &mut t1,
-                    &mut t2,
-                    false,
-                    30.0,
-                    persistence::DEFAULT_SLOT,
-                    &sprites,
-                    &audio,
-                    0.0,
-                    0.0,
-                    &KeyBindings::default(),
-                );
-            })
-            .await;
+    if let Some(configs) = capture::CaptureConfig::all_from_env(CAPTURE_PREFIX) {
+        for config in configs {
+            let mut cap_state = create_new_game(data::difficulty::Difficulty::default(), 1);
+            capture_scenes::seed_capture_scene(&mut cap_state, &config.scene);
+            // Most scenes show the Monsters tab; a couple open the tab they exist
+            // to show off.
+            let mut drawer_tab = match config.scene.as_str() {
+                "build" => DrawerTab::Build,
+                "variants" => DrawerTab::Evolution,
+                "traps" => DrawerTab::Traps,
+                "journal" => DrawerTab::Heroes,
+                _ => DrawerTab::Monsters,
+            };
+            let mut upgrade_section = UpgradeSection::Traps;
+            let mut drawer_open = matches!(
+                config.scene.as_str(),
+                "build" | "variants" | "traps" | "journal"
+            );
+            let mut event_log_expanded = false;
+            let mut species_scroll = 0.0;
+            let mut defender_scroll = 0.0;
+            let mut heroes_scroll = 0.0;
+            let mut show_codex = false;
+            let mut show_controls = false;
+            let mut codex_scroll = 0.0;
+            // The `coretree` scene boots straight into the core-power tree overlay.
+            let mut show_core_tree = config.scene == "coretree";
+            // The `goals` scene boots straight into the milestone overlay.
+            let mut show_milestones = config.scene == "goals";
+            let mut milestones_scroll = 0.0;
+            let mut t0 = get_time();
+            let mut t1 = t0;
+            let mut t2 = t0;
+            let strip = capture::filmstrip::StripConfig::from_env(CAPTURE_PREFIX);
+            if let Some(strip) = strip {
+                capture::filmstrip::run_filmstrip(&config, &strip, |_dt| {
+                    render_playing_frame(
+                        &mut cap_state,
+                        &mut drawer_tab,
+                        &mut upgrade_section,
+                        &mut drawer_open,
+                        &mut event_log_expanded,
+                        &mut species_scroll,
+                        &mut defender_scroll,
+                        &mut heroes_scroll,
+                        &mut show_codex,
+                        &mut show_controls,
+                        &mut codex_scroll,
+                        &mut show_core_tree,
+                        &mut show_milestones,
+                        &mut milestones_scroll,
+                        &mut t0,
+                        &mut t1,
+                        &mut t2,
+                        true,
+                        30.0,
+                        persistence::DEFAULT_SLOT,
+                        &sprites,
+                        &audio,
+                        0.0,
+                        0.0,
+                        &KeyBindings::default(),
+                    );
+                })
+                .await;
+            } else {
+                capture::run_capture_once(&config, |_dt| {
+                    render_playing_frame(
+                        &mut cap_state,
+                        &mut drawer_tab,
+                        &mut upgrade_section,
+                        &mut drawer_open,
+                        &mut event_log_expanded,
+                        &mut species_scroll,
+                        &mut defender_scroll,
+                        &mut heroes_scroll,
+                        &mut show_codex,
+                        &mut show_controls,
+                        &mut codex_scroll,
+                        &mut show_core_tree,
+                        &mut show_milestones,
+                        &mut milestones_scroll,
+                        &mut t0,
+                        &mut t1,
+                        &mut t2,
+                        false,
+                        30.0,
+                        persistence::DEFAULT_SLOT,
+                        &sprites,
+                        &audio,
+                        0.0,
+                        0.0,
+                        &KeyBindings::default(),
+                    );
+                })
+                .await;
+            }
         }
         return;
     }
