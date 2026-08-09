@@ -22,6 +22,8 @@ pub enum UpgradeAction {
     DismissMonster(u64),
     /// Open the drawer's upgrade tab to pick something for this room.
     ArmUpgrades,
+    /// Open the monster catalogue to add a defender to this room.
+    ArmMonsters,
     /// Place the armed monster onto this defender — upgrading its line or
     /// evicting it, whichever the swap plan says.
     SwapMonster(u64),
@@ -202,7 +204,7 @@ fn draw_selected_room(
     action: &mut UpgradeAction,
 ) -> f32 {
     // Card grows with the defender list (up to MAX_DEFENDER_ROWS visible).
-    let defender_rows = room.monsters.len().clamp(1, MAX_DEFENDER_ROWS);
+    let defender_rows = room.monsters.len().min(MAX_DEFENDER_ROWS);
     let rect = Rect::new(
         bounds.x,
         y,
@@ -298,19 +300,21 @@ fn draw_selected_room(
         if adventurers > 0 { WARNING } else { EMERALD },
     );
 
-    draw_section_rule(rect.x + 12.0, rect.y + 202.0, rect.w - 24.0, "DEFENDERS");
-    if let Some(row_action) = draw_monster_progress_rows(
-        state,
-        room,
-        Rect::new(
-            rect.x + 12.0,
-            rect.y + 212.0,
-            rect.w - 24.0,
-            defender_rows as f32 * DEFENDER_ROW_H,
-        ),
-        defender_scroll,
-    ) {
-        *action = row_action;
+    if defender_rows > 0 {
+        draw_section_rule(rect.x + 12.0, rect.y + 202.0, rect.w - 24.0, "DEFENDERS");
+        if let Some(row_action) = draw_monster_progress_rows(
+            state,
+            room,
+            Rect::new(
+                rect.x + 12.0,
+                rect.y + 212.0,
+                rect.w - 24.0,
+                defender_rows as f32 * DEFENDER_ROW_H,
+            ),
+            defender_scroll,
+        ) {
+            *action = row_action;
+        }
     }
 
     y + rect.h
@@ -331,9 +335,17 @@ fn draw_upgrade_choices(
     draw_section_rule(bounds.x, y + 18.0, bounds.w, "ACTIONS");
     let mut row_y = y + 36.0;
 
-    // Adding is the drawer's job now — one flow for putting things in rooms,
-    // monster or trap alike — so this is a jump, not a second catalog. It leads
-    // because it is the action; what is already installed is review below it.
+    if draw_command_button(
+        Rect::new(bounds.x, row_y, bounds.w, 32.0),
+        "Add defender",
+        ButtonTone::Primary,
+        state.adventurer_parties.is_empty(),
+    ) {
+        *action = UpgradeAction::ArmMonsters;
+    }
+    row_y += 40.0;
+
+    // Adding upgrades remains the drawer's job, keeping one catalogue flow.
     let remaining = get_all_upgrades()
         .into_iter()
         .filter(|t| {

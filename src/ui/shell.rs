@@ -5,11 +5,12 @@ use crate::game_state::{DungeonStatus, GameState, RoomType};
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
 
-pub const HUD_HEIGHT: f32 = 84.0;
-pub const LOG_BAR_HEIGHT: f32 = 108.0;
+pub const HUD_HEIGHT: f32 = 68.0;
+pub const LOG_BAR_COLLAPSED_HEIGHT: f32 = 38.0;
+pub const LOG_BAR_EXPANDED_HEIGHT: f32 = 108.0;
 pub const OUTER_MARGIN: f32 = 8.0;
 pub const PANEL_GAP: f32 = 12.0;
-pub const SIDE_PANEL_WIDTH: f32 = 274.0;
+pub const SIDE_PANEL_WIDTH: f32 = 246.0;
 
 /// The two top-shell controls that mutate simulation state. The older controls
 /// panel had extra actions but is no longer rendered anywhere.
@@ -17,7 +18,7 @@ pub const SIDE_PANEL_WIDTH: f32 = 274.0;
 pub enum ControlAction {
     None,
     TogglePause,
-    ToggleSpeed,
+    SetSpeed(i32),
     ToggleDungeon,
 }
 
@@ -47,58 +48,43 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
         with_alpha(TREASURE, 0.22),
     );
 
-    let title_w = (rect.w * 0.20).clamp(210.0, 300.0);
+    let title_w = (rect.w * 0.15).clamp(156.0, 196.0);
     let title_rect = Rect::new(rect.x + 14.0, rect.y + 10.0, title_w, rect.h - 20.0);
     draw_brand_mark(
-        vec2(title_rect.x + 28.0, title_rect.y + title_rect.h * 0.5),
-        24.0,
+        vec2(title_rect.x + 20.0, title_rect.y + title_rect.h * 0.5),
+        17.0,
     );
     draw_text_fit(
         "DUNGEON CORE",
-        title_rect.x + 62.0,
+        title_rect.x + 44.0,
         title_rect.y + title_rect.h * 0.5 + 2.0,
-        title_rect.w - 66.0,
-        24.0,
+        title_rect.w - 48.0,
+        18.0,
         TEXT,
     );
     draw_text_fit(
         "[H] Help  [C] Codex  [K] Goals",
-        title_rect.x + 62.0,
+        title_rect.x + 44.0,
         title_rect.y + title_rect.h * 0.5 + 22.0,
-        title_rect.w - 66.0,
-        11.0,
+        title_rect.w - 48.0,
+        10.0,
         TEXT_DIM,
     );
 
     // Right-hand control cluster: speed selector + dungeon toggle.
     let dungeon_w = 150.0_f32.min(rect.w * 0.14).max(120.0);
-    let speed_w = 138.0_f32.min(rect.w * 0.13).max(112.0);
-    let pause_w = 78.0;
+    let speed_w = 132.0_f32.min(rect.w * 0.13).max(112.0);
     let cluster_gap = 10.0;
-    let control_h = 42.0;
+    let control_h = 38.0;
     let control_y = rect.y + (rect.h - control_h) * 0.5;
     let dungeon_x = rect.x + rect.w - 14.0 - dungeon_w;
     let speed_x = dungeon_x - cluster_gap - speed_w;
-    let pause_x = speed_x - cluster_gap - pause_w;
-
-    if draw_command_button(
-        Rect::new(pause_x, control_y, pause_w, control_h),
-        if state.paused { "Resume" } else { "Pause" },
-        if state.paused {
-            ButtonTone::Primary
-        } else {
-            ButtonTone::Ghost
-        },
-        true,
-    ) {
-        action = ControlAction::TogglePause;
-    }
-
-    if draw_speed_segments(
+    if let Some(time_action) = draw_speed_segments(
         Rect::new(speed_x, control_y, speed_w, control_h),
         state.speed,
+        state.paused,
     ) {
-        action = ControlAction::ToggleSpeed;
+        action = time_action;
     }
 
     let (status_text, status_tone, enabled) = match state.status {
@@ -117,7 +103,7 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
 
     // Resource + status stats fill the space between the title and controls.
     let stats_x = title_rect.x + title_rect.w + 16.0;
-    let stats_w = pause_x - stats_x - 16.0;
+    let stats_w = speed_x - stats_x - 16.0;
     let stat_w = (stats_w / 5.0).clamp(90.0, 156.0);
     let y = rect.y + 14.0;
     let stat_h = rect.h - 28.0;
@@ -323,16 +309,20 @@ fn draw_top_stat(
     }
 }
 
-fn draw_speed_segments(rect: Rect, speed: i32) -> bool {
-    let clicked = rect.contains(vec2(mouse_position().0, mouse_position().1))
-        && is_mouse_button_released(MouseButton::Left);
+fn draw_speed_segments(rect: Rect, speed: i32, paused: bool) -> Option<ControlAction> {
+    let pointer = vec2(mouse_position().0, mouse_position().1);
+    let released = is_mouse_button_released(MouseButton::Left);
+    let mut action = None;
     draw_card(rect, Color::new(0.018, 0.028, 0.045, 0.94), BORDER_MUTED);
     let labels = ["||", "1x", "2x", "4x"];
     let seg_w = rect.w / labels.len() as f32;
     for (idx, label) in labels.iter().enumerate() {
         let seg = Rect::new(rect.x + idx as f32 * seg_w, rect.y, seg_w, rect.h);
-        let active =
-            (idx == 1 && speed == 1) || (idx == 2 && speed == 2) || (idx == 3 && speed >= 4);
+        let active = (idx == 0 && paused)
+            || (!paused
+                && ((idx == 1 && speed == 1)
+                    || (idx == 2 && speed == 2)
+                    || (idx == 3 && speed >= 4)));
         if active {
             draw_rectangle(seg.x, seg.y, seg.w, seg.h, with_alpha(MANA, 0.12));
         }
@@ -347,8 +337,16 @@ fn draw_speed_segments(rect: Rect, speed: i32) -> bool {
             );
         }
         draw_centered_text(label, seg, 15.0, if active { TEXT } else { TEXT_DIM });
+        if released && seg.contains(pointer) {
+            action = Some(match idx {
+                0 => ControlAction::TogglePause,
+                1 => ControlAction::SetSpeed(1),
+                2 => ControlAction::SetSpeed(2),
+                _ => ControlAction::SetSpeed(4),
+            });
+        }
     }
-    clicked
+    action
 }
 
 fn draw_brand_mark(center: Vec2, radius: f32) {

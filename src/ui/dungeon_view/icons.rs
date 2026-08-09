@@ -60,11 +60,13 @@ pub(super) fn draw_entrance_art(rect: Rect, color: Color) {
 }
 
 pub(super) fn draw_combat_art(rect: Rect, color: Color) {
+    // A furnished guard chamber reads more like a place creatures inhabit than
+    // a large abstract room icon. The small banner retains the room identity.
     let banner = Rect::new(
-        rect.x + rect.w * 0.34,
-        rect.y + rect.h * 0.18,
-        rect.w * 0.32,
-        rect.h * 0.38,
+        rect.x + rect.w * 0.41,
+        rect.y + rect.h * 0.28,
+        rect.w * 0.18,
+        rect.h * 0.24,
     );
     draw_rectangle(
         banner.x,
@@ -79,10 +81,61 @@ pub(super) fn draw_combat_art(rect: Rect, color: Color) {
         vec2(banner.x + banner.w, banner.y + banner.h),
         Color::new(0.08, 0.035, 0.025, 0.30),
     );
-    let c = vec2(rect.x + rect.w * 0.5, rect.y + rect.h * 0.52);
-    draw_room_icon(&RoomType::Normal, c, rect.h * 0.22, color);
-    draw_torch(vec2(rect.x + rect.w * 0.18, rect.y + rect.h * 0.62));
-    draw_torch(vec2(rect.x + rect.w * 0.82, rect.y + rect.h * 0.62));
+    let c = vec2(rect.x + rect.w * 0.5, rect.y + rect.h * 0.41);
+    draw_room_icon(&RoomType::Normal, c, rect.h * 0.09, with_alpha(color, 0.76));
+    draw_torch(vec2(rect.x + rect.w * 0.17, rect.y + rect.h * 0.53));
+    draw_torch(vec2(rect.x + rect.w * 0.83, rect.y + rect.h * 0.53));
+
+    // Low weapon racks and supply crates leave the foreground open for units.
+    let rack_y = rect.y + rect.h * 0.67;
+    draw_line(
+        rect.x + rect.w * 0.27,
+        rack_y - 10.0,
+        rect.x + rect.w * 0.27,
+        rack_y + 9.0,
+        2.0,
+        with_alpha(color, 0.46),
+    );
+    draw_line(
+        rect.x + rect.w * 0.34,
+        rack_y - 10.0,
+        rect.x + rect.w * 0.34,
+        rack_y + 9.0,
+        2.0,
+        with_alpha(color, 0.46),
+    );
+    draw_line(
+        rect.x + rect.w * 0.24,
+        rack_y - 2.0,
+        rect.x + rect.w * 0.37,
+        rack_y - 2.0,
+        1.5,
+        with_alpha(color, 0.34),
+    );
+    let crate_rect = Rect::new(rect.x + rect.w * 0.68, rack_y - 7.0, 13.0, 14.0);
+    draw_rectangle(
+        crate_rect.x,
+        crate_rect.y,
+        crate_rect.w,
+        crate_rect.h,
+        Color::new(0.30, 0.19, 0.10, 0.78),
+    );
+    draw_rectangle_lines(
+        crate_rect.x,
+        crate_rect.y,
+        crate_rect.w,
+        crate_rect.h,
+        1.0,
+        with_alpha(TREASURE, 0.42),
+    );
+    draw_line(
+        crate_rect.x,
+        crate_rect.y,
+        crate_rect.x + crate_rect.w,
+        crate_rect.y + crate_rect.h,
+        1.0,
+        with_alpha(TREASURE, 0.28),
+    );
 }
 
 pub(super) fn draw_core_art(rect: Rect, color: Color) {
@@ -100,6 +153,7 @@ pub(super) fn draw_core_art(rect: Rect, color: Color) {
 }
 
 fn draw_torch(pos: Vec2) {
+    draw_circle(pos.x, pos.y - 9.0, 13.0, with_alpha(TREASURE, 0.09));
     draw_rectangle(
         pos.x - 2.0,
         pos.y - 8.0,

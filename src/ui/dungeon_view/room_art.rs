@@ -41,7 +41,7 @@ pub(super) fn draw_room_tile(
     draw_room_chamber_art(draw_rect, room, fill, border, icon_color);
     if let Some((element, multiplier)) = room.attunement() {
         draw_pill(
-            Rect::new(draw_rect.x + 6.0, draw_rect.y + 6.0, 58.0, 16.0),
+            Rect::new(draw_rect.x + 7.0, draw_rect.y + 29.0, 58.0, 15.0),
             &format!(
                 "{} +{:.0}%",
                 element_marker(element),
@@ -101,7 +101,7 @@ pub(super) fn draw_room_tile(
                 ) {
                     if elem.as_str() == room_elem {
                         draw_pill(
-                            Rect::new(draw_rect.x + 6.0, draw_rect.y + 6.0, 76.0, 16.0),
+                            Rect::new(draw_rect.x + 7.0, draw_rect.y + 29.0, 76.0, 15.0),
                             "Attuned",
                             element_color(&elem),
                         );
@@ -150,19 +150,19 @@ pub(super) fn draw_room_tile(
     }
 
     let label_rect = Rect::new(
-        draw_rect.x + draw_rect.w * 0.12,
-        draw_rect.y + draw_rect.h + 9.0,
-        draw_rect.w * 0.76,
-        27.0,
+        draw_rect.x + 7.0,
+        draw_rect.y + 6.0,
+        draw_rect.w - 14.0,
+        20.0,
     );
     draw_room_label_plate(label_rect, title, room, icon_color);
 
     // Per-unit icons: defenders on the left, adventurers on the right.
     let strip = Rect::new(
         draw_rect.x + 8.0,
-        draw_rect.y + draw_rect.h - 26.0,
+        draw_rect.y + draw_rect.h - 34.0,
         draw_rect.w - 16.0,
-        22.0,
+        27.0,
     );
     // Recurring survivors / prolific slayers are "rivals": name them on the
     // board so heroes read as recognisable actors, not anonymous tokens.
@@ -185,15 +185,24 @@ pub(super) fn draw_room_tile(
 }
 
 fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, icon_color: Color) {
-    draw_card(rect, fill, border);
-
-    let wall = Rect::new(rect.x + 8.0, rect.y + 8.0, rect.w - 16.0, rect.h - 18.0);
+    // A heavy silhouette around a brighter interior gives every floor the
+    // readable side-on cutaway shape of an inhabited underground complex.
+    draw_rectangle(
+        rect.x - 3.0,
+        rect.y - 4.0,
+        rect.w + 6.0,
+        rect.h + 9.0,
+        BLACK,
+    );
+    draw_rectangle(rect.x, rect.y, rect.w, rect.h, with_alpha(border, 0.46));
+    let wall = Rect::new(rect.x + 5.0, rect.y + 7.0, rect.w - 10.0, rect.h - 14.0);
+    draw_rectangle(wall.x, wall.y, wall.w, wall.h, fill);
     draw_rectangle(
         wall.x,
         wall.y,
         wall.w,
-        wall.h,
-        Color::new(0.0, 0.0, 0.0, 0.18),
+        wall.h * 0.62,
+        Color::new(0.0, 0.0, 0.0, 0.10),
     );
 
     // Depth is a visual material change, not a stat or simulation effect:
@@ -208,23 +217,41 @@ fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, ic
     );
     draw_rectangle(wall.x, wall.y, wall.w, wall.h, depth_tint);
 
-    let brick = Color::new(0.20, 0.22, 0.25, 0.13);
-    let mut by = wall.y + 8.0;
-    while by < wall.y + wall.h - 8.0 {
-        draw_line(wall.x + 6.0, by, wall.x + wall.w - 6.0, by, 1.0, brick);
-        by += 16.0;
+    let brick = with_alpha(icon_color, 0.10);
+    let mut by = wall.y + 18.0;
+    let mut row = 0usize;
+    while by < wall.y + wall.h - 13.0 {
+        draw_line(wall.x + 3.0, by, wall.x + wall.w - 3.0, by, 1.0, brick);
+        let offset = if row % 2 == 0 { 10.0 } else { 22.0 };
+        let mut bx = wall.x + offset;
+        while bx < wall.x + wall.w - 4.0 {
+            draw_line(bx, by - 14.0, bx, by, 1.0, brick);
+            bx += 28.0;
+        }
+        by += 14.0;
+        row += 1;
     }
-    let mut bx = wall.x + 12.0;
-    while bx < wall.x + wall.w - 10.0 {
-        draw_line(
-            bx,
-            wall.y + 10.0,
-            bx,
-            wall.y + wall.h - 10.0,
-            1.0,
-            Color::new(0.18, 0.20, 0.24, 0.08),
-        );
-        bx += 24.0;
+
+    // Stone ceiling, side supports, and a lit floor anchor the room as a
+    // physical chamber instead of a floating UI card.
+    draw_rectangle(wall.x, wall.y, wall.w, 5.0, with_alpha(BLACK, 0.62));
+    draw_rectangle(
+        wall.x,
+        wall.y + wall.h - 10.0,
+        wall.w,
+        10.0,
+        with_alpha(BLACK, 0.70),
+    );
+    draw_line(
+        wall.x,
+        wall.y + wall.h - 11.0,
+        wall.x + wall.w,
+        wall.y + wall.h - 11.0,
+        1.5,
+        with_alpha(icon_color, 0.38),
+    );
+    for x in [wall.x + 3.0, wall.x + wall.w - 6.0] {
+        draw_rectangle(x, wall.y + 5.0, 4.0, wall.h - 15.0, with_alpha(BLACK, 0.34));
     }
 
     match room.room_type {
@@ -360,23 +387,33 @@ fn draw_room_upgrade_art(wall: Rect, room: &Room) {
 }
 
 fn draw_room_label_plate(rect: Rect, title: &str, room: &Room, color: Color) {
-    draw_card(
-        rect,
-        Color::new(0.0, 0.0, 0.0, 0.34),
-        with_alpha(color, 0.28),
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        Color::new(0.0, 0.0, 0.0, 0.62),
+    );
+    draw_line(
+        rect.x,
+        rect.y + rect.h,
+        rect.x + rect.w,
+        rect.y + rect.h,
+        1.0,
+        with_alpha(color, 0.46),
     );
     draw_text_fit(
         title,
-        rect.x + 28.0,
-        rect.y + 18.0,
-        rect.w - 34.0,
-        12.0,
-        color,
+        rect.x + 22.0,
+        rect.y + 14.0,
+        rect.w - 28.0,
+        11.0,
+        TEXT,
     );
     draw_room_icon(
         &room.room_type,
-        vec2(rect.x + 15.0, rect.y + rect.h * 0.50),
-        7.0,
+        vec2(rect.x + 11.0, rect.y + rect.h * 0.50),
+        6.0,
         color,
     );
 
@@ -387,10 +424,10 @@ fn draw_room_label_plate(rect: Rect, title: &str, room: &Room, color: Color) {
         let used = room.monsters.len();
         draw_text_fit_right(
             &format!("{}/{}", used, capacity),
-            rect.x + rect.w - 6.0,
-            rect.y + 18.0,
+            rect.x + rect.w - 5.0,
+            rect.y + 14.0,
             30.0,
-            11.0,
+            9.0,
             if used >= capacity {
                 WARNING
             } else {
@@ -415,11 +452,23 @@ pub(super) fn draw_future_room_tile(state: &GameState, rect: Rect, plan: &BuildP
         draw_rect.y -= 2.0;
     }
 
+    draw_rectangle(
+        draw_rect.x - 3.0,
+        draw_rect.y - 4.0,
+        draw_rect.w + 6.0,
+        draw_rect.h + 9.0,
+        BLACK,
+    );
     draw_card(draw_rect, fill, border);
-    draw_dashed_border(draw_rect, border);
+    draw_dashed_border(draw_rect, with_alpha(border, 0.72));
     draw_centered_text(
         "+",
-        Rect::new(draw_rect.x, draw_rect.y + 8.0, draw_rect.w, 26.0),
+        Rect::new(
+            draw_rect.x,
+            draw_rect.y + draw_rect.h * 0.20,
+            draw_rect.w,
+            28.0,
+        ),
         30.0,
         border,
     );
@@ -442,20 +491,25 @@ pub(super) fn draw_future_room_tile(state: &GameState, rect: Rect, plan: &BuildP
         border,
     );
     let label_rect = Rect::new(
-        draw_rect.x + draw_rect.w * 0.18,
-        draw_rect.y + draw_rect.h + 9.0,
-        draw_rect.w * 0.64,
-        27.0,
+        draw_rect.x + 7.0,
+        draw_rect.y + 6.0,
+        draw_rect.w - 14.0,
+        20.0,
     );
     draw_card(
         label_rect,
         Color::new(0.0, 0.0, 0.0, 0.34),
-        with_alpha(border, 0.24),
+        with_alpha(border, 0.34),
     );
     draw_centered_text(&label, label_rect, 11.0, TEXT_MUTED);
     draw_centered_text(
         &format!("{}M", plan.cost),
-        Rect::new(label_rect.x, label_rect.y + 24.0, label_rect.w, 14.0),
+        Rect::new(
+            draw_rect.x,
+            draw_rect.y + draw_rect.h - 25.0,
+            draw_rect.w,
+            14.0,
+        ),
         11.0,
         if can_afford { MANA } else { DANGER },
     );
@@ -511,22 +565,27 @@ pub(super) fn draw_party_transit(
 
 pub(super) fn draw_connector(rect: Rect, ghost: bool) {
     let alpha = if ghost { 0.32 } else { 0.70 };
-    let fill = Color::new(0.110, 0.145, 0.195, alpha);
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, fill);
-    draw_rectangle_lines(
+    draw_rectangle(
         rect.x,
-        rect.y,
+        rect.y - 5.0,
         rect.w,
-        rect.h,
-        1.0,
-        Color::new(0.35, 0.40, 0.48, alpha),
+        rect.h + 10.0,
+        with_alpha(BLACK, alpha),
+    );
+    let passage = Rect::new(rect.x, rect.y + 3.0, rect.w, rect.h - 6.0);
+    draw_rectangle(
+        passage.x,
+        passage.y,
+        passage.w,
+        passage.h,
+        Color::new(0.18, 0.16, 0.14, alpha),
     );
     draw_line(
-        rect.x + 4.0,
+        rect.x,
         rect.y + rect.h * 0.5,
-        rect.x + rect.w - 4.0,
+        rect.x + rect.w,
         rect.y + rect.h * 0.5,
-        2.0,
+        1.5,
         with_alpha(TREASURE, if ghost { 0.22 } else { 0.36 }),
     );
 }
@@ -534,25 +593,25 @@ pub(super) fn draw_connector(rect: Rect, ghost: bool) {
 fn room_tone(room: &Room) -> (Color, Color, Color, &'static str) {
     match room.room_type {
         RoomType::Entrance => (
-            Color::new(0.05, 0.34, 0.22, 0.94),
+            Color::new(0.075, 0.25, 0.17, 0.98),
             with_alpha(EMERALD, 0.78),
             Color::new(0.70, 1.00, 0.82, 1.0),
             "Entrance",
         ),
         RoomType::Normal => (
-            Color::new(0.07, 0.19, 0.29, 0.94),
-            with_alpha(MANA, 0.58),
-            Color::new(0.72, 0.91, 1.0, 1.0),
+            Color::new(0.16, 0.19, 0.22, 0.98),
+            Color::new(0.38, 0.42, 0.46, 0.92),
+            Color::new(0.94, 0.62, 0.28, 1.0),
             "Room",
         ),
         RoomType::Boss => (
-            Color::new(0.36, 0.12, 0.07, 0.94),
+            Color::new(0.34, 0.15, 0.08, 0.98),
             with_alpha(WARNING, 0.78),
             Color::new(1.0, 0.80, 0.58, 1.0),
             "Boss",
         ),
         RoomType::Core => (
-            Color::new(0.26, 0.10, 0.42, 0.96),
+            Color::new(0.24, 0.11, 0.34, 0.98),
             with_alpha(SOUL, 0.82),
             Color::new(0.93, 0.78, 1.0, 1.0),
             "Core",

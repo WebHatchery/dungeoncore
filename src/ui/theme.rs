@@ -8,9 +8,9 @@ use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
 
 pub const BG: Color = Color::new(0.010, 0.014, 0.022, 1.0);
 pub const BG_DEEP: Color = Color::new(0.004, 0.006, 0.011, 1.0);
-pub const PANEL: Color = Color::new(0.024, 0.031, 0.047, 0.92);
-pub const PANEL_ALT: Color = Color::new(0.035, 0.043, 0.064, 0.92);
-pub const PANEL_HEADER: Color = Color::new(0.050, 0.053, 0.076, 0.78);
+pub const PANEL: Color = Color::new(0.024, 0.031, 0.047, 1.0);
+pub const PANEL_ALT: Color = Color::new(0.035, 0.043, 0.064, 1.0);
+pub const PANEL_HEADER: Color = Color::new(0.050, 0.053, 0.076, 1.0);
 pub const CARD: Color = Color::new(0.026, 0.033, 0.050, 0.86);
 pub const BORDER: Color = Color::new(0.240, 0.270, 0.340, 0.48);
 pub const BORDER_MUTED: Color = Color::new(0.140, 0.165, 0.220, 0.36);

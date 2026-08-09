@@ -5,11 +5,55 @@ use crate::game_state::{GameState, LogEntry, LogFilter};
 
 use super::theme::*;
 
-/// Draw the always-visible event log panel. Shows the most recent events,
-/// colour-coded by type, so the player can follow what is happening in the
-/// dungeon without expanding anything.
-pub fn draw_event_log(state: &mut GameState, rect: Rect) {
-    draw_panel(rect, Some("Event Log"), MANA);
+/// Draw the compact event strip, with an expanded filtered history on demand.
+pub fn draw_event_log(state: &mut GameState, rect: Rect, expanded: &mut bool) {
+    draw_panel(rect, None, MANA);
+
+    let toggle = Rect::new(rect.x, rect.y, rect.w, 30.0_f32.min(rect.h));
+    let matching_count = state
+        .log
+        .iter()
+        .filter(|entry| state.log_filter.matches(entry))
+        .count();
+    draw_text_fit(
+        &format!(
+            "EVENT LOG · {matching_count} {}  [{}]",
+            if matching_count == 1 {
+                "message"
+            } else {
+                "messages"
+            },
+            if *expanded { "CLOSE" } else { "OPEN" }
+        ),
+        toggle.x + 12.0,
+        toggle.y + 20.0,
+        230.0,
+        13.0,
+        MANA,
+    );
+    if toggle.contains(vec2(mouse_position().0, mouse_position().1))
+        && is_mouse_button_released(MouseButton::Left)
+    {
+        *expanded = !*expanded;
+    }
+    if !*expanded {
+        if let Some(entry) = state
+            .log
+            .iter()
+            .rev()
+            .find(|entry| state.log_filter.matches(entry))
+        {
+            draw_text_fit(
+                &entry.message,
+                rect.x + 248.0,
+                rect.y + 20.0,
+                (rect.w - 270.0).max(80.0),
+                12.0,
+                event_color(entry),
+            );
+        }
+        return;
+    }
 
     let filters = [
         (LogFilter::All, "ALL"),

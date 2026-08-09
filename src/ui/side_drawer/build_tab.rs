@@ -167,7 +167,7 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
     // Ongoing gold sink + mana safety-valve: channel surplus gold into mana.
     use crate::simulation::economy::{can_channel_gold, GOLD_CHANNEL_COST, GOLD_CHANNEL_MANA};
     let cy = y + 78.0;
-    if cy + 66.0 <= rect.y + rect.h {
+    if cy + 66.0 <= rect.y + rect.h - 44.0 {
         draw_text_fit(
             &format!("CHANNEL THE HOARD · {} gold", state.gold),
             rect.x,
@@ -199,6 +199,17 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
                 vec2(channel_rect.x, channel_rect.y + channel_rect.h),
             );
         }
+    }
+
+    let reset_rect = Rect::new(rect.x, rect.y + rect.h - 34.0, rect.w, 30.0);
+    if draw_command_button(reset_rect, "Reset dungeon", ButtonTone::Danger, true) {
+        return BuildTabAction::Reset;
+    }
+    if is_hovered_rect(reset_rect) {
+        macroquad_toolkit::ui::draw_tooltip(
+            "Start a new dungeon. You will be asked to confirm before anything changes.",
+            vec2(reset_rect.x, reset_rect.y),
+        );
     }
 
     BuildTabAction::None

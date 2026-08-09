@@ -7,6 +7,14 @@ use crate::ui::theme::*;
 
 use super::super::DungeonSprites;
 
+// Board units need to remain readable when rooms are scaled down to fit a
+// long floor. The sprite is deliberately larger than its layout footprint;
+// the atlas frames have transparent margins, so nearby units still separate
+// cleanly while their actual creature art remains prominent.
+const UNIT_RADIUS: f32 = 9.5;
+const UNIT_STEP: f32 = 22.0;
+const UNIT_SPRITE_SIZE: f32 = 28.0;
+
 /// Draw one icon per unit in the room. Overflow collapses into a compact tag.
 pub(super) fn draw_room_units(
     room: &Room,
@@ -16,9 +24,9 @@ pub(super) fn draw_room_units(
     rival_ids: &[u64],
     sprites: &DungeonSprites,
 ) {
-    let radius = 7.0;
-    let step = radius * 2.0 + 3.0;
-    let cy = strip.y + radius + 1.0;
+    let radius = UNIT_RADIUS;
+    let step = UNIT_STEP;
+    let cy = strip.y + strip.h * 0.5;
 
     if room.room_type == RoomType::Normal || room.room_type == RoomType::Boss {
         let mut ordered: Vec<&Monster> = room.monsters.iter().filter(|m| m.alive).collect();
@@ -53,7 +61,7 @@ pub(super) fn draw_room_units(
                 && sprites.draw_monster(
                     &monster.type_name,
                     vec2(x, cy + bob),
-                    radius * 2.3,
+                    UNIT_SPRITE_SIZE,
                     phase,
                     false,
                     fighting,
@@ -102,7 +110,7 @@ pub(super) fn draw_room_units(
             let drawn_sprite = sprites.draw_adventurer(
                 &adventurer.class_name,
                 vec2(x, cy + bob),
-                radius * 2.3,
+                UNIT_SPRITE_SIZE,
                 phase,
                 true,
                 false,

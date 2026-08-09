@@ -28,10 +28,12 @@ pub use sprites::{
     UNIT_SHEET_PATH,
 };
 
-const BASE_ROOM_W: f32 = 156.0;
-const BASE_ROOM_H: f32 = 122.0;
-const BASE_CONNECTOR_W: f32 = 36.0;
-const FLOOR_RAIL_W: f32 = 58.0;
+// Rooms form one continuous cutaway floor. Narrow doorway connectors and a
+// compact floor marker spend the available width on the inhabited chambers.
+const BASE_ROOM_W: f32 = 170.0;
+const BASE_ROOM_H: f32 = 146.0;
+const BASE_CONNECTOR_W: f32 = 10.0;
+const FLOOR_RAIL_W: f32 = 68.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DungeonAction {
@@ -116,11 +118,7 @@ pub fn draw_dungeon_board(
     sprites: &DungeonSprites,
 ) -> DungeonAction {
     let mut action = DungeonAction::None;
-    draw_card(
-        rect,
-        Color::new(0.0, 0.0, 0.0, 0.18),
-        with_alpha(BORDER, 0.18),
-    );
+    draw_card(rect, PANEL, with_alpha(BORDER, 0.18));
 
     draw_text_fit("Dungeon", rect.x + 22.0, rect.y + 30.0, 160.0, 24.0, TEXT);
     draw_text_fit(
@@ -146,7 +144,7 @@ pub fn draw_dungeon_board(
         return action;
     }
 
-    let gap = 14.0;
+    let gap = 10.0;
     let floor_len = state.floors.len();
     let floor_count = floor_len as f32;
     let row_h = ((content.h - gap * (floor_len.saturating_sub(1) as f32)) / floor_count)
@@ -179,7 +177,10 @@ pub fn draw_dungeon_board(
     let sorted_floors = sorted_floors(state);
 
     for floor in sorted_floors {
-        if row_y + row_h < content.y || row_y > content.y + content.h {
+        // Do not let a partially scrolled floor intrude into the board header.
+        // The cutaway stays cleaner when floors enter as complete horizontal
+        // bands instead of exposing clipped fragments above the rock viewport.
+        if row_y < content.y || row_y > content.y + content.h {
             row_y += row_h + gap;
             continue;
         }
@@ -188,12 +189,8 @@ pub fn draw_dungeon_board(
         let selected_floor = state
             .selected_room
             .map(|(floor_num, _)| floor_num == floor.number)
-            .unwrap_or(floor.is_deepest);
-        let row_border = if selected_floor {
-            with_alpha(TREASURE, 0.48)
-        } else {
-            BORDER_MUTED
-        };
+            .unwrap_or(false);
+        let row_border = BORDER_MUTED;
         draw_room_route_backplate(row_rect, selected_floor, row_border);
 
         let rail = Rect::new(
@@ -207,7 +204,7 @@ pub fn draw_dungeon_board(
         let rooms_area = Rect::new(
             rail.x + rail.w + 10.0,
             row_rect.y + 8.0,
-            row_rect.w - rail.w - 28.0,
+            row_rect.w - rail.w - 22.0,
             row_rect.h - 16.0,
         );
         if let Some(row_action) =
@@ -304,9 +301,9 @@ fn draw_floor_rooms(
     let tile_w = BASE_ROOM_W * scale;
     let tile_h = BASE_ROOM_H * scale;
     let connector_w = BASE_CONNECTOR_W * scale;
-    let label_h = 32.0 * scale;
-    let tile_y = area.y + ((area.h - tile_h - label_h) * 0.5).max(0.0);
-    let mut x = area.x + 6.0;
+    let tile_y = area.y + ((area.h - tile_h) * 0.5).max(0.0);
+    let rendered_w = total_w * scale;
+    let mut x = area.x + ((area.w - rendered_w) * 0.5).max(0.0);
     let mut drawn_nodes = 0usize;
     let total_nodes = node_count;
 
@@ -393,7 +390,6 @@ fn draw_graph_rooms(
         .clamp(0.46, 0.82);
     let tile_w = BASE_ROOM_W * scale;
     let tile_h = BASE_ROOM_H * scale;
-    let label_h = 32.0 * scale;
     let center = |depth: usize, lane: i32| {
         vec2(
             area.x + step_x * (depth as f32 + 0.5),
@@ -453,7 +449,6 @@ fn draw_graph_rooms(
             ));
         }
     }
-    let _ = label_h; // Room art owns its label plate; retain the scale relationship above.
     action
 }
 

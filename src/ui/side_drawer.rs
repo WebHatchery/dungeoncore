@@ -23,8 +23,8 @@ use macroquad_toolkit::colors::with_alpha;
 use monster_tab::draw_monster_tab;
 use traps_tab::draw_traps_tab;
 
-pub const DRAWER_OPEN_WIDTH: f32 = 274.0;
-pub const DRAWER_COLLAPSED_WIDTH: f32 = 64.0;
+pub const DRAWER_OPEN_WIDTH: f32 = 246.0;
+pub const DRAWER_COLLAPSED_WIDTH: f32 = 56.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DrawerTab {
@@ -88,6 +88,7 @@ pub enum BuildTabAction {
     Branch,
     OpenCorePowers,
     ChannelGold,
+    Reset,
 }
 
 pub fn draw_side_drawer(
@@ -123,6 +124,7 @@ pub fn draw_side_drawer(
             BuildTabAction::Branch => action = DrawerAction::BranchRoom,
             BuildTabAction::OpenCorePowers => action = DrawerAction::OpenCorePowers,
             BuildTabAction::ChannelGold => action = DrawerAction::ChannelGold,
+            BuildTabAction::Reset => action = DrawerAction::ResetGame,
             BuildTabAction::None => {}
         },
         DrawerTab::Monsters => {
@@ -149,7 +151,7 @@ pub fn draw_side_drawer(
 }
 
 fn draw_tab_rail(
-    state: &GameState,
+    _state: &GameState,
     rect: Rect,
     rail_w: f32,
     active_tab: &mut DrawerTab,
@@ -171,15 +173,15 @@ fn draw_tab_rail(
     }
 
     let mut y = rect.y + 54.0;
-    for (tab, icon, label, color) in [
-        (DrawerTab::Monsters, "M", "MONSTERS", SOUL),
-        (DrawerTab::Traps, "T", "TRAPS", DANGER),
-        (DrawerTab::Build, "B", "BUILD", TREASURE),
-        (DrawerTab::Evolution, "V", "VARIANTS", MANA),
-        (DrawerTab::Heroes, "H", "HEROES", WARNING),
+    for (tab, icon, color) in [
+        (DrawerTab::Monsters, "M", SOUL),
+        (DrawerTab::Traps, "T", DANGER),
+        (DrawerTab::Build, "B", TREASURE),
+        (DrawerTab::Evolution, "V", MANA),
+        (DrawerTab::Heroes, "H", WARNING),
     ] {
         let tab_rect = Rect::new(rect.x + 7.0, y, rail_w - 14.0, 54.0);
-        if draw_rail_tab(tab_rect, icon, label, color, *active_tab == tab) {
+        if draw_rail_tab(tab_rect, icon, color, *active_tab == tab) {
             *active_tab = tab;
             *open = true;
         }
@@ -198,44 +200,7 @@ fn draw_tab_rail(
         y += 60.0;
     }
 
-    let chip_rect = Rect::new(rect.x + 9.0, rect.y + rect.h - 88.0, rail_w - 18.0, 34.0);
-    let color = if state.adventurer_parties.is_empty() {
-        EMERALD
-    } else {
-        WARNING
-    };
-    draw_card(chip_rect, with_alpha(color, 0.09), with_alpha(color, 0.26));
-    draw_centered_text(
-        if state.adventurer_parties.is_empty() {
-            "Safe"
-        } else {
-            "Alert"
-        },
-        chip_rect,
-        10.0,
-        color,
-    );
-    if is_hovered_rect(chip_rect) {
-        macroquad_toolkit::ui::draw_tooltip(
-            if state.adventurer_parties.is_empty() {
-                "No adventurers are currently inside. It is safe to reorganize the dungeon."
-            } else {
-                "An adventuring party is inside. Room construction and defender changes wait until the raid ends."
-            },
-            vec2(chip_rect.x + chip_rect.w, chip_rect.y),
-        );
-    }
-
-    // Reset control lives quietly at the bottom of the rail.
-    let reset_rect = Rect::new(rect.x + 9.0, rect.y + rect.h - 46.0, rail_w - 18.0, 34.0);
-    let reset = draw_small_tab(reset_rect, "RESET", DANGER, false);
-    if is_hovered_rect(reset_rect) {
-        macroquad_toolkit::ui::draw_tooltip(
-            "Start a new dungeon. A confirmation keeps this destructive action reversible until you approve it.",
-            vec2(reset_rect.x + reset_rect.w, reset_rect.y),
-        );
-    }
-    reset
+    false
 }
 
 fn draw_section_title(rect: Rect, title: &str, subtitle: &str) {
@@ -268,7 +233,7 @@ fn draw_small_tab(rect: Rect, text: &str, color: Color, active: bool) -> bool {
     was_clicked_rect(rect)
 }
 
-fn draw_rail_tab(rect: Rect, icon: &str, label: &str, color: Color, active: bool) -> bool {
+fn draw_rail_tab(rect: Rect, icon: &str, color: Color, active: bool) -> bool {
     let hovered = is_hovered_rect(rect);
     draw_card(
         rect,
@@ -281,17 +246,6 @@ fn draw_rail_tab(rect: Rect, icon: &str, label: &str, color: Color, active: bool
         },
         with_alpha(color, if active { 0.48 } else { 0.16 }),
     );
-    draw_centered_text(
-        icon,
-        Rect::new(rect.x, rect.y + 10.0, rect.w, 24.0),
-        22.0,
-        if active { color } else { TEXT_DIM },
-    );
-    draw_centered_text(
-        label,
-        Rect::new(rect.x + 2.0, rect.y + 43.0, rect.w - 4.0, 20.0),
-        8.0,
-        if active { TEXT } else { TEXT_MUTED },
-    );
+    draw_centered_text(icon, rect, 24.0, if active { color } else { TEXT_DIM });
     was_clicked_rect(rect)
 }

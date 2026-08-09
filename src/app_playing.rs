@@ -20,6 +20,7 @@ pub fn render_playing_frame(
     drawer_tab: &mut DrawerTab,
     upgrade_section: &mut UpgradeSection,
     drawer_open: &mut bool,
+    event_log_expanded: &mut bool,
     species_scroll: &mut f32,
     defender_scroll: &mut f32,
     heroes_scroll: &mut f32,
@@ -152,9 +153,13 @@ pub fn render_playing_frame(
                 reset_timers(last_time_advance, last_adventure_tick, last_save);
             }
         }
-        ControlAction::ToggleSpeed => {
+        ControlAction::SetSpeed(speed) => {
             audio.play(SoundCue::Ui, sfx_volume);
-            simulation::toggle_speed(state);
+            state.speed = speed;
+            if state.paused {
+                state.paused = false;
+                reset_timers(last_time_advance, last_adventure_tick, last_save);
+            }
         }
         ControlAction::ToggleDungeon => {
             audio.play(SoundCue::Ui, sfx_volume);
@@ -163,11 +168,16 @@ pub fn render_playing_frame(
         _ => {}
     }
 
+    let log_h = if *event_log_expanded {
+        LOG_BAR_EXPANDED_HEIGHT
+    } else {
+        LOG_BAR_COLLAPSED_HEIGHT
+    };
     let log_rect = Rect::new(
         OUTER_MARGIN,
-        sh - OUTER_MARGIN - LOG_BAR_HEIGHT,
+        sh - OUTER_MARGIN - log_h,
         sw - OUTER_MARGIN * 2.0,
-        LOG_BAR_HEIGHT,
+        log_h,
     );
 
     let body_top = hud_rect.y + hud_rect.h + PANEL_GAP;
@@ -188,7 +198,7 @@ pub fn render_playing_frame(
     apply_drawer_action(drawer_action, state, show_core_tree, audio, sfx_volume);
 
     let right_panel_w = if has_inspector {
-        (sw * 0.21).clamp(270.0, 330.0)
+        (sw * 0.18).clamp(220.0, 240.0)
     } else {
         0.0
     };
@@ -311,6 +321,10 @@ pub fn render_playing_frame(
                 *drawer_tab = DrawerTab::Traps;
                 *drawer_open = true;
             }
+            UpgradeAction::ArmMonsters => {
+                *drawer_tab = DrawerTab::Monsters;
+                *drawer_open = true;
+            }
             UpgradeAction::SwapMonster(monster_id) => {
                 // The armed monster goes onto an occupied slot: its own line
                 // grows, anything else evicts. Selection clears either way —
@@ -400,7 +414,7 @@ pub fn render_playing_frame(
         }
     }
 
-    draw_event_log(state, log_rect);
+    draw_event_log(state, log_rect, event_log_expanded);
 
     // A siege turns the whole screen into an alarm state.
     if state.siege_active {

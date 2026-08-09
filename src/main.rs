@@ -108,7 +108,11 @@ async fn main() {
             _ => DrawerTab::Monsters,
         };
         let mut upgrade_section = UpgradeSection::Traps;
-        let mut drawer_open = true;
+        let mut drawer_open = matches!(
+            config.scene.as_str(),
+            "build" | "variants" | "traps" | "journal"
+        );
+        let mut event_log_expanded = false;
         let mut species_scroll = 0.0;
         let mut defender_scroll = 0.0;
         let mut heroes_scroll = 0.0;
@@ -131,6 +135,7 @@ async fn main() {
                     &mut drawer_tab,
                     &mut upgrade_section,
                     &mut drawer_open,
+                    &mut event_log_expanded,
                     &mut species_scroll,
                     &mut defender_scroll,
                     &mut heroes_scroll,
@@ -161,6 +166,7 @@ async fn main() {
                     &mut drawer_tab,
                     &mut upgrade_section,
                     &mut drawer_open,
+                    &mut event_log_expanded,
                     &mut species_scroll,
                     &mut defender_scroll,
                     &mut heroes_scroll,
@@ -210,7 +216,8 @@ async fn main() {
     let mut last_save = get_time();
     let mut drawer_tab = DrawerTab::Monsters;
     let mut upgrade_section = UpgradeSection::Traps;
-    let mut drawer_open = true;
+    let mut drawer_open = false;
+    let mut event_log_expanded = false;
     let mut species_scroll = 0.0;
     let mut defender_scroll = 0.0;
     let mut heroes_scroll = 0.0;
@@ -374,6 +381,7 @@ async fn main() {
             &mut drawer_tab,
             &mut upgrade_section,
             &mut drawer_open,
+            &mut event_log_expanded,
             &mut species_scroll,
             &mut defender_scroll,
             &mut heroes_scroll,

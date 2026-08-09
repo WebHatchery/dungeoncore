@@ -24,7 +24,7 @@ pub(super) fn draw_monster_tab(state: &GameState, rect: Rect) -> Option<String> 
         })
         .collect();
     let available_h = (rect.h - 138.0).max(0.0);
-    let row_h = (available_h / templates.len().max(1) as f32).clamp(46.0, 72.0);
+    let row_h = (available_h / templates.len().max(1) as f32).clamp(58.0, 76.0);
     let row_gap = 6.0;
     let mut y = rect.y + 72.0;
     for template in &templates {
@@ -85,8 +85,6 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
     };
 
     draw_card(rect, fill, border);
-    let portrait = Rect::new(rect.x + 9.0, rect.y + 9.0, 54.0, rect.h - 18.0);
-    draw_monster_portrait(portrait, unlocked, selected);
     let title = if unlocked {
         template.name.as_str()
     } else {
@@ -94,9 +92,9 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
     };
     draw_text_fit(
         title,
-        rect.x + 74.0,
-        rect.y + rect.h * 0.38,
-        rect.w - 126.0,
+        rect.x + 10.0,
+        rect.y + 22.0,
+        rect.w - 20.0,
         14.0,
         if unlocked { TEXT } else { TEXT_DIM },
     );
@@ -119,9 +117,9 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
     };
     draw_text_fit(
         &detail,
-        rect.x + 74.0,
-        rect.y + rect.h * 0.70,
-        rect.w - 126.0,
+        rect.x + 10.0,
+        rect.y + rect.h - 10.0,
+        rect.w - 20.0,
         11.0,
         TEXT_MUTED,
     );
@@ -133,9 +131,9 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
     draw_text_fit_right(
         &cost_label,
         rect.x + rect.w - 10.0,
-        rect.y + rect.h * 0.58,
+        rect.y + 41.0,
         54.0,
-        13.0,
+        12.0,
         if can_afford { MANA } else { DANGER },
     );
 
@@ -164,60 +162,6 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
     }
 
     enabled && was_clicked_rect(rect)
-}
-
-fn draw_monster_portrait(rect: Rect, unlocked: bool, selected: bool) {
-    let color = if unlocked { EMERALD } else { TEXT_DIM };
-    draw_card(
-        rect,
-        Color::new(0.0, 0.0, 0.0, 0.30),
-        with_alpha(color, if selected { 0.55 } else { 0.20 }),
-    );
-    if unlocked {
-        draw_circle(
-            rect.x + rect.w * 0.50,
-            rect.y + rect.h * 0.42,
-            rect.w * 0.22,
-            with_alpha(color, 0.42),
-        );
-        draw_triangle(
-            vec2(rect.x + rect.w * 0.21, rect.y + rect.h * 0.30),
-            vec2(rect.x + rect.w * 0.38, rect.y + rect.h * 0.38),
-            vec2(rect.x + rect.w * 0.30, rect.y + rect.h * 0.55),
-            color,
-        );
-        draw_triangle(
-            vec2(rect.x + rect.w * 0.79, rect.y + rect.h * 0.30),
-            vec2(rect.x + rect.w * 0.62, rect.y + rect.h * 0.38),
-            vec2(rect.x + rect.w * 0.70, rect.y + rect.h * 0.55),
-            color,
-        );
-        draw_circle(rect.x + rect.w * 0.42, rect.y + rect.h * 0.40, 2.0, BG_DEEP);
-        draw_circle(rect.x + rect.w * 0.58, rect.y + rect.h * 0.40, 2.0, BG_DEEP);
-    } else {
-        draw_rectangle(
-            rect.x + rect.w * 0.30,
-            rect.y + rect.h * 0.38,
-            rect.w * 0.40,
-            rect.h * 0.34,
-            Color::new(0.0, 0.0, 0.0, 0.34),
-        );
-        draw_rectangle_lines(
-            rect.x + rect.w * 0.34,
-            rect.y + rect.h * 0.45,
-            rect.w * 0.32,
-            rect.h * 0.22,
-            2.0,
-            TEXT_DIM,
-        );
-        draw_circle_lines(
-            rect.x + rect.w * 0.50,
-            rect.y + rect.h * 0.43,
-            rect.w * 0.16,
-            2.0,
-            TEXT_DIM,
-        );
-    }
 }
 
 fn trait_summary(trait_ids: &[String]) -> String {

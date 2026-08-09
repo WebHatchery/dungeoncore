@@ -64,7 +64,7 @@ pub fn reset_timers(
 /// Preserve board space on a narrower desktop while a room inspector is open.
 pub fn responsive_drawer_width(has_inspector: bool, drawer_open: bool, screen_width: f32) -> f32 {
     if drawer_open && !(has_inspector && screen_width < 1080.0) {
-        SIDE_PANEL_WIDTH.min((screen_width * 0.22).clamp(250.0, DRAWER_OPEN_WIDTH))
+        SIDE_PANEL_WIDTH.min((screen_width * 0.20).clamp(230.0, DRAWER_OPEN_WIDTH))
     } else {
         DRAWER_COLLAPSED_WIDTH
     }
