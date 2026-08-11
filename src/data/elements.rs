@@ -21,7 +21,7 @@ struct ElementsData {
 }
 
 // Embed JSON at compile time for WASM compatibility
-const ELEMENTS_JSON: &str = include_str!("../../assets/elements.json");
+const ELEMENTS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/elements.json");
 
 /// Load all element definitions
 pub fn get_all_elements() -> Vec<ElementDef> {

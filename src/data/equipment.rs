@@ -43,7 +43,7 @@ struct EquipmentData {
 }
 
 // Embed JSON at compile time for WASM compatibility
-const EQUIPMENT_JSON: &str = include_str!("../../assets/equipment.json");
+const EQUIPMENT_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/equipment.json");
 
 /// Load all equipment templates from embedded JSON
 pub fn get_all_equipment() -> Vec<EquipmentTemplate> {

@@ -71,7 +71,7 @@ struct ConstantsData {
 }
 
 // Embed JSON at compile time
-const CONSTANTS_JSON: &str = include_str!("../../assets/constants.json");
+const CONSTANTS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/constants.json");
 
 fn load_constants() -> ConstantsData {
     serde_json::from_str(CONSTANTS_JSON).expect("Failed to parse constants.json")

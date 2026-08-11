@@ -25,7 +25,7 @@ struct UpgradesData {
 }
 
 // Embed JSON at compile time for WASM compatibility
-const UPGRADES_JSON: &str = include_str!("../../assets/upgrades.json");
+const UPGRADES_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/upgrades.json");
 
 /// Load all upgrade templates from embedded JSON
 pub fn get_all_upgrades() -> Vec<UpgradeTemplate> {

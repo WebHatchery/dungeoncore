@@ -45,7 +45,7 @@ struct MonstersData {
 }
 
 // Embed JSON at compile time for WASM compatibility
-const MONSTERS_JSON: &str = include_str!("../../assets/monsters.json");
+const MONSTERS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/monsters.json");
 
 /// Parse the embedded monster data once and keep it for the process lifetime.
 /// The JSON is immutable at runtime, so re-parsing it on every lookup (as the

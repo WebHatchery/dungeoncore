@@ -23,7 +23,7 @@ struct TraitsData {
 }
 
 // Embed JSON for WASM
-const TRAITS_JSON: &str = include_str!("../../assets/traits.json");
+const TRAITS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/traits.json");
 
 /// Load all traits
 pub fn get_all_traits() -> Vec<MonsterTrait> {

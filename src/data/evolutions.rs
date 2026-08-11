@@ -25,7 +25,8 @@ struct EvolutionData {
 }
 
 // Embed JSON at compile time for WASM compatibility
-const EVOLUTION_JSON: &str = include_str!("../../assets/evolution_trees.json");
+const EVOLUTION_JSON: &str =
+    macroquad_toolkit::include_json_str!("../../assets/evolution_trees.json");
 
 /// Load all evolution trees from embedded JSON
 pub fn get_evolution_trees() -> HashMap<String, Vec<EvolutionPath>> {

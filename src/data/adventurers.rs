@@ -41,7 +41,8 @@ struct AdventurersData {
 }
 
 // Embed JSON at compile time for WASM compatibility
-const ADVENTURERS_JSON: &str = include_str!("../../assets/adventurers.json");
+const ADVENTURERS_JSON: &str =
+    macroquad_toolkit::include_json_str!("../../assets/adventurers.json");
 
 fn load_data() -> AdventurersData {
     serde_json::from_str(ADVENTURERS_JSON).expect("Failed to parse adventurers.json")
