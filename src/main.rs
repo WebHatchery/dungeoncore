@@ -33,7 +33,9 @@ async fn main() {
     macroquad_toolkit::crash::install_crash_log("dungeon_core");
 
     let mut assets = AssetManager::new();
-    let _ = assets.load_asset_pack("assets.zip").await;
+    if let Err(error) = assets.load_asset_pack("assets.zip").await {
+        eprintln!("Failed to load asset pack; loose asset fallback will be used: {error}");
+    }
     if let Err(e) = assets
         .load_texture_with_filter(
             TITLE_BACKGROUND_KEY,

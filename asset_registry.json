@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "assets": [
+    "assets/title_screen.png",
+    "assets/sprites/dungeon_adventurers_animated.png",
+    "assets/sprites/dungeon_monsters_animated.png",
+    "assets/sprites/dungeon_monsters_full_animated.png",
+    "assets/sprites/dungeon_units.png",
+    "assets/sprites/dungeon_units_animated.png"
+  ]
+}
