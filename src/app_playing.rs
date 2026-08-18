@@ -357,7 +357,7 @@ pub fn render_playing_frame(
         state,
         Rect::new(
             dungeon_rect.x + dungeon_rect.w - chip_w - 24.0,
-            dungeon_rect.y + 24.0,
+            dungeon_rect.y + 12.0,
             chip_w,
             36.0,
         ),
@@ -372,7 +372,7 @@ pub fn render_playing_frame(
         let chip_x = dungeon_rect.x + dungeon_rect.w - chip_w - 24.0;
         let smite_rect = Rect::new(
             (chip_x - CORE_SPELL_BTN_W - 10.0).max(dungeon_rect.x + 12.0),
-            dungeon_rect.y + 18.0,
+            dungeon_rect.y + 7.0,
             CORE_SPELL_BTN_W,
             CORE_SPELL_BTN_H,
         );

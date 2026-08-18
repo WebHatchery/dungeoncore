@@ -65,6 +65,13 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.unlocked_species.clear();
             state.unlocked_monsters.clear();
         }
+        "opening" => {
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.status = DungeonStatus::Closed;
+        }
         "tutorial" => {
             if let Some(species) = first_starter_species() {
                 let _ = simulation::unlock_species(state, &species);
@@ -161,6 +168,17 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                     glide
                 },
             });
+        }
+        "branching" => {
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.mana = 800;
+            let _ = simulation::add_room(state, None);
+            let _ = simulation::branch_from(state, 1, 0);
+            let _ = simulation::add_room(state, None);
+            state.status = DungeonStatus::Closed;
         }
         "coretree" => {
             if let Some(species) = first_starter_species() {

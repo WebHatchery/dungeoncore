@@ -11,16 +11,22 @@ use crate::game_state::{DungeonStatus, GameState, Room, RoomType};
 use super::theme::*;
 
 mod backdrop;
+mod camera;
 mod icons;
 mod layout;
 mod room_art;
 mod sprites;
 
-use backdrop::{draw_board_surface, draw_floor_rail, draw_room_route_backplate};
+use backdrop::{
+    begin_cutaway_clip, draw_board_surface, draw_cutaway_frame, draw_floor_structure,
+    draw_lift_extension, draw_lift_shaft, end_cutaway_clip,
+};
+use camera::{draw_zoom_controls, update as update_camera};
 use layout::layout_floor;
 use macroquad_toolkit::colors::with_alpha;
-use macroquad_toolkit::input::was_clicked_rect;
-use room_art::{draw_connector, draw_future_room_tile, draw_party_transit, draw_room_tile};
+use room_art::{
+    draw_connector, draw_future_room_tile, draw_party_transit, draw_room_tile, draw_route_tunnel,
+};
 pub use sprites::{
     DungeonSprites, ANIMATED_ADVENTURER_SHEET_KEY, ANIMATED_ADVENTURER_SHEET_PATH,
     ANIMATED_FULL_MONSTER_SHEET_KEY, ANIMATED_FULL_MONSTER_SHEET_PATH, ANIMATED_MONSTER_SHEET_KEY,
@@ -31,10 +37,13 @@ pub use sprites::{
 // Rooms are world-sized pieces of one physical base. The camera moves across
 // them as the dungeon grows; these values must never be fitted down to the
 // current viewport width.
-const BASE_ROOM_W: f32 = 240.0;
-const BASE_ROOM_H: f32 = 300.0;
-const BASE_CONNECTOR_W: f32 = 20.0;
-const FLOOR_RAIL_W: f32 = 68.0;
+const BASE_ROOM_W: f32 = 300.0;
+const BASE_ROOM_H: f32 = 230.0;
+const BASE_CONNECTOR_W: f32 = 8.0;
+const BASE_SLAB_H: f32 = 14.0;
+const BASE_SHAFT_W: f32 = 54.0;
+const WORLD_MARGIN: f32 = 18.0;
+const BOARD_HEADER_H: f32 = 60.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DungeonAction {
@@ -119,197 +128,182 @@ pub fn draw_dungeon_board(
     sprites: &DungeonSprites,
 ) -> DungeonAction {
     let mut action = DungeonAction::None;
-    draw_card(rect, PANEL, with_alpha(BORDER, 0.18));
-
-    draw_text_fit("Dungeon", rect.x + 22.0, rect.y + 30.0, 160.0, 24.0, TEXT);
+    draw_rectangle(rect.x, rect.y, rect.w, rect.h, BG_DEEP);
+    draw_rectangle(rect.x, rect.y, rect.w, BOARD_HEADER_H, PANEL);
+    draw_line(
+        rect.x,
+        rect.y + BOARD_HEADER_H,
+        rect.x + rect.w,
+        rect.y + BOARD_HEADER_H,
+        1.0,
+        with_alpha(TREASURE, 0.22),
+    );
+    draw_text_fit("Dungeon", rect.x + 22.0, rect.y + 27.0, 160.0, 23.0, TEXT);
     draw_text_fit(
         &current_objective(state),
         rect.x + 22.0,
-        rect.y + 54.0,
+        rect.y + 48.0,
         (rect.w * 0.48).max(240.0),
-        13.0,
+        12.0,
         TEXT_MUTED,
-    );
-    draw_text_fit(
-        "Drag the dungeon to pan",
-        rect.x + 22.0,
-        rect.y + 70.0,
-        160.0,
-        10.0,
-        TEXT_DIM,
     );
 
     if let Some(monster) = &state.selected_monster {
         draw_placement_badge(state, monster, rect);
     }
     draw_route_choice(state, rect);
-    draw_board_zoom_controls(state, rect);
+    draw_zoom_controls(state, rect);
 
-    let content = Rect::new(rect.x + 10.0, rect.y + 76.0, rect.w - 20.0, rect.h - 86.0);
+    let content = Rect::new(
+        rect.x + 2.0,
+        rect.y + BOARD_HEADER_H + 1.0,
+        rect.w - 4.0,
+        rect.h - BOARD_HEADER_H - 3.0,
+    );
     draw_board_surface(content);
 
     if state.floors.is_empty() {
         draw_centered_text("No dungeon mapped", content, 18.0, TEXT_MUTED);
+        draw_cutaway_frame(content);
         return action;
     }
 
     let preview = next_build_preview(state);
-    let gap = 12.0;
-    let floor_len = state.floors.len();
-    let floor_count = floor_len as f32;
-    // A lone floor gets the full cavern viewport. Additional floors keep the
-    // same world-space room height and become a vertically scrollable stack.
-    let row_h = if floor_len == 1 {
-        content.h
+    let zoom = state.board_zoom;
+    let world_h = state
+        .floors
+        .iter()
+        .map(|floor| floor_world_height(floor, zoom))
+        .sum::<f32>();
+    let widest_world = state
+        .floors
+        .iter()
+        .map(|floor| floor_world_width(floor, preview.as_ref(), zoom))
+        .fold(0.0, f32::max);
+    let max_pan = (widest_world + WORLD_MARGIN * 2.0 - content.w).max(0.0);
+    let max_scroll = (world_h + WORLD_MARGIN * 2.0 - content.h).max(0.0);
+    update_camera(state, content, max_pan, max_scroll);
+
+    let world_x = if widest_world + WORLD_MARGIN * 2.0 <= content.w {
+        content.x + (content.w - widest_world) * 0.5
     } else {
-        BASE_ROOM_H * state.board_zoom + 32.0
+        content.x + WORLD_MARGIN - state.board_pan_x
     };
-    let used_h = row_h * floor_count + gap * (floor_len.saturating_sub(1) as f32);
-    let max_scroll = (used_h - content.h).max(0.0);
-    let rooms_viewport_w = (content.w - FLOOR_RAIL_W - 54.0).max(180.0);
-    let max_pan = board_max_pan(state, rooms_viewport_w, state.board_zoom, preview.as_ref());
-    update_board_camera(state, content, max_pan, max_scroll);
-    let mut row_y = content.y + ((content.h - used_h) * 0.5).max(14.0) - state.board_scroll;
+    let mut floor_y = if world_h + WORLD_MARGIN * 2.0 <= content.h {
+        content.y + (content.h - world_h) * 0.5
+    } else {
+        content.y + WORLD_MARGIN - state.board_scroll
+    };
+
     if max_scroll > 0.0 {
         draw_text_fit(
-            &format!(
-                "Scroll floors  {:.0}%",
-                state.board_scroll / max_scroll * 100.0
-            ),
+            &format!("Depth {:.0}%", state.board_scroll / max_scroll * 100.0),
             rect.x + rect.w - 150.0,
-            rect.y + 70.0,
+            rect.y + 48.0,
             132.0,
-            11.0,
+            10.0,
             TEXT_DIM,
         );
     }
-    let sorted_floors = sorted_floors(state);
 
-    for floor in sorted_floors {
-        // Do not let a partially scrolled floor intrude into the board header.
-        // The cutaway stays cleaner when floors enter as complete horizontal
-        // bands instead of exposing clipped fragments above the rock viewport.
-        if row_y + row_h < content.y || row_y > content.y + content.h {
-            row_y += row_h + gap;
+    begin_cutaway_clip(content);
+    let shaft_w = BASE_SHAFT_W * zoom;
+    if floor_y > content.y + 7.0 {
+        draw_lift_extension(Rect::new(
+            world_x,
+            content.y + 7.0,
+            shaft_w,
+            floor_y - content.y - 7.0,
+        ));
+    }
+    let floors = sorted_floors(state);
+    for floor in floors {
+        let floor_h = floor_world_height(floor, zoom);
+        if floor_y + floor_h < content.y || floor_y > content.y + content.h {
+            floor_y += floor_h;
             continue;
         }
-
-        let row_rect = Rect::new(content.x + 18.0, row_y, content.w - 36.0, row_h);
+        let floor_world_w = floor_world_width(floor, preview.as_ref(), zoom);
+        let floor_rect = Rect::new(world_x, floor_y, floor_world_w, floor_h);
         let selected_floor = state
             .selected_room
             .map(|(floor_num, _)| floor_num == floor.number)
             .unwrap_or(false);
-        let row_border = BORDER_MUTED;
-        draw_room_route_backplate(row_rect, selected_floor, row_border);
-
-        let rail = Rect::new(
-            row_rect.x + 8.0,
-            row_rect.y + 8.0,
-            FLOOR_RAIL_W,
-            row_rect.h - 16.0,
+        draw_floor_structure(floor_rect, floor.number, selected_floor);
+        let shaft = Rect::new(
+            world_x,
+            floor_y,
+            BASE_SHAFT_W * zoom,
+            floor_h - BASE_SLAB_H * zoom,
         );
-        draw_floor_rail(rail, floor.number, floor.rooms.len(), floor.is_deepest);
-
+        draw_lift_shaft(shaft, floor.number, floor.is_deepest);
         let rooms_area = Rect::new(
-            rail.x + rail.w + 10.0,
-            row_rect.y + 8.0,
-            row_rect.w - rail.w - 22.0,
-            row_rect.h - 16.0,
+            shaft.x + shaft.w + BASE_CONNECTOR_W * zoom,
+            floor_y,
+            floor_world_w - shaft.w - BASE_CONNECTOR_W * zoom,
+            floor_h - BASE_SLAB_H * zoom,
         );
         if let Some(row_action) =
-            draw_floor_rooms(state, floor, rooms_area, preview.as_ref(), sprites)
+            draw_floor_rooms(state, floor, rooms_area, content, preview.as_ref(), sprites)
         {
             action = row_action;
         }
-
-        row_y += row_h + gap;
+        floor_y += floor_h;
     }
+    if floor_y < content.y + content.h - 7.0 {
+        draw_lift_extension(Rect::new(
+            world_x,
+            floor_y,
+            shaft_w,
+            content.y + content.h - floor_y - 7.0,
+        ));
+    }
+    end_cutaway_clip();
+    draw_cutaway_frame(content);
 
     action
 }
 
-fn board_max_pan(
-    state: &GameState,
-    viewport_w: f32,
-    zoom: f32,
+fn floor_world_width(
+    floor: &crate::game_state::Floor,
     preview: Option<&BuildPreview>,
+    zoom: f32,
 ) -> f32 {
-    let widest_world = state
-        .floors
+    let branching = floor
+        .rooms
         .iter()
-        .map(|floor| {
-            let has_preview = preview.is_some_and(|plan| plan.floor == floor.number);
-            let nodes = floor.rooms.len() + usize::from(has_preview);
-            let rooms_w = nodes as f32 * BASE_ROOM_W * zoom;
-            let connectors_w = nodes.saturating_sub(1) as f32 * BASE_CONNECTOR_W * zoom;
-            rooms_w + connectors_w
-        })
-        .fold(0.0, f32::max);
-    (widest_world - viewport_w + 16.0).max(0.0)
+        .any(|room| room.room_type != RoomType::Core && room.exits.len() != 1);
+    if branching {
+        let layout = layout_floor(floor);
+        let columns = layout.iter().map(|node| node.depth).max().unwrap_or(0) + 1;
+        let room_w = BASE_ROOM_W * zoom;
+        let step_x = room_w + (BASE_CONNECTOR_W + 18.0) * zoom;
+        let rooms_w = columns as f32 * step_x - (step_x - room_w);
+        return BASE_SHAFT_W * zoom + BASE_CONNECTOR_W * zoom + rooms_w;
+    }
+    let has_preview = preview.is_some_and(|plan| plan.floor == floor.number);
+    let nodes = floor.rooms.len() + usize::from(has_preview);
+    let rooms_w = nodes as f32 * BASE_ROOM_W * zoom;
+    let seams_w = nodes.saturating_sub(1) as f32 * BASE_CONNECTOR_W * zoom;
+    BASE_SHAFT_W * zoom + BASE_CONNECTOR_W * zoom + rooms_w + seams_w
 }
 
-/// Pan the board directly under the pointer. The same gesture works with a
-/// mouse and with browser touch input, while the wheel remains a convenient
-/// vertical shortcut for a deep stack of floors.
-fn update_board_camera(state: &mut GameState, content: Rect, max_pan: f32, max_scroll: f32) {
-    let pointer = vec2(mouse_position().0, mouse_position().1);
-    if is_mouse_button_pressed(MouseButton::Left) {
-        state.board_dragged = false;
-        state.board_drag_last = content.contains(pointer).then_some((pointer.x, pointer.y));
-    }
-    if is_mouse_button_down(MouseButton::Left) {
-        if let Some((last_x, last_y)) = state.board_drag_last {
-            let delta = vec2(pointer.x - last_x, pointer.y - last_y);
-            if delta.length_squared() > 0.25 {
-                state.board_pan_x = (state.board_pan_x - delta.x).clamp(0.0, max_pan);
-                state.board_scroll = (state.board_scroll - delta.y).clamp(0.0, max_scroll);
-                state.board_dragged = true;
-            }
-        }
-        if state.board_drag_last.is_some() {
-            state.board_drag_last = Some((pointer.x, pointer.y));
-        }
+fn floor_world_height(floor: &crate::game_state::Floor, zoom: f32) -> f32 {
+    let branching = floor
+        .rooms
+        .iter()
+        .any(|room| room.room_type != RoomType::Core && room.exits.len() != 1);
+    let lanes = if branching {
+        layout_floor(floor)
+            .iter()
+            .map(|node| node.lane)
+            .max()
+            .unwrap_or(0) as usize
+            + 1
     } else {
-        state.board_drag_last = None;
-    }
-
-    if content.contains(pointer) {
-        let (_, wheel_y) = mouse_wheel();
-        state.board_scroll = (state.board_scroll - wheel_y * 48.0).clamp(0.0, max_scroll);
-    }
-    state.board_pan_x = state.board_pan_x.clamp(0.0, max_pan);
-    state.board_scroll = state.board_scroll.clamp(0.0, max_scroll);
-}
-
-/// Keep dense boards readable without changing layout or save data. Zoom is
-/// deliberately transient, like scroll position, and uses obvious controls so
-/// a player never needs to discover a modifier-wheel gesture.
-fn draw_board_zoom_controls(state: &mut GameState, rect: Rect) {
-    let zoom_x = if rect.w >= 560.0 {
-        rect.x + 220.0
-    } else {
-        rect.x + rect.w - 148.0
+        1
     };
-    let zoom = Rect::new(zoom_x, rect.y + 22.0, 126.0, 24.0);
-    let minus = Rect::new(zoom.x, zoom.y, 26.0, zoom.h);
-    let reset = Rect::new(zoom.x + 29.0, zoom.y, 66.0, zoom.h);
-    let plus = Rect::new(zoom.x + 98.0, zoom.y, 26.0, zoom.h);
-    draw_card(zoom, with_alpha(BG_DEEP, 0.90), with_alpha(BORDER, 0.60));
-    draw_centered_text("−", minus, 16.0, TEXT);
-    draw_centered_text(
-        &format!("Zoom {:.0}%", state.board_zoom * 100.0),
-        reset,
-        9.0,
-        TEXT_MUTED,
-    );
-    draw_centered_text("+", plus, 16.0, TEXT);
-    if was_clicked_rect(minus) {
-        state.board_zoom = (state.board_zoom - 0.15).max(0.70);
-    } else if was_clicked_rect(plus) {
-        state.board_zoom = (state.board_zoom + 0.15).min(1.30);
-    } else if was_clicked_rect(reset) {
-        state.board_zoom = 1.0;
-    }
+    lanes as f32 * BASE_ROOM_H * zoom + BASE_SLAB_H * zoom
 }
 
 /// Make the active fork's decision readable without opening the log. The
@@ -336,7 +330,7 @@ fn draw_route_choice(state: &GameState, rect: Rect) {
         return;
     }
     let reason = crate::simulation::pathing::choice_reason(state, party, &room.exits);
-    let badge = Rect::new(rect.x + rect.w - 236.0, rect.y + 54.0, 214.0, 24.0);
+    let badge = Rect::new(rect.x + rect.w - 236.0, rect.y + 36.0, 214.0, 20.0);
     draw_card(badge, with_alpha(WARNING, 0.12), with_alpha(WARNING, 0.42));
     draw_centered_text(&format!("ROUTE: {reason}"), badge, 10.0, WARNING);
 }
@@ -345,6 +339,7 @@ fn draw_floor_rooms(
     state: &GameState,
     floor: &crate::game_state::Floor,
     area: Rect,
+    viewport: Rect,
     preview: Option<&BuildPreview>,
     sprites: &DungeonSprites,
 ) -> Option<DungeonAction> {
@@ -353,7 +348,7 @@ fn draw_floor_rooms(
         .iter()
         .any(|room| room.room_type != RoomType::Core && room.exits.len() != 1)
     {
-        return draw_graph_rooms(state, floor, area, sprites);
+        return draw_graph_rooms(state, floor, area, viewport, sprites);
     }
     let mut action = None;
     let rooms = sorted_rooms(&floor.rooms);
@@ -365,13 +360,8 @@ fn draw_floor_rooms(
     let tile_w = BASE_ROOM_W * state.board_zoom;
     let tile_h = BASE_ROOM_H * state.board_zoom;
     let connector_w = BASE_CONNECTOR_W * state.board_zoom;
-    let tile_y = area.y + ((area.h - tile_h) * 0.5).max(0.0);
-    let rendered_w = node_count as f32 * tile_w + node_count.saturating_sub(1) as f32 * connector_w;
-    let mut x = if rendered_w <= area.w {
-        area.x + (area.w - rendered_w) * 0.5
-    } else {
-        area.x + 8.0 - state.board_pan_x
-    };
+    let tile_y = area.y;
+    let mut x = area.x;
     let mut drawn_nodes = 0usize;
     let total_nodes = node_count;
 
@@ -379,17 +369,16 @@ fn draw_floor_rooms(
         if future_before_core && room.room_type == RoomType::Core {
             if let Some(plan) = future_in_floor {
                 let future_rect = Rect::new(x, tile_y, tile_w, tile_h);
-                if room_rect_visible(future_rect, area)
-                    && draw_future_room_tile(state, future_rect, plan)
+                if room_rect_visible(future_rect, viewport)
+                    && draw_future_room_tile(state, future_rect, viewport, plan)
                 {
                     action = Some(DungeonAction::BuildRoom);
                 }
                 drawn_nodes += 1;
                 x += tile_w;
                 if drawn_nodes < total_nodes {
-                    let connector =
-                        Rect::new(x, tile_y + tile_h * 0.36, connector_w, tile_h * 0.28);
-                    if room_rect_visible(connector, area) {
+                    let connector = Rect::new(x, tile_y, connector_w, tile_h);
+                    if room_rect_visible(connector, viewport) {
                         draw_connector(connector, true);
                     }
                     x += connector_w;
@@ -399,7 +388,9 @@ fn draw_floor_rooms(
 
         let rect = Rect::new(x, tile_y, tile_w, tile_h);
         let placement = placement_state(state, room);
-        if room_rect_visible(rect, area) && draw_room_tile(state, room, rect, placement, sprites) {
+        if room_rect_visible(rect, viewport)
+            && draw_room_tile(state, room, rect, viewport, placement, sprites)
+        {
             action = Some(DungeonAction::RoomSelected(
                 room.floor_number,
                 room.position,
@@ -409,12 +400,12 @@ fn draw_floor_rooms(
         x += tile_w;
 
         if drawn_nodes < total_nodes {
-            let connector = Rect::new(x, tile_y + tile_h * 0.36, connector_w, tile_h * 0.28);
-            if room_rect_visible(connector, area) {
+            let connector = Rect::new(x, tile_y, connector_w, tile_h);
+            if room_rect_visible(connector, viewport) {
                 draw_connector(connector, false);
             }
             // A party crossing this corridor rides the connector between rooms.
-            if room_rect_visible(connector, area) {
+            if room_rect_visible(connector, viewport) {
                 if let Some(party) = party_in_transit(
                     state,
                     floor.number,
@@ -436,8 +427,8 @@ fn draw_floor_rooms(
     if future_after_core {
         if let Some(plan) = future_in_floor {
             let future_rect = Rect::new(x, tile_y, tile_w, tile_h);
-            if room_rect_visible(future_rect, area)
-                && draw_future_room_tile(state, future_rect, plan)
+            if room_rect_visible(future_rect, viewport)
+                && draw_future_room_tile(state, future_rect, viewport, plan)
             {
                 action = Some(DungeonAction::BuildRoom);
             }
@@ -453,24 +444,18 @@ fn draw_graph_rooms(
     state: &GameState,
     floor: &crate::game_state::Floor,
     area: Rect,
+    viewport: Rect,
     sprites: &DungeonSprites,
 ) -> Option<DungeonAction> {
     let layout = layout_floor(floor);
-    let max_depth = layout.iter().map(|node| node.depth).max().unwrap_or(0);
     let max_lane = layout.iter().map(|node| node.lane).max().unwrap_or(0) as usize;
-    let cols = max_depth + 1;
     let rows = max_lane + 1;
     let tile_w = BASE_ROOM_W * state.board_zoom;
     let tile_h = BASE_ROOM_H * state.board_zoom;
     let connector_w = BASE_CONNECTOR_W * state.board_zoom;
     let step_x = tile_w + connector_w + 18.0 * state.board_zoom;
     let step_y = area.h / rows.max(1) as f32;
-    let world_w = cols as f32 * step_x - (step_x - tile_w);
-    let origin_x = if world_w <= area.w {
-        area.x + (area.w - world_w) * 0.5
-    } else {
-        area.x + 8.0 - state.board_pan_x
-    };
+    let origin_x = area.x;
     let center = |depth: usize, lane: i32| {
         vec2(
             origin_x + tile_w * 0.5 + step_x * depth as f32,
@@ -487,14 +472,7 @@ fn draw_graph_rooms(
         for &exit in &room.exits {
             let Some(to) = node_at(exit) else { continue };
             let to_center = center(to.depth, to.lane);
-            draw_line(
-                from_center.x + tile_w * 0.42,
-                from_center.y,
-                to_center.x - tile_w * 0.42,
-                to_center.y,
-                3.0 * state.board_zoom,
-                with_alpha(TREASURE, 0.52),
-            );
+            draw_route_tunnel(from_center, to_center, tile_w, tile_h, state.board_zoom);
             if let Some(party) = party_in_transit(state, floor.number, room.position, exit) {
                 let progress = party.move_anim.fraction_elapsed();
                 let point = from_center.lerp(to_center, progress);
@@ -523,7 +501,9 @@ fn draw_graph_rooms(
             tile_h,
         );
         let placement = placement_state(state, room);
-        if room_rect_visible(rect, area) && draw_room_tile(state, room, rect, placement, sprites) {
+        if room_rect_visible(rect, viewport)
+            && draw_room_tile(state, room, rect, viewport, placement, sprites)
+        {
             action = Some(DungeonAction::RoomSelected(
                 room.floor_number,
                 room.position,
@@ -537,7 +517,7 @@ fn draw_graph_rooms(
 /// element (colour-coded) and what that element is strong against. The Codex
 /// wheel is reference material; this puts the same knowledge in the funnel.
 fn draw_placement_badge(_state: &GameState, monster: &str, rect: Rect) {
-    let badge = Rect::new(rect.x + rect.w - 360.0, rect.y + 22.0, 200.0, 46.0);
+    let badge = Rect::new(rect.x + rect.w - 360.0, rect.y + 7.0, 200.0, 46.0);
     let element = crate::data::monsters::monster_element_id(monster);
     let accent = element.as_deref().map(element_color).unwrap_or(SOUL);
 

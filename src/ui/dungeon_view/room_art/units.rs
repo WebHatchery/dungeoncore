@@ -7,13 +7,11 @@ use crate::ui::theme::*;
 
 use super::super::DungeonSprites;
 
-// Board units need to remain readable when rooms are scaled down to fit a
-// long floor. The sprite is deliberately larger than its layout footprint;
-// the atlas frames have transparent margins, so nearby units still separate
-// cleanly while their actual creature art remains prominent.
-const UNIT_RADIUS: f32 = 13.0;
-const UNIT_STEP: f32 = 30.0;
-const UNIT_SPRITE_SIZE: f32 = 40.0;
+// The cutaway is read through its occupants first. Sprites therefore carry
+// real visual weight against furniture while overflow still collapses safely.
+const UNIT_RADIUS: f32 = 16.0;
+const UNIT_STEP: f32 = 38.0;
+const UNIT_SPRITE_SIZE: f32 = 52.0;
 
 /// Draw one icon per unit in the room. Overflow collapses into a compact tag.
 pub(super) fn draw_room_units(

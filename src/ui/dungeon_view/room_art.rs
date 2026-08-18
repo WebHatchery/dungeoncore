@@ -24,19 +24,18 @@ pub(super) fn draw_room_tile(
     state: &GameState,
     room: &Room,
     rect: Rect,
+    viewport: Rect,
     placement: PlacementState,
     sprites: &DungeonSprites,
 ) -> bool {
-    let hovered = is_hovered_rect(rect);
+    let pointer = vec2(mouse_position().0, mouse_position().1);
+    let hovered = viewport.contains(pointer) && is_hovered_rect(rect);
     let selected = state.selected_room == Some((room.floor_number, room.position));
     let adventurers = adventurers_in_room(state, room);
     let alive = room.monsters.iter().filter(|monster| monster.alive).count();
     let fighting = !adventurers.is_empty() && alive > 0;
     let (fill, border, icon_color, title) = room_tone(room);
-    let mut draw_rect = rect;
-    if hovered {
-        draw_rect.y -= 2.0;
-    }
+    let draw_rect = rect;
 
     draw_room_chamber_art(draw_rect, room, fill, border, icon_color);
     if let Some((element, multiplier)) = room.attunement() {
@@ -63,12 +62,21 @@ pub(super) fn draw_room_tile(
     }
     if selected {
         draw_rectangle_lines(
-            draw_rect.x - 2.0,
-            draw_rect.y - 2.0,
-            draw_rect.w + 4.0,
-            draw_rect.h + 4.0,
+            draw_rect.x + 3.0,
+            draw_rect.y + 3.0,
+            draw_rect.w - 6.0,
+            draw_rect.h - 6.0,
             3.0,
             MANA,
+        );
+    } else if hovered {
+        draw_rectangle_lines(
+            draw_rect.x + 3.0,
+            draw_rect.y + 3.0,
+            draw_rect.w - 6.0,
+            draw_rect.h - 6.0,
+            2.0,
+            with_alpha(TEXT, 0.38),
         );
     }
 
@@ -150,19 +158,19 @@ pub(super) fn draw_room_tile(
     }
 
     let label_rect = Rect::new(
-        draw_rect.x + 7.0,
-        draw_rect.y + 6.0,
-        draw_rect.w - 14.0,
-        20.0,
+        draw_rect.x + 10.0,
+        draw_rect.y + 10.0,
+        (draw_rect.w * 0.55).clamp(112.0, 170.0),
+        22.0,
     );
     draw_room_label_plate(label_rect, title, room, icon_color);
 
     // Per-unit icons: defenders on the left, adventurers on the right.
     let strip = Rect::new(
-        draw_rect.x + 8.0,
-        draw_rect.y + draw_rect.h - 34.0,
-        draw_rect.w - 16.0,
-        27.0,
+        draw_rect.x + 12.0,
+        draw_rect.y + draw_rect.h - 58.0,
+        draw_rect.w - 24.0,
+        48.0,
     );
     // Recurring survivors / prolific slayers are "rivals": name them on the
     // board so heroes read as recognisable actors, not anonymous tokens.
@@ -181,28 +189,28 @@ pub(super) fn draw_room_tile(
     // Floating combat feedback (damage numbers, kills) rising over the room.
     draw_room_effects(state, room, draw_rect, sprites);
 
-    was_clicked_rect(rect) && !state.board_dragged
+    viewport.contains(pointer) && was_clicked_rect(rect) && !state.board_dragged
 }
 
 fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, icon_color: Color) {
-    // A heavy silhouette around a brighter interior gives every floor the
-    // readable side-on cutaway shape of an inhabited underground complex.
+    // `rect` is one excavated bay in a shared floor. Structure reaches every
+    // edge so adjacent rooms meet at a common wall seam instead of floating as
+    // independently shadowed cards.
     draw_rectangle(
-        rect.x - 3.0,
-        rect.y - 4.0,
-        rect.w + 6.0,
-        rect.h + 9.0,
-        BLACK,
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        Color::new(0.02, 0.02, 0.024, 1.0),
     );
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, with_alpha(border, 0.46));
-    let wall = Rect::new(rect.x + 5.0, rect.y + 7.0, rect.w - 10.0, rect.h - 14.0);
+    let wall = Rect::new(rect.x + 5.0, rect.y + 8.0, rect.w - 10.0, rect.h - 18.0);
     draw_rectangle(wall.x, wall.y, wall.w, wall.h, fill);
     draw_rectangle(
         wall.x,
         wall.y,
         wall.w,
-        wall.h * 0.62,
-        Color::new(0.0, 0.0, 0.0, 0.10),
+        wall.h * 0.60,
+        Color::new(0.0, 0.0, 0.0, 0.14),
     );
 
     // Depth is a visual material change, not a stat or simulation effect:
@@ -217,7 +225,7 @@ fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, ic
     );
     draw_rectangle(wall.x, wall.y, wall.w, wall.h, depth_tint);
 
-    let brick = with_alpha(icon_color, 0.10);
+    let brick = with_alpha(icon_color, 0.12);
     let mut by = wall.y + 18.0;
     let mut row = 0usize;
     while by < wall.y + wall.h - 13.0 {
@@ -232,26 +240,72 @@ fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, ic
         row += 1;
     }
 
-    // Stone ceiling, side supports, and a lit floor anchor the room as a
-    // physical chamber instead of a floating UI card.
-    draw_rectangle(wall.x, wall.y, wall.w, 5.0, with_alpha(BLACK, 0.62));
+    // Shared ceiling beam, load-bearing seams, and a lit floor sell the room as
+    // an open cutaway bay rather than a UI tile.
     draw_rectangle(
-        wall.x,
-        wall.y + wall.h - 10.0,
-        wall.w,
-        10.0,
-        with_alpha(BLACK, 0.70),
+        rect.x,
+        rect.y,
+        rect.w,
+        8.0,
+        Color::new(0.075, 0.065, 0.060, 1.0),
     );
     draw_line(
-        wall.x,
-        wall.y + wall.h - 11.0,
-        wall.x + wall.w,
-        wall.y + wall.h - 11.0,
+        rect.x,
+        rect.y + 8.0,
+        rect.x + rect.w,
+        rect.y + 8.0,
         1.5,
-        with_alpha(icon_color, 0.38),
+        with_alpha(border, 0.46),
     );
-    for x in [wall.x + 3.0, wall.x + wall.w - 6.0] {
-        draw_rectangle(x, wall.y + 5.0, 4.0, wall.h - 15.0, with_alpha(BLACK, 0.34));
+    draw_rectangle(
+        rect.x,
+        rect.y + rect.h - 14.0,
+        rect.w,
+        14.0,
+        Color::new(0.045, 0.042, 0.043, 1.0),
+    );
+    draw_line(
+        rect.x,
+        rect.y + rect.h - 14.0,
+        rect.x + rect.w,
+        rect.y + rect.h - 14.0,
+        2.0,
+        with_alpha(icon_color, 0.42),
+    );
+    for x in [rect.x, rect.x + rect.w - 5.0] {
+        draw_rectangle(
+            x,
+            rect.y,
+            5.0,
+            rect.h,
+            Color::new(0.055, 0.050, 0.050, 0.98),
+        );
+        draw_line(
+            x + 2.5,
+            rect.y + 12.0,
+            x + 2.5,
+            rect.y + rect.h - 14.0,
+            1.0,
+            with_alpha(border, 0.30),
+        );
+    }
+
+    // Ceiling lamps create a readable pool of light across furniture and
+    // combatants, with darker corners preserving the underground depth.
+    for lamp_x in [wall.x + wall.w * 0.25, wall.x + wall.w * 0.75] {
+        draw_rectangle(
+            lamp_x - 12.0,
+            wall.y + 5.0,
+            24.0,
+            3.0,
+            with_alpha(icon_color, 0.55),
+        );
+        draw_triangle(
+            vec2(lamp_x - 24.0, wall.y + wall.h * 0.55),
+            vec2(lamp_x + 24.0, wall.y + wall.h * 0.55),
+            vec2(lamp_x, wall.y + 8.0),
+            with_alpha(icon_color, 0.035),
+        );
     }
 
     match room.room_type {
@@ -437,35 +491,76 @@ fn draw_room_label_plate(rect: Rect, title: &str, room: &Room, color: Color) {
     }
 }
 
-pub(super) fn draw_future_room_tile(state: &GameState, rect: Rect, plan: &BuildPreview) -> bool {
+pub(super) fn draw_future_room_tile(
+    state: &GameState,
+    rect: Rect,
+    viewport: Rect,
+    plan: &BuildPreview,
+) -> bool {
     let can_afford = state.mana >= plan.cost;
     let can_build = can_afford && state.adventurer_parties.is_empty();
-    let hovered = is_hovered_rect(rect);
-    let fill = if can_build {
-        with_alpha(TREASURE, 0.10)
-    } else {
-        Color::new(0.045, 0.052, 0.075, 0.72)
-    };
+    let pointer = vec2(mouse_position().0, mouse_position().1);
+    let hovered = viewport.contains(pointer) && is_hovered_rect(rect);
     let border = if can_build { TREASURE } else { BORDER_MUTED };
-    let mut draw_rect = rect;
-    if hovered && can_build {
-        draw_rect.y -= 2.0;
-    }
+    let draw_rect = rect;
 
+    // The build target is already an excavated continuation of the floor:
+    // rubble and survey lines occupy a dark bay with the same shared beams.
     draw_rectangle(
-        draw_rect.x - 3.0,
-        draw_rect.y - 4.0,
-        draw_rect.w + 6.0,
-        draw_rect.h + 9.0,
-        BLACK,
+        draw_rect.x,
+        draw_rect.y,
+        draw_rect.w,
+        draw_rect.h,
+        Color::new(0.020, 0.018, 0.017, 1.0),
     );
-    draw_card(draw_rect, fill, border);
-    draw_dashed_border(draw_rect, with_alpha(border, 0.72));
+    draw_rectangle(
+        draw_rect.x,
+        draw_rect.y,
+        draw_rect.w,
+        8.0,
+        Color::new(0.075, 0.065, 0.060, 1.0),
+    );
+    draw_rectangle(
+        draw_rect.x,
+        draw_rect.y + draw_rect.h - 14.0,
+        draw_rect.w,
+        14.0,
+        Color::new(0.045, 0.042, 0.043, 1.0),
+    );
+    let survey = Rect::new(
+        draw_rect.x + 8.0,
+        draw_rect.y + 10.0,
+        draw_rect.w - 16.0,
+        draw_rect.h - 26.0,
+    );
+    draw_rectangle(
+        survey.x,
+        survey.y,
+        survey.w,
+        survey.h,
+        if can_build {
+            with_alpha(TREASURE, if hovered { 0.15 } else { 0.08 })
+        } else {
+            Color::new(0.04, 0.04, 0.05, 0.72)
+        },
+    );
+    draw_dashed_border(survey, with_alpha(border, 0.72));
+
+    let rubble_y = draw_rect.y + draw_rect.h - 18.0;
+    for (index, radius) in [9.0_f32, 6.0, 12.0, 7.0, 10.0].iter().enumerate() {
+        let x = draw_rect.x + draw_rect.w * (0.18 + index as f32 * 0.16);
+        draw_circle(
+            x,
+            rubble_y - radius * 0.35,
+            *radius,
+            Color::new(0.10, 0.08, 0.065, 0.92),
+        );
+    }
     draw_centered_text(
         "+",
         Rect::new(
             draw_rect.x,
-            draw_rect.y + draw_rect.h * 0.20,
+            draw_rect.y + draw_rect.h * 0.23,
             draw_rect.w,
             28.0,
         ),
@@ -490,16 +585,13 @@ pub(super) fn draw_future_room_tile(state: &GameState, rect: Rect, plan: &BuildP
         13.0,
         border,
     );
-    let label_rect = Rect::new(
-        draw_rect.x + 7.0,
-        draw_rect.y + 6.0,
-        draw_rect.w - 14.0,
-        20.0,
-    );
-    draw_card(
-        label_rect,
-        Color::new(0.0, 0.0, 0.0, 0.34),
-        with_alpha(border, 0.34),
+    let label_rect = Rect::new(draw_rect.x + 10.0, draw_rect.y + 10.0, 112.0, 22.0);
+    draw_rectangle(
+        label_rect.x,
+        label_rect.y,
+        label_rect.w,
+        label_rect.h,
+        Color::new(0.0, 0.0, 0.0, 0.50),
     );
     draw_centered_text(&label, label_rect, 11.0, TEXT_MUTED);
     draw_centered_text(
@@ -514,7 +606,7 @@ pub(super) fn draw_future_room_tile(state: &GameState, rect: Rect, plan: &BuildP
         if can_afford { MANA } else { DANGER },
     );
 
-    was_clicked_rect(rect)
+    viewport.contains(pointer) && was_clicked_rect(rect) && !state.board_dragged
 }
 
 /// Draw a party marker gliding along a corridor connector at `progress` (0..1),
@@ -526,7 +618,7 @@ pub(super) fn draw_party_transit(
     sprites: &DungeonSprites,
 ) {
     let cx = connector.x + connector.w * progress;
-    let cy = connector.y + connector.h * 0.5;
+    let cy = connector.y + connector.h * 0.70;
     // A short motion trail behind the marker sells the direction of travel.
     draw_circle(cx - 5.0, cy, 4.0, with_alpha(WARNING, 0.16));
     let shown = members.iter().filter(|member| member.alive).take(3).count();
@@ -541,7 +633,7 @@ pub(super) fn draw_party_transit(
         if !sprites.draw_adventurer(
             &member.class_name,
             center,
-            16.0,
+            22.0,
             get_time() as f32 + member.id as f32 * 0.173,
             true,
             false,
@@ -564,29 +656,75 @@ pub(super) fn draw_party_transit(
 }
 
 pub(super) fn draw_connector(rect: Rect, ghost: bool) {
-    let alpha = if ghost { 0.32 } else { 0.70 };
+    let alpha = if ghost { 0.30 } else { 0.88 };
+    // This narrow seam is the shared wall between two bays. A doorway cut
+    // through its lower half keeps the floor continuous without a card gap.
     draw_rectangle(
         rect.x,
-        rect.y - 5.0,
+        rect.y,
         rect.w,
-        rect.h + 10.0,
-        with_alpha(BLACK, alpha),
+        rect.h,
+        Color::new(0.055, 0.050, 0.050, alpha),
     );
-    let passage = Rect::new(rect.x, rect.y + 3.0, rect.w, rect.h - 6.0);
+    let passage = Rect::new(rect.x, rect.y + rect.h * 0.52, rect.w, rect.h * 0.37);
     draw_rectangle(
         passage.x,
         passage.y,
         passage.w,
         passage.h,
-        Color::new(0.18, 0.16, 0.14, alpha),
+        Color::new(0.16, 0.14, 0.12, alpha),
     );
     draw_line(
         rect.x,
-        rect.y + rect.h * 0.5,
+        passage.y,
         rect.x + rect.w,
-        rect.y + rect.h * 0.5,
-        1.5,
+        passage.y,
+        2.0,
         with_alpha(TREASURE, if ghost { 0.22 } else { 0.36 }),
+    );
+    draw_line(
+        rect.x,
+        passage.y + passage.h,
+        rect.x + rect.w,
+        passage.y + passage.h,
+        1.0,
+        with_alpha(BLACK, 0.72),
+    );
+}
+
+pub(super) fn draw_route_tunnel(
+    from_center: Vec2,
+    to_center: Vec2,
+    room_w: f32,
+    room_h: f32,
+    zoom: f32,
+) {
+    let direction = (to_center - from_center).normalize_or_zero();
+    let from = from_center + vec2(room_w * 0.47, room_h * 0.12 * direction.y);
+    let to = to_center - vec2(room_w * 0.47, room_h * 0.12 * direction.y);
+    draw_line(
+        from.x,
+        from.y,
+        to.x,
+        to.y,
+        38.0 * zoom,
+        Color::new(0.025, 0.022, 0.021, 1.0),
+    );
+    draw_line(
+        from.x,
+        from.y,
+        to.x,
+        to.y,
+        28.0 * zoom,
+        Color::new(0.12, 0.10, 0.085, 1.0),
+    );
+    draw_line(
+        from.x,
+        from.y,
+        to.x,
+        to.y,
+        2.0 * zoom,
+        with_alpha(TREASURE, 0.28),
     );
 }
 

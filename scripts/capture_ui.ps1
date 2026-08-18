@@ -9,8 +9,8 @@
 #   & .\scripts\capture_ui.ps1 -Scenes gameplay      # one scene
 #   & .\scripts\capture_ui.ps1 -SkipBuild            # reuse the current build
 #
-# Scenes: gameplay (mid-raid dungeon), tutorial (onboarding overlay),
-#         species (starter-race selection modal).
+# Scenes include opening (fresh dungeon), gameplay (mid-raid dungeon),
+# branching/deep_board (camera stress), tutorial, and species.
 
 param(
     [string[]]$Scenes = @("gameplay", "tutorial", "species"),
