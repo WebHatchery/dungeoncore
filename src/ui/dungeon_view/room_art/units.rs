@@ -11,9 +11,9 @@ use super::super::DungeonSprites;
 // long floor. The sprite is deliberately larger than its layout footprint;
 // the atlas frames have transparent margins, so nearby units still separate
 // cleanly while their actual creature art remains prominent.
-const UNIT_RADIUS: f32 = 9.5;
-const UNIT_STEP: f32 = 22.0;
-const UNIT_SPRITE_SIZE: f32 = 28.0;
+const UNIT_RADIUS: f32 = 13.0;
+const UNIT_STEP: f32 = 30.0;
+const UNIT_SPRITE_SIZE: f32 = 40.0;
 
 /// Draw one icon per unit in the room. Overflow collapses into a compact tag.
 pub(super) fn draw_room_units(

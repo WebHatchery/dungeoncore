@@ -444,9 +444,19 @@ pub struct GameState {
     /// Dungeon-board vertical viewport, kept outside saved game state.
     #[serde(skip)]
     pub board_scroll: f32,
-    /// Player-controlled room-row scale for dense dungeon boards.
+    /// Player-controlled camera scale for the dungeon cross-section.
     #[serde(skip)]
     pub board_zoom: f32,
+    /// Horizontal camera offset in world pixels. Rooms keep their world size
+    /// as the dungeon grows; this offset reveals the larger structure.
+    #[serde(skip)]
+    pub board_pan_x: f32,
+    /// Last pointer position used by the board's direct-manipulation camera.
+    #[serde(skip)]
+    pub board_drag_last: Option<(f32, f32)>,
+    /// Prevent a drag release from also selecting the room beneath it.
+    #[serde(skip)]
+    pub board_dragged: bool,
 
     // Log
     pub log: Vec<LogEntry>,
@@ -519,6 +529,9 @@ impl GameState {
             log_filter: LogFilter::All,
             board_scroll: 0.0,
             board_zoom: 1.0,
+            board_pan_x: 0.0,
+            board_drag_last: None,
+            board_dragged: false,
             log: vec![LogEntry::system(
                 "Welcome to Dungeon Core! Choose a starter race to awaken your first defenders.",
             )],

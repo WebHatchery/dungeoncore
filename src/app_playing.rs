@@ -367,9 +367,12 @@ pub fn render_playing_frame(
     // the dungeon; fires on click or the [Q] hotkey, with the cast surfacing its
     // own feedback (recharging / no mana) via the log.
     if core_spell_visible(state) {
+        // Keep the raid lever in the dungeon header beside the status chip;
+        // the board below is reserved for the physical cutaway rooms.
+        let chip_x = dungeon_rect.x + dungeon_rect.w - chip_w - 24.0;
         let smite_rect = Rect::new(
-            dungeon_rect.x + dungeon_rect.w - CORE_SPELL_BTN_W - 24.0,
-            dungeon_rect.y + 24.0 + 36.0 + 10.0,
+            (chip_x - CORE_SPELL_BTN_W - 10.0).max(dungeon_rect.x + 12.0),
+            dungeon_rect.y + 18.0,
             CORE_SPELL_BTN_W,
             CORE_SPELL_BTN_H,
         );

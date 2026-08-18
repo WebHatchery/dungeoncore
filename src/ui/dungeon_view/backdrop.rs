@@ -24,6 +24,16 @@ pub(super) fn draw_board_surface(rect: Rect) {
         );
         y += 46.0;
     }
+
+    // A shallow atmospheric haze keeps the playable cross-section anchored in
+    // the rock instead of reading as a floating set of cards.
+    draw_rectangle(
+        rect.x + 16.0,
+        rect.y + 42.0,
+        rect.w - 32.0,
+        rect.h - 84.0,
+        Color::new(0.08, 0.07, 0.065, 0.08),
+    );
 }
 
 fn draw_cavern_backdrop(rect: Rect) {
@@ -35,8 +45,51 @@ fn draw_cavern_backdrop(rect: Rect) {
         Color::new(0.055, 0.043, 0.037, 1.0),
     );
 
+    // A heavy ceiling and floor make the board feel excavated into one mass of
+    // rock. The irregular edge is deliberately asymmetrical like a cutaway,
+    // not a decorative card frame.
+    let rock = Color::new(0.075, 0.060, 0.052, 0.92);
+    let ceiling_h = rect.h.min(58.0);
+    let floor_h = rect.h.min(42.0);
+    draw_rectangle(rect.x, rect.y, rect.w, ceiling_h, rock);
+    draw_rectangle(
+        rect.x,
+        rect.y + rect.h - floor_h,
+        rect.w,
+        floor_h,
+        Color::new(0.035, 0.030, 0.028, 0.96),
+    );
+    draw_line(
+        rect.x + 10.0,
+        rect.y + ceiling_h - 3.0,
+        rect.x + rect.w - 10.0,
+        rect.y + ceiling_h + 2.0,
+        2.0,
+        Color::new(0.18, 0.14, 0.11, 0.72),
+    );
+    draw_line(
+        rect.x + 10.0,
+        rect.y + rect.h - floor_h + 2.0,
+        rect.x + rect.w - 10.0,
+        rect.y + rect.h - floor_h - 2.0,
+        2.0,
+        Color::new(0.12, 0.10, 0.09, 0.78),
+    );
+
+    let mut strata_y = rect.y + 16.0;
+    while strata_y < rect.y + ceiling_h - 7.0 {
+        draw_line(
+            rect.x + 8.0,
+            strata_y,
+            rect.x + rect.w - 8.0,
+            strata_y + 3.0,
+            1.0,
+            Color::new(0.24, 0.19, 0.15, 0.22),
+        );
+        strata_y += 13.0;
+    }
+
     // Rock teeth frame the playable cutaway without competing with it.
-    let rock = Color::new(0.075, 0.060, 0.052, 0.74);
     let tooth_w = (rect.w / 12.0).max(28.0);
     for i in 0..12 {
         let x = rect.x + i as f32 * tooth_w;
@@ -54,6 +107,23 @@ fn draw_cavern_backdrop(rect: Rect) {
             with_alpha(rock, 0.62),
         );
     }
+
+    // Side walls remain visible when the camera pans, giving the player a
+    // physical boundary to push against instead of an abrupt screen edge.
+    draw_rectangle(
+        rect.x,
+        rect.y + 18.0,
+        14.0,
+        (rect.h - 36.0).max(0.0),
+        Color::new(0.06, 0.048, 0.042, 0.82),
+    );
+    draw_rectangle(
+        rect.x + rect.w - 14.0,
+        rect.y + 18.0,
+        14.0,
+        (rect.h - 36.0).max(0.0),
+        Color::new(0.06, 0.048, 0.042, 0.82),
+    );
 }
 
 pub(super) fn draw_room_route_backplate(rect: Rect, selected: bool, border: Color) {
@@ -63,6 +133,21 @@ pub(super) fn draw_room_route_backplate(rect: Rect, selected: bool, border: Colo
         Color::new(0.045, 0.038, 0.035, 0.90)
     };
     draw_rectangle(rect.x, rect.y, rect.w, rect.h, rock);
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        9.0,
+        Color::new(0.025, 0.022, 0.021, 0.88),
+    );
+    draw_line(
+        rect.x + 2.0,
+        rect.y + 9.0,
+        rect.x + rect.w - 2.0,
+        rect.y + 7.0,
+        2.0,
+        Color::new(0.16, 0.13, 0.11, 0.56),
+    );
     if !selected {
         draw_rectangle_lines(
             rect.x,
@@ -73,13 +158,13 @@ pub(super) fn draw_room_route_backplate(rect: Rect, selected: bool, border: Colo
             with_alpha(border, 0.13),
         );
     }
-    let floor_y = rect.y + rect.h - 20.0;
+    let floor_y = rect.y + rect.h - 22.0;
     draw_rectangle(
         rect.x,
         floor_y,
         rect.w,
-        20.0,
-        Color::new(0.020, 0.018, 0.017, 0.86),
+        22.0,
+        Color::new(0.020, 0.018, 0.017, 0.92),
     );
     draw_line(
         rect.x,

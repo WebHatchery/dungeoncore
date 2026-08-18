@@ -181,7 +181,7 @@ pub(super) fn draw_room_tile(
     // Floating combat feedback (damage numbers, kills) rising over the room.
     draw_room_effects(state, room, draw_rect, sprites);
 
-    was_clicked_rect(rect)
+    was_clicked_rect(rect) && !state.board_dragged
 }
 
 fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, icon_color: Color) {
@@ -407,13 +407,13 @@ fn draw_room_label_plate(rect: Rect, title: &str, room: &Room, color: Color) {
         rect.x + 22.0,
         rect.y + 14.0,
         rect.w - 28.0,
-        11.0,
+        13.0,
         TEXT,
     );
     draw_room_icon(
         &room.room_type,
         vec2(rect.x + 11.0, rect.y + rect.h * 0.50),
-        6.0,
+        8.0,
         color,
     );
 
@@ -427,7 +427,7 @@ fn draw_room_label_plate(rect: Rect, title: &str, room: &Room, color: Color) {
             rect.x + rect.w - 5.0,
             rect.y + 14.0,
             30.0,
-            9.0,
+            11.0,
             if used >= capacity {
                 WARNING
             } else {
