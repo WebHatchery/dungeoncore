@@ -266,6 +266,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                 let _ = simulation::place_monster(state, floor, pos, "Goblin Shaman");
                 if let Some(f) = state.floors.iter_mut().find(|f| f.number == floor) {
                     if let Some(r) = f.rooms.iter_mut().find(|r| r.position == pos) {
+                        r.battle_order = game_state::RoomBattleOrder::CullWounded;
                         r.monsters.push(game_state::Monster {
                             id: 940,
                             type_name: "Goblin Shaman".to_string(),

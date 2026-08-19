@@ -3,12 +3,13 @@ use macroquad_toolkit::input::{is_hovered_rect, was_clicked_rect};
 
 use crate::data::monsters::{get_monster_template, get_species_display_name};
 use crate::data::upgrades::get_all_upgrades;
-use crate::game_state::{GameState, Room, RoomType};
+use crate::game_state::{GameState, Room, RoomBattleOrder, RoomType};
 
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
 
 mod defenders;
+mod orders;
 pub(crate) mod previews;
 
 use defenders::{draw_monster_progress_rows, DEFENDER_ROW_H, MAX_DEFENDER_ROWS};
@@ -27,6 +28,7 @@ pub enum UpgradeAction {
     /// Place the armed monster onto this defender — upgrading its line or
     /// evicting it, whichever the swap plan says.
     SwapMonster(u64),
+    SetBattleOrder(RoomBattleOrder),
     Close,
 }
 
@@ -205,11 +207,13 @@ fn draw_selected_room(
 ) -> f32 {
     // Card grows with the defender list (up to MAX_DEFENDER_ROWS visible).
     let defender_rows = room.monsters.len().min(MAX_DEFENDER_ROWS);
+    let combat_room = room.room_type == RoomType::Normal || room.room_type == RoomType::Boss;
+    let order_extra = if combat_room { 72.0 } else { 0.0 };
     let rect = Rect::new(
         bounds.x,
         y,
         bounds.w,
-        214.0 + defender_rows as f32 * DEFENDER_ROW_H + 10.0,
+        214.0 + order_extra + defender_rows as f32 * DEFENDER_ROW_H + 10.0,
     );
     let tone = room_color(room);
     draw_card(
@@ -305,14 +309,24 @@ fn draw_selected_room(
         if adventurers > 0 { WARNING } else { EMERALD },
     );
 
+    if combat_room {
+        orders::draw_battle_orders(
+            state,
+            room,
+            Rect::new(rect.x + 12.0, rect.y + 190.0, rect.w - 24.0, order_extra),
+            action,
+        );
+    }
+
     if defender_rows > 0 {
-        draw_section_rule(rect.x + 12.0, rect.y + 202.0, rect.w - 24.0, "DEFENDERS");
+        let defenders_y = rect.y + 202.0 + order_extra;
+        draw_section_rule(rect.x + 12.0, defenders_y, rect.w - 24.0, "DEFENDERS");
         if let Some(row_action) = draw_monster_progress_rows(
             state,
             room,
             Rect::new(
                 rect.x + 12.0,
-                rect.y + 212.0,
+                defenders_y + 10.0,
                 rect.w - 24.0,
                 defender_rows as f32 * DEFENDER_ROW_H,
             ),

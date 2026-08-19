@@ -51,3 +51,64 @@ fn moving_the_core_to_a_new_floor_removes_the_old_sink_edge() {
         assert!(last.exits.is_empty());
     }
 }
+
+#[test]
+fn battle_orders_are_persistent_room_rules_with_real_tradeoffs() {
+    let mut room = Room::new(1, RoomType::Normal, 1, 1);
+    assert_eq!(room.battle_order, RoomBattleOrder::Balanced);
+
+    room.battle_order = RoomBattleOrder::HoldLine;
+    assert!(room.defender_attack_multiplier() < 1.0);
+    assert!(room.defender_damage_taken_multiplier() < 1.0);
+
+    room.battle_order = RoomBattleOrder::CullWounded;
+    assert_eq!(room.defender_attack_multiplier(), 1.0);
+    assert!(room.defender_damage_taken_multiplier() > 1.0);
+}
+
+#[test]
+fn old_rooms_restore_to_the_balanced_order() {
+    let room = Room::new(1, RoomType::Normal, 1, 1);
+    let mut value = serde_json::to_value(room).unwrap();
+    value.as_object_mut().unwrap().remove("battle_order");
+    let restored: Room = serde_json::from_value(value).unwrap();
+    assert_eq!(restored.battle_order, RoomBattleOrder::Balanced);
+}
+
+#[test]
+fn a_keeper_can_issue_orders_only_between_raids() {
+    let mut state = GameState::new();
+    state.mana = 1_000;
+    add_room(&mut state, None).unwrap();
+    set_battle_order(&mut state, 1, 1, RoomBattleOrder::HoldLine).unwrap();
+    assert_eq!(
+        state.floors[0].room_at(1).unwrap().battle_order,
+        RoomBattleOrder::HoldLine
+    );
+
+    state
+        .adventurer_parties
+        .push(crate::game_state::AdventurerParty {
+            id: 9,
+            members: Vec::new(),
+            current_floor: 1,
+            current_room: 0,
+            retreating: false,
+            casualties: 0,
+            loot: 0,
+            entry_time: 0,
+            target_floor: 1,
+            snared_ticks: 0,
+            alarmed: false,
+            sieging: false,
+            prev_room: 0,
+            move_anim: macroquad_toolkit::timing::Cooldown::new(
+                crate::game_state::PARTY_MOVE_SECONDS,
+            ),
+        });
+    assert!(set_battle_order(&mut state, 1, 1, RoomBattleOrder::CullWounded).is_err());
+    assert_eq!(
+        state.floors[0].room_at(1).unwrap().battle_order,
+        RoomBattleOrder::HoldLine
+    );
+}

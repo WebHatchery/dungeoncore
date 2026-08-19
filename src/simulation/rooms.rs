@@ -1,5 +1,36 @@
 use crate::data::constants::{get_room_cost, CORE_ROOM_MANA_BONUS, MAX_ROOMS_PER_FLOOR};
-use crate::game_state::{Floor, GameState, LogEntry, Room, RoomType};
+use crate::game_state::{Floor, GameState, LogEntry, Room, RoomBattleOrder, RoomType};
+
+/// Change a combat room's standing order between raids.
+pub fn set_battle_order(
+    state: &mut GameState,
+    floor_num: i32,
+    room_pos: usize,
+    order: RoomBattleOrder,
+) -> Result<(), String> {
+    if !state.adventurer_parties.is_empty() {
+        return Err("Battle orders cannot change while adventurers are inside!".into());
+    }
+    let room = state
+        .floors
+        .iter_mut()
+        .find(|floor| floor.number == floor_num)
+        .and_then(|floor| floor.room_at_mut(room_pos))
+        .ok_or("Room not found")?;
+    if room.room_type != RoomType::Normal && room.room_type != RoomType::Boss {
+        return Err("Only combat rooms can receive battle orders.".into());
+    }
+    if room.battle_order == order {
+        return Ok(());
+    }
+    room.battle_order = order;
+    state.add_log(LogEntry::building(format!(
+        "Floor {floor_num}, room {room_pos} now follows the {} order: {}",
+        order.label(),
+        order.description()
+    )));
+    Ok(())
+}
 
 /// Add a room to the dungeon
 pub fn add_room(state: &mut GameState, target_floor: Option<i32>) -> Result<(), String> {

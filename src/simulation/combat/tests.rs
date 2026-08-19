@@ -257,3 +257,54 @@ fn monsters_in_lower_strata_carry_more_loot() {
         "deep haul {grave} should exceed {rootways}"
     );
 }
+
+#[test]
+fn cull_order_focuses_the_most_wounded_living_hero() {
+    let mut party = lone_invader(100);
+    let mut second = party.members[0].clone();
+    second.id = 11;
+    second.name = "Healthy".to_string();
+    party.members[0].name = "Wounded".to_string();
+    party.members[0].hp = 20;
+    second.hp = 80;
+    party.members.push(second);
+    let mut rng = macroquad_toolkit::rng::SeededRng::new(1);
+
+    assert_eq!(
+        helpers::target_adventurer_idx(
+            &mut rng,
+            &party,
+            crate::game_state::RoomBattleOrder::CullWounded
+        ),
+        Some(0)
+    );
+}
+
+fn exchange_under_order(order: crate::game_state::RoomBattleOrder) -> (i32, i32) {
+    let mut state = GameState::new();
+    let mut room = Room::new(99, RoomType::Normal, 2, 1);
+    room.battle_order = order;
+    room.monsters.push(sturdy_monster());
+    state.floors[0].rooms.push(room);
+    let room_idx = state.floors[0].rooms.len() - 1;
+    let mut party = lone_invader(500);
+    party.members[0].scaled_stats.attack = 100;
+    state.adventurer_parties.push(party);
+    let hero_before = state.adventurer_parties[0].members[0].hp;
+    let monster_before = state.floors[0].rooms[room_idx].monsters[0].hp;
+    resolve_combat(&mut state, 0, 0, room_idx);
+    (
+        hero_before - state.adventurer_parties[0].members[0].hp,
+        monster_before - state.floors[0].rooms[room_idx].monsters[0].hp,
+    )
+}
+
+#[test]
+fn hold_order_trades_attack_for_defender_survival() {
+    let (balanced_attack, balanced_taken) =
+        exchange_under_order(crate::game_state::RoomBattleOrder::Balanced);
+    let (hold_attack, hold_taken) =
+        exchange_under_order(crate::game_state::RoomBattleOrder::HoldLine);
+    assert!(hold_attack < balanced_attack);
+    assert!(hold_taken < balanced_taken);
+}

@@ -386,6 +386,13 @@ pub fn render_playing_frame(
                     state.selected_monster = None;
                 }
             }
+            UpgradeAction::SetBattleOrder(order) => {
+                if let Some((floor, pos)) = state.selected_room {
+                    if let Err(error) = simulation::set_battle_order(state, floor, pos, order) {
+                        state.add_log(game_state::LogEntry::system(error));
+                    }
+                }
+            }
             UpgradeAction::Close => {
                 state.selected_room = None;
                 state.selected_monster = None;

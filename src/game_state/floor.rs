@@ -30,6 +30,10 @@ impl Floor {
         self.rooms.iter().find(|r| r.position == position)
     }
 
+    pub fn room_at_mut(&mut self, position: usize) -> Option<&mut Room> {
+        self.rooms.iter_mut().find(|room| room.position == position)
+    }
+
     /// Wire every room's `exits` as a single linear chain in ascending
     /// `position` order (each room points at the next; the last has none). Used
     /// to migrate pre-graph saves and to seed freshly-built linear floors.

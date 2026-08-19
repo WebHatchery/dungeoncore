@@ -58,6 +58,25 @@ pub(super) fn draw_room_tile(
             element_color(element),
         );
     }
+    if room.battle_order != crate::game_state::RoomBattleOrder::Balanced
+        && (room.room_type == RoomType::Normal || room.room_type == RoomType::Boss)
+    {
+        let tone = if room.battle_order == crate::game_state::RoomBattleOrder::HoldLine {
+            MANA
+        } else {
+            DANGER
+        };
+        draw_pill(
+            Rect::new(
+                draw_rect.x + draw_rect.w - 58.0,
+                draw_rect.y + 29.0,
+                51.0,
+                15.0,
+            ),
+            &room.battle_order.label().to_uppercase(),
+            tone,
+        );
+    }
     if fighting {
         let pulse = if state.reduced_motion {
             0.45

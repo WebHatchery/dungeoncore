@@ -1,6 +1,52 @@
 use super::Monster;
 use serde::{Deserialize, Serialize};
 
+/// Standing command given to a room's defenders. Orders trade raw safety for
+/// target control and are changed between raids through visible inspector
+/// buttons, so the keeper can prepare different rooms for different jobs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RoomBattleOrder {
+    #[default]
+    Balanced,
+    HoldLine,
+    CullWounded,
+}
+
+impl RoomBattleOrder {
+    pub const ALL: [Self; 3] = [Self::Balanced, Self::HoldLine, Self::CullWounded];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Balanced => "Balanced",
+            Self::HoldLine => "Hold",
+            Self::CullWounded => "Cull",
+        }
+    }
+
+    pub fn description(self) -> &'static str {
+        match self {
+            Self::Balanced => "No modifiers; targets are spread naturally.",
+            Self::HoldLine => "-22% damage taken, but -12% defender attack.",
+            Self::CullWounded => "Focuses the weakest hero; +12% damage taken.",
+        }
+    }
+
+    pub fn defender_attack_multiplier(self) -> f32 {
+        match self {
+            Self::Balanced | Self::CullWounded => 1.0,
+            Self::HoldLine => 0.88,
+        }
+    }
+
+    pub fn defender_damage_taken_multiplier(self) -> f32 {
+        match self {
+            Self::Balanced => 1.0,
+            Self::HoldLine => 0.78,
+            Self::CullWounded => 1.12,
+        }
+    }
+}
+
 /// Room type enumeration.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum RoomType {
@@ -59,6 +105,9 @@ pub struct Room {
     pub exits: Vec<usize>,
     pub floor_number: i32,
     pub monsters: Vec<Monster>,
+    /// Keeper-selected combat behavior. Old saves default to Balanced.
+    #[serde(default)]
+    pub battle_order: RoomBattleOrder,
     /// Installed upgrades — at most one per RoomUpgradeType.
     #[serde(default)]
     pub upgrades: Vec<RoomUpgrade>,
@@ -78,6 +127,7 @@ impl Room {
             exits: Vec::new(),
             floor_number,
             monsters: Vec::new(),
+            battle_order: RoomBattleOrder::Balanced,
             upgrades: Vec::new(),
             upgrade: None,
             explored: false,
@@ -137,6 +187,11 @@ impl Room {
 
     pub fn defender_damage_taken_multiplier(&self) -> f32 {
         neutral_multiplier(self.secondary_multiplier("DefenderDamageReduction"))
+            * self.battle_order.defender_damage_taken_multiplier()
+    }
+
+    pub fn defender_attack_multiplier(&self) -> f32 {
+        self.battle_order.defender_attack_multiplier()
     }
 
     /// Attack modifier applied to every living adventurer in this room.

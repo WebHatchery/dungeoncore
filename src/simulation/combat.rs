@@ -34,7 +34,7 @@ use abilities::{resolve_abilities, tick_conditions};
 use helpers::{
     adventurer_attack_mult, adventurer_damage_taken_mult, adventurer_element, attunement_mult,
     has_passive, monster_attack_value, monster_damage_taken_mult, monster_element, passive_value,
-    split_spawn, target_monster_idx,
+    split_spawn, target_adventurer_idx, target_monster_idx,
 };
 use rewards::{reward_adventurer_kills, reward_monster_kills};
 use traps::resolve_trap;
@@ -84,8 +84,9 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     }
 
     let room = &state.floors[floor_idx].rooms[room_idx];
-    let reinforcement_mult = room.reinforcement_multiplier();
+    let reinforcement_mult = room.reinforcement_multiplier() * room.defender_attack_multiplier();
     let defender_damage_taken_mult = room.defender_damage_taken_multiplier();
+    let battle_order = room.battle_order;
     let adventurer_room_attack_mult = room.adventurer_attack_multiplier();
     let adventurer_damage_to_monsters_mult = room.adventurer_damage_to_monsters_multiplier();
     let monster_regeneration_rate = room.monster_regeneration_rate();
@@ -303,17 +304,10 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     {
         let party = &mut state.adventurer_parties[party_idx];
         for strike in &monster_strikes {
-            let alive_idxs: Vec<usize> = party
-                .members
-                .iter()
-                .enumerate()
-                .filter(|(_, a)| a.alive)
-                .map(|(i, _)| i)
-                .collect();
-            if alive_idxs.is_empty() {
+            let Some(victim_idx) = target_adventurer_idx(&mut state.run_rng, party, battle_order)
+            else {
                 break;
-            }
-            let victim_idx = alive_idxs[state.run_rng.below(alive_idxs.len())];
+            };
             let victim = &mut party.members[victim_idx];
             let elem_mult =
                 element_multiplier(&strike.element, &adventurer_element(&victim.class_name));

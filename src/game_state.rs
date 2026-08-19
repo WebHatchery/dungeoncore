@@ -14,7 +14,7 @@ pub use heroes::{
     Adventurer, AdventurerParty, Condition, Equipment, HeroDrive, HeroRecord, HeroStatus,
 };
 pub use reputation::{ReputationBand, VisitorQuality, REPUTATION_MAX, REPUTATION_MIN};
-pub use rooms::{Room, RoomType, RoomUpgrade, RoomUpgradeType};
+pub use rooms::{Room, RoomBattleOrder, RoomType, RoomUpgrade, RoomUpgradeType};
 
 fn default_condition_multiplier() -> f32 {
     1.0

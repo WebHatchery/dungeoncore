@@ -1,7 +1,7 @@
 //! Stat, trait, and targeting helpers shared across the combat submodules.
 
 use crate::data::traits::get_trait;
-use crate::game_state::{ActiveTrait, Adventurer, AdventurerParty, Monster};
+use crate::game_state::{ActiveTrait, Adventurer, AdventurerParty, Monster, RoomBattleOrder};
 use macroquad_toolkit::rng::SeededRng;
 
 /// Whether a monster has a passive trait with the given effect type.
@@ -181,5 +181,29 @@ pub(super) fn random_alive_idx(rng: &mut SeededRng, party: &AdventurerParty) -> 
         None
     } else {
         Some(alive[rng.below(alive.len())])
+    }
+}
+
+/// Target selected by a room's standing order. Cull rooms concentrate every
+/// strike on the most wounded living hero; other rooms preserve the existing
+/// seeded spread across the party.
+pub(super) fn target_adventurer_idx(
+    rng: &mut SeededRng,
+    party: &AdventurerParty,
+    order: RoomBattleOrder,
+) -> Option<usize> {
+    if order == RoomBattleOrder::CullWounded {
+        party
+            .members
+            .iter()
+            .enumerate()
+            .filter(|(_, hero)| hero.alive)
+            .min_by_key(|(index, hero)| {
+                let health_per_mille = hero.hp.max(0) as i64 * 1_000 / hero.max_hp.max(1) as i64;
+                (health_per_mille, hero.hp, *index)
+            })
+            .map(|(index, _)| index)
+    } else {
+        random_alive_idx(rng, party)
     }
 }
