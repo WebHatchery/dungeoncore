@@ -11,6 +11,8 @@ fn hero(id: u64, delves: i32, kills: i32) -> HeroRecord {
         delves,
         kills,
         gold_stolen: 0,
+        escapes: 0,
+        deepest_floor: 0,
         status: HeroStatus::Inside,
         death_floor: 0,
         death_day: 0,

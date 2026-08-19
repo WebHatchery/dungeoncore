@@ -178,8 +178,8 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
                 hero.race, hero.class_name, hero.death_floor, hero.death_day
             ),
             _ => format!(
-                "{} {} · {} delves · {} kills",
-                hero.race, hero.class_name, hero.delves, hero.kills
+                "{} {} · {} escapes · deepest F{}",
+                hero.race, hero.class_name, hero.escapes, hero.deepest_floor
             ),
         };
         draw_text_fit(
@@ -284,6 +284,8 @@ fn draw_hero_journal(hero: &HeroRecord, rect: Rect) -> HeroesTabAction {
 
     let stats = [
         ("Delves", hero.delves.to_string(), TEXT),
+        ("Escapes", hero.escapes.to_string(), EMERALD),
+        ("Deepest floor", hero.deepest_floor.to_string(), SOUL),
         ("Defenders slain", hero.kills.to_string(), DANGER),
         ("Gold carried off", hero.gold_stolen.to_string(), TREASURE),
     ];

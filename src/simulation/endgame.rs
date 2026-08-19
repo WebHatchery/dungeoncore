@@ -328,6 +328,8 @@ pub fn maybe_launch_siege(state: &mut GameState) {
             delves: 1,
             kills: 0,
             gold_stolen: 0,
+            escapes: 0,
+            deepest_floor: 0,
             status: HeroStatus::Inside,
             death_floor: 0,
             death_day: 0,

@@ -78,6 +78,32 @@ fn threat_party_shape(state: &mut GameState) -> (usize, i32, i32) {
     (size.max(1), level_min, level_max)
 }
 
+/// How far this expedition intends to delve. Strong heroes, returning
+/// veterans, and a frightened realm all push deeper; a fresh low-level party
+/// still tests only the upper dungeon. This replaces the old hard floor-2 cap,
+/// allowing ordinary raids to interact with the whole built dungeon.
+fn expedition_target_floor(state: &GameState, members: &[Adventurer]) -> i32 {
+    let available = state.total_floors.max(1);
+    let strongest = members.iter().map(|hero| hero.level).max().unwrap_or(1);
+    let veteran_delves = members
+        .iter()
+        .filter_map(|member| {
+            state
+                .known_adventurers
+                .iter()
+                .find(|record| record.id == member.id)
+                .map(|record| record.delves)
+        })
+        .max()
+        .unwrap_or(1);
+    let strength_depth = (strongest - 1).max(0) / 2;
+    let veteran_depth = (veteran_delves - 1).max(0) / 2;
+    let realm_pressure = state.threat_tier();
+    let prestige_pressure = state.prestige.min(2);
+
+    (2 + strength_depth + veteran_depth + realm_pressure + prestige_pressure).clamp(1, available)
+}
+
 /// Try to spawn a new adventurer party
 pub fn spawn_party(state: &mut GameState) {
     // Only spawn when open and no parties present
@@ -169,6 +195,8 @@ pub fn spawn_party(state: &mut GameState) {
             delves: 1,
             kills: 0,
             gold_stolen: 0,
+            escapes: 0,
+            deepest_floor: 0,
             status: HeroStatus::Inside,
             death_floor: 0,
             death_day: 0,
@@ -188,7 +216,7 @@ pub fn spawn_party(state: &mut GameState) {
         ));
     }
 
-    let target_floor = state.floors.len().min(2) as i32;
+    let target_floor = expedition_target_floor(state, &members);
 
     let party = AdventurerParty {
         id: state.run_rng.next_u64(),
@@ -212,11 +240,12 @@ pub fn spawn_party(state: &mut GameState) {
     state.current_raid = Some(Default::default());
 
     state.add_log(LogEntry::adventure(format!(
-        "{} visitors enter: {} members, levels {}–{}.",
+        "{} visitors enter: {} members, levels {}–{}, expedition target floor {}.",
         state.reputation_band().name(),
         party.members.len(),
         level_min,
-        level_max
+        level_max,
+        party.target_floor
     )));
 
     // Random entry quote
@@ -441,19 +470,19 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
     let survivor_count = survivors.len().max(1) as i32;
     let loot_share = state.adventurer_parties[party_idx].loot / survivor_count;
 
-    let member_ids: Vec<(u64, bool)> = state.adventurer_parties[party_idx]
+    let member_ids: Vec<(u64, bool, i32, i32)> = state.adventurer_parties[party_idx]
         .members
         .iter()
-        .map(|m| (m.id, m.alive))
+        .map(|m| (m.id, m.alive, m.hp, m.max_hp))
         .collect();
 
     // Snapshot a summary card of the raid the dungeon just weathered.
     let party_size = member_ids.len() as i32;
-    let survivors = member_ids.iter().filter(|(_, alive)| *alive).count() as i32;
+    let survivors = member_ids.iter().filter(|(_, alive, _, _)| *alive).count() as i32;
     let slain = party_size - survivors;
     let returning_survivors = member_ids
         .iter()
-        .filter(|(id, alive)| {
+        .filter(|(id, alive, _, _)| {
             *alive
                 && state
                     .known_adventurers
@@ -497,13 +526,19 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
         }
     )));
 
-    for (id, alive) in member_ids {
+    for (id, alive, hp, max_hp) in member_ids {
         if alive {
             // Escaped: bank XP, gold, and possibly a level.
             let day = state.day;
             if let Some(record) = state.hero_mut(id) {
                 record.status = HeroStatus::Alive;
-                record.experience += 20 + record.delves * 5;
+                record.escapes += 1;
+                record.deepest_floor = record.deepest_floor.max(party_floor);
+                // Deep expeditions are the main route to veteran growth. A
+                // hero who repeatedly skims floor 1 improves much more slowly
+                // than one who survives the lower strata.
+                let xp_gain = 15 + party_floor * 8 + record.delves * 3;
+                record.experience += xp_gain;
                 record.gold_stolen += loot_share;
                 let level_before = record.level;
                 while record.level < 10
@@ -513,11 +548,14 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
                     record.level += 1;
                 }
                 let escaped = if loot_share > 0 {
-                    format!("Escaped with {loot_share} gold")
+                    format!("Escaped floor {party_floor} with {loot_share} gold (+{xp_gain} XP)")
                 } else {
-                    "Escaped empty-handed".to_string()
+                    format!("Escaped floor {party_floor} empty-handed (+{xp_gain} XP)")
                 };
                 record.remember(day, escaped);
+                if hp * 4 <= max_hp.max(1) {
+                    record.remember(day, "Survived with grievous wounds");
+                }
                 if record.level > level_before {
                     let level = record.level;
                     record.remember(day, format!("Reached level {level}"));
@@ -528,3 +566,6 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

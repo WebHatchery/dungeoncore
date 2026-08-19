@@ -39,6 +39,8 @@ fn every_milestone_condition_is_wired() {
             delves: 0,
             kills: 0,
             gold_stolen: 0,
+            escapes: 0,
+            deepest_floor: 0,
             status: crate::game_state::HeroStatus::Alive,
             death_floor: 0,
             death_day: 0,

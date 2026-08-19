@@ -99,6 +99,14 @@ pub struct HeroRecord {
     pub kills: i32,
     /// Total gold this hero has escaped the dungeon with.
     pub gold_stolen: i32,
+    /// Number of delves this hero survived. Kept separately from `delves` so
+    /// the ledger can distinguish a frequent visitor from a proven escapee.
+    #[serde(default)]
+    pub escapes: i32,
+    /// Deepest floor this hero has personally reached, whether or not they
+    /// returned from it. Old saves begin at the surface.
+    #[serde(default)]
+    pub deepest_floor: i32,
     pub status: HeroStatus,
     /// Floor and day of death (only meaningful when status is Dead).
     #[serde(default)]

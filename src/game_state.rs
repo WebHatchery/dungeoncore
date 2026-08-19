@@ -464,6 +464,7 @@ impl GameState {
         let day = self.day;
         if let Some(record) = self.hero_mut(hero_id) {
             record.kills += 1;
+            record.deepest_floor = record.deepest_floor.max(floor);
             record.remember(day, format!("Slew a {monster} on floor {floor}"));
         }
     }
@@ -479,6 +480,7 @@ impl GameState {
                 bounty = Some((record.name.clone(), souls, gold));
             }
             record.status = HeroStatus::Dead;
+            record.deepest_floor = record.deepest_floor.max(floor);
             record.death_floor = floor;
             record.death_day = day;
             record.remember(day, format!("Fell on floor {floor}"));
