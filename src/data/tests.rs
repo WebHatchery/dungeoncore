@@ -46,6 +46,29 @@ fn constants_json_parses() {
 }
 
 #[test]
+fn strata_cover_depth_contiguously_and_use_known_elements() {
+    let strata = strata::get_all_strata();
+    assert!(!strata.is_empty());
+    assert_eq!(strata[0].floor_min, 1);
+    for (index, stratum) in strata.iter().enumerate() {
+        assert!(stratum.floor_max >= stratum.floor_min);
+        assert!(stratum.defender_attack_multiplier >= 1.0);
+        assert!(stratum.defender_guard_multiplier > 0.0);
+        assert!(stratum.loot_multiplier >= 1.0);
+        assert!(elements::get_element(&stratum.element).is_some());
+        assert!(!stratum.description.trim().is_empty());
+        if let Some(next) = strata.get(index + 1) {
+            assert_eq!(
+                stratum.floor_max + 1,
+                next.floor_min,
+                "strata must have no missing or overlapping floors"
+            );
+        }
+    }
+    assert!(strata.last().unwrap().floor_max >= 20);
+}
+
+#[test]
 fn monsters_reference_valid_species_and_traits() {
     let species: Vec<String> = monsters::get_species_names();
     for template in monsters::get_monster_templates() {

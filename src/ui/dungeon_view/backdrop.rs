@@ -63,6 +63,15 @@ pub(super) fn draw_board_surface(rect: Rect) {
 
 pub(super) fn draw_floor_structure(rect: Rect, floor_num: i32, selected: bool) {
     let depth = ((floor_num - 1).max(0) as f32 / 19.0).clamp(0.0, 1.0);
+    let stratum = crate::data::strata::stratum_for_floor(floor_num);
+    let stratum_color = element_color(&stratum.element);
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        with_alpha(stratum_color, 0.025),
+    );
     let slab_h = 14.0_f32.min(rect.h * 0.12);
     let slab_y = rect.y + rect.h - slab_h;
     draw_rectangle(
@@ -86,13 +95,15 @@ pub(super) fn draw_floor_structure(rect: Rect, floor_num: i32, selected: bool) {
         slab_y,
         2.0,
         with_alpha(
-            if selected { MANA } else { TREASURE },
+            if selected { MANA } else { stratum_color },
             if selected { 0.48 } else { 0.18 },
         ),
     );
 }
 
 pub(super) fn draw_lift_shaft(rect: Rect, floor_num: i32, deepest: bool) {
+    let stratum = crate::data::strata::stratum_for_floor(floor_num);
+    let stratum_color = element_color(&stratum.element);
     draw_rectangle(
         rect.x,
         rect.y,
@@ -122,7 +133,17 @@ pub(super) fn draw_lift_shaft(rect: Rect, floor_num: i32, deepest: bool) {
         &format!("F{floor_num}"),
         Rect::new(rect.x + 5.0, rect.y + 7.0, rect.w - 10.0, 18.0),
         11.0,
-        if deepest { SOUL } else { TEXT_MUTED },
+        if deepest { SOUL } else { stratum_color },
+    );
+    draw_centered_text(
+        if rect.w >= 44.0 {
+            &stratum.name
+        } else {
+            stratum.short_label()
+        },
+        Rect::new(rect.x + 3.0, rect.y + 21.0, rect.w - 6.0, 12.0),
+        7.0,
+        with_alpha(stratum_color, 0.82),
     );
     let car = Rect::new(rect.x + 9.0, rect.y + rect.h * 0.52, rect.w - 18.0, 34.0);
     draw_rectangle(

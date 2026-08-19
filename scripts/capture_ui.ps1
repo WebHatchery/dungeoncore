@@ -17,7 +17,7 @@ param(
     [string[]]$Scenes = @(
         "title", "save_slots", "new_game", "settings", "species",
         "opening", "tutorial", "build", "defenders", "traps", "variants", "placement",
-        "gameplay", "transit", "branching", "deep_board", "journal", "rival",
+        "gameplay", "transit", "branching", "deep_board", "strata", "journal", "rival",
         "swap", "codex", "coretree", "goals", "controls", "log", "pause",
         "summary", "siege", "prestige_vfx", "vfx_showcase", "confirmation",
         "overwrite", "gameover"

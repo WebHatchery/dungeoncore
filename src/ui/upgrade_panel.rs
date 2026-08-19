@@ -232,12 +232,17 @@ fn draw_selected_room(
         TEXT,
     );
     draw_text_fit(
-        &format!("Tier {}", room.floor_number),
+        &format!(
+            "F{} · {} · {} resonance",
+            room.floor_number,
+            crate::data::strata::stratum_for_floor(room.floor_number).name,
+            crate::data::strata::stratum_for_floor(room.floor_number).element
+        ),
         rect.x + 56.0,
         rect.y + 48.0,
         rect.w - 68.0,
         13.0,
-        TEXT_MUTED,
+        element_color(&crate::data::strata::stratum_for_floor(room.floor_number).element),
     );
     draw_text_fit(
         room_role(room),

@@ -9,6 +9,7 @@ use crate::simulation;
 
 mod combat_sprites;
 mod deep_board;
+mod strata;
 mod vfx;
 
 /// First species flagged as a starter, used to seed capture scenes.
@@ -64,6 +65,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.total_deaths = 186;
         }
         "deep_board" => deep_board::seed(state),
+        "strata" => strata::seed(state),
         "combat_sprites" => combat_sprites::seed(state),
         "species" => {
             state.unlocked_species.clear();

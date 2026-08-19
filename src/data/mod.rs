@@ -5,6 +5,7 @@ pub mod elements;
 pub mod equipment;
 pub mod evolutions;
 pub mod monsters;
+pub mod strata;
 pub mod traits;
 pub mod upgrades;
 

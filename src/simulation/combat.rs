@@ -64,6 +64,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
 
     let floor_num = state.floors[floor_idx].number;
     let room_pos = state.floors[floor_idx].rooms[room_idx].position;
+    let stratum = crate::data::strata::stratum_for_floor(floor_num);
 
     // Visual-only combat punctuation. This is deliberately a transient UI
     // effect; it is neither saved nor consulted by the deterministic resolver.
@@ -172,6 +173,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                 * taken_mult
                 * defender_damage_taken_mult
                 * adventurer_damage_to_monsters_mult
+                * stratum.guard_multiplier_for(&mon_element)
                 * elem_mult)
                 .round()
                 .max(1.0) as i32;
@@ -275,13 +277,14 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             .map(|m| {
                 let element = monster_element(&m.type_name);
                 let attune_mult = attunement_mult(&attunement, &element);
+                let stratum_mult = stratum.attack_multiplier_for(&element);
                 MonsterStrike {
                     monster_id: m.id,
                     attack: monster_attack_value(
                         m,
                         alive_count,
                         enemies_alive,
-                        reinforcement_mult * attune_mult * alarm_mult,
+                        reinforcement_mult * attune_mult * alarm_mult * stratum_mult,
                     ),
                     element,
                     pierce: has_passive(m, "ArmorPierce"),

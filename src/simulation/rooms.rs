@@ -273,9 +273,13 @@ fn create_new_floor(state: &mut GameState) -> Result<(), String> {
     // A deeper core holds more mana — keeps late-tier summons affordable.
     state.max_mana += 50;
 
+    let stratum = crate::data::strata::stratum_for_floor(new_floor_num);
+
     state.add_log(LogEntry::building(format!(
-        "New floor {} created for {} mana! Deep core bonus: +{}%, max mana {}",
+        "New floor {} reaches the {} ({} resonance) for {} mana! Deep core bonus: +{}%, max mana {}",
         new_floor_num,
+        stratum.name,
+        stratum.element,
         cost,
         (state.deep_core_bonus * 100.0) as i32,
         state.max_mana

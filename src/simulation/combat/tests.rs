@@ -192,13 +192,18 @@ fn duty_and_resolve_change_how_a_hero_fights() {
     assert!(helpers::adventurer_damage_taken_mult(&hero) < 1.0);
 }
 
-fn monster_loot_for(drive: crate::game_state::HeroDrive) -> i32 {
+fn monster_loot_on_floor(drive: crate::game_state::HeroDrive, floor: i32) -> i32 {
     let mut state = GameState::new();
+    state.floors[0].number = floor;
     let mut party = lone_invader(100);
     party.members[0].drive = drive;
     state.adventurer_parties.push(party);
     rewards::reward_monster_kills(&mut state, 0, 0, 1, &[("Goblin".to_string(), false)]);
     state.adventurer_parties[0].loot
+}
+
+fn monster_loot_for(drive: crate::game_state::HeroDrive) -> i32 {
+    monster_loot_on_floor(drive, 1)
 }
 
 #[test]
@@ -208,5 +213,47 @@ fn fortune_seekers_increase_the_partys_monster_loot() {
     assert!(
         fortune > duty,
         "Fortune haul {fortune} should exceed {duty}"
+    );
+}
+
+fn stratum_exchange(monster_name: &str, floor: i32) -> (i32, i32) {
+    let mut state = GameState::new();
+    state.floors[0].number = floor;
+    let mut room = Room::new(99, RoomType::Normal, 2, floor);
+    let mut monster = sturdy_monster();
+    monster.type_name = monster_name.to_string();
+    room.monsters.push(monster);
+    state.floors[0].rooms.push(room);
+    let room_idx = state.floors[0].rooms.len() - 1;
+    let mut party = lone_invader(500);
+    party.members[0].scaled_stats.attack = 100;
+    state.adventurer_parties.push(party);
+    let hero_before = state.adventurer_parties[0].members[0].hp;
+    let monster_before = state.floors[0].rooms[room_idx].monsters[0].hp;
+    resolve_combat(&mut state, 0, 0, room_idx);
+    (
+        hero_before - state.adventurer_parties[0].members[0].hp,
+        monster_before - state.floors[0].rooms[room_idx].monsters[0].hp,
+    )
+}
+
+#[test]
+fn matching_defenders_attack_harder_and_guard_better_in_their_stratum() {
+    // Red and Green Slime use Fire and Nature respectively. Both exchanges use
+    // identical injected stats against a Body adventurer, keeping the element
+    // wheel neutral so only Ember Fault resonance differs.
+    let (fire_dealt, fire_taken) = stratum_exchange("Red Slime", 5);
+    let (nature_dealt, nature_taken) = stratum_exchange("Green Slime", 5);
+    assert!(fire_dealt > nature_dealt);
+    assert!(fire_taken < nature_taken);
+}
+
+#[test]
+fn monsters_in_lower_strata_carry_more_loot() {
+    let rootways = monster_loot_on_floor(crate::game_state::HeroDrive::Duty, 1);
+    let grave = monster_loot_on_floor(crate::game_state::HeroDrive::Duty, 17);
+    assert!(
+        grave > rootways,
+        "deep haul {grave} should exceed {rootways}"
     );
 }

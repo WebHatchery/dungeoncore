@@ -15,10 +15,12 @@ use super::DungeonSprites;
 use super::{adventurers_in_room, BuildPreview, PlacementState};
 
 mod effects;
+mod strata;
 mod units;
 mod upgrades;
 
 use effects::draw_room_effects;
+use strata::draw_stratum_art;
 use units::draw_room_units;
 use upgrades::draw_room_upgrade_art;
 
@@ -39,7 +41,12 @@ pub(super) fn draw_room_tile(
     let (fill, border, icon_color, title) = room_tone(room);
     let draw_rect = rect;
 
-    draw_room_chamber_art(draw_rect, room, fill, border, icon_color);
+    let art_time = if state.reduced_motion {
+        0.0
+    } else {
+        crate::ui::visual_time()
+    };
+    draw_room_chamber_art(draw_rect, room, fill, border, icon_color, art_time);
     if let Some((element, multiplier)) = room.attunement() {
         draw_pill(
             Rect::new(draw_rect.x + 7.0, draw_rect.y + 29.0, 58.0, 15.0),
@@ -199,7 +206,14 @@ pub(super) fn draw_room_tile(
     viewport.contains(pointer) && was_clicked_rect(rect) && !state.board_dragged
 }
 
-fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, icon_color: Color) {
+fn draw_room_chamber_art(
+    rect: Rect,
+    room: &Room,
+    fill: Color,
+    border: Color,
+    icon_color: Color,
+    art_time: f32,
+) {
     // `rect` is one excavated bay in a shared floor. Structure reaches every
     // edge so adjacent rooms meet at a common wall seam instead of floating as
     // independently shadowed cards.
@@ -246,6 +260,8 @@ fn draw_room_chamber_art(rect: Rect, room: &Room, fill: Color, border: Color, ic
         by += 14.0;
         row += 1;
     }
+
+    draw_stratum_art(wall, room.floor_number, art_time);
 
     // Shared ceiling beam, load-bearing seams, and a lit floor sell the room as
     // an open cutaway bay rather than a UI tile.

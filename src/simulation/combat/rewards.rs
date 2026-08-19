@@ -18,6 +18,7 @@ pub(super) fn reward_monster_kills(
     let floor_num = state.floors[floor_idx].number;
     let room_pos = state.floors[floor_idx].rooms[room_idx].position;
     let treasure_mult = state.floors[floor_idx].rooms[room_idx].treasure_multiplier();
+    let depth_loot_mult = crate::data::strata::stratum_for_floor(floor_num).loot_multiplier;
     let fortune_seekers = state.adventurer_parties[party_idx]
         .members
         .iter()
@@ -27,7 +28,8 @@ pub(super) fn reward_monster_kills(
 
     for (monster_name, is_boss) in kills {
         let base_gold = if *is_boss { 50 } else { 20 };
-        let gold_reward = (base_gold as f32 * treasure_mult * fortune_mult).round() as i32;
+        let gold_reward =
+            (base_gold as f32 * treasure_mult * fortune_mult * depth_loot_mult).round() as i32;
         let soul_reward = if *is_boss { 1 } else { 0 };
 
         state.adventurer_parties[party_idx].loot += gold_reward;

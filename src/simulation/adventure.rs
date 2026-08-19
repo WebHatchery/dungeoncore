@@ -394,12 +394,22 @@ fn advance_party(state: &mut GameState, party_idx: usize) {
 
         if current_floor < target_floor && current_floor < state.floors.len() as i32 {
             // Descend to next floor
-            state.adventurer_parties[party_idx].current_floor += 1;
+            let next_floor = current_floor + 1;
+            let prior_stratum = crate::data::strata::stratum_for_floor(current_floor);
+            let next_stratum = crate::data::strata::stratum_for_floor(next_floor);
+            state.adventurer_parties[party_idx].current_floor = next_floor;
             state.adventurer_parties[party_idx].current_room = 0;
-            state.add_log(LogEntry::adventure(format!(
-                "Party descends to floor {}",
-                current_floor + 1
-            )));
+            if prior_stratum.id != next_stratum.id {
+                state.add_log(LogEntry::adventure(format!(
+                    "Party descends to floor {} and enters the {} — {} resonance ahead.",
+                    next_floor, next_stratum.name, next_stratum.element
+                )));
+            } else {
+                state.add_log(LogEntry::adventure(format!(
+                    "Party descends through the {} to floor {}.",
+                    next_stratum.name, next_floor
+                )));
+            }
         } else {
             // Completed exploration, retreat with loot
             let loot = state.adventurer_parties[party_idx].loot;
