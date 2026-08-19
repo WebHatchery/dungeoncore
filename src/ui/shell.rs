@@ -351,7 +351,7 @@ fn draw_top_stat(
             "CORE UNDER SIEGE" => "The core must survive this siege. Defeat or repel the invading party before its health reaches zero.",
             _ => "This shows your prestige rank and the current dungeon day and hour.",
         };
-        macroquad_toolkit::ui::draw_tooltip(text, vec2(rect.x, rect.y + rect.h));
+        crate::ui::draw_tooltip(text, vec2(rect.x, rect.y + rect.h));
     }
 }
 

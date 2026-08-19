@@ -42,6 +42,7 @@ pub fn render_playing_frame(
     music_volume: f32,
     keybindings: &KeyBindings,
 ) {
+    clear_tooltips();
     let now = get_time();
     let sw = screen_width();
     let sh = screen_height();
@@ -108,6 +109,7 @@ pub fn render_playing_frame(
             let _ = persistence::save_game(save_slot, state);
             reset_timers(last_time_advance, last_adventure_tick, last_save);
         }
+        draw_tooltips();
         return;
     }
 
@@ -136,6 +138,7 @@ pub fn render_playing_frame(
             }
         }
 
+        draw_tooltips();
         return;
     }
 
@@ -527,4 +530,5 @@ pub fn render_playing_frame(
     if *show_controls && draw_controls_reference(sw, sh, keybindings) {
         *show_controls = false;
     }
+    draw_tooltips();
 }

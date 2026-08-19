@@ -163,7 +163,7 @@ fn draw_upgrade_option(
         } else {
             String::new()
         };
-        macroquad_toolkit::ui::draw_tooltip(
+        crate::ui::draw_tooltip(
             &format!(
                 "{}\nCost: {} mana{}\n{}\n{}",
                 template.name,

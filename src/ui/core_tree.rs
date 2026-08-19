@@ -238,7 +238,7 @@ fn draw_node(state: &GameState, power: &CorePower, rect: Rect) -> Option<String>
         } else {
             "Tap to spend souls and awaken this permanent power."
         };
-        macroquad_toolkit::ui::draw_tooltip(
+        crate::ui::draw_tooltip(
             &format!("{} {}", power.description, status),
             vec2(rect.x, rect.y + rect.h),
         );

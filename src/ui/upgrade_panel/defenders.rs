@@ -138,7 +138,7 @@ fn draw_defender_row(
     );
     let stats_rect = Rect::new(row.x + row.w * 0.56, row.y + 3.0, row.w * 0.42, 16.0);
     if is_hovered_rect(stats_rect) {
-        macroquad_toolkit::ui::draw_tooltip(
+        crate::ui::draw_tooltip(
             "ATK is this defender's base hit. DEF reduces incoming damage.",
             vec2(stats_rect.x, stats_rect.y + stats_rect.h + 4.0),
         );

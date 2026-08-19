@@ -163,7 +163,7 @@ fn draw_tab_rail(
         *open = !*open;
     }
     if is_hovered_rect(toggle) {
-        macroquad_toolkit::ui::draw_tooltip(
+        crate::ui::draw_tooltip(
             if *open {
                 "Collapse the drawer to give the dungeon board more room."
             } else {
@@ -196,7 +196,7 @@ fn draw_tab_rail(
                     "Review adventurer records, rival bounties, and dungeon reputation."
                 }
             };
-            macroquad_toolkit::ui::draw_tooltip(help, vec2(tab_rect.x + tab_rect.w, tab_rect.y));
+            crate::ui::draw_tooltip(help, vec2(tab_rect.x + tab_rect.w, tab_rect.y));
         }
         y += 66.0;
     }

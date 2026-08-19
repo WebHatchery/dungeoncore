@@ -1,3 +1,44 @@
+use macroquad::prelude::Vec2;
+use std::cell::RefCell;
+
+struct PendingTooltip {
+    text: String,
+    anchor: Vec2,
+}
+
+thread_local! {
+    static PENDING_TOOLTIP: RefCell<Option<PendingTooltip>> = const { RefCell::new(None) };
+}
+
+/// Queue the current hover hint for the final UI layer.
+///
+/// Tooltips are requested while panels are being composed, but drawing them
+/// immediately lets later panels cover them. Replacing the pending hint keeps
+/// the most specific, last-drawn control under the pointer.
+pub fn draw_tooltip(text: &str, anchor: Vec2) {
+    PENDING_TOOLTIP.with(|pending| {
+        *pending.borrow_mut() = Some(PendingTooltip {
+            text: text.to_string(),
+            anchor,
+        });
+    });
+}
+
+/// Draw and clear the one tooltip collected during the current frame.
+pub fn draw_tooltips() {
+    let tooltip = PENDING_TOOLTIP.with(|pending| pending.borrow_mut().take());
+    if let Some(tooltip) = tooltip {
+        macroquad_toolkit::ui::draw_tooltip(&tooltip.text, tooltip.anchor);
+    }
+}
+
+/// Clear a tooltip left by a frame that ended before its normal final pass.
+pub fn clear_tooltips() {
+    PENDING_TOOLTIP.with(|pending| {
+        pending.borrow_mut().take();
+    });
+}
+
 pub mod confirmation;
 pub mod core_spell_button;
 pub mod core_tree;

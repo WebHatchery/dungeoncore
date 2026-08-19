@@ -45,7 +45,7 @@ pub(super) fn draw_evolution_tab(state: &GameState, rect: Rect) -> DrawerAction 
     );
     let xp_rect = Rect::new(rect.x + 6.0, rect.y + 19.0, rect.w - 92.0, 18.0);
     if is_hovered_rect(xp_rect) {
-        macroquad_toolkit::ui::draw_tooltip(
+        crate::ui::draw_tooltip(
             "XP is pooled across every defender of this line. Field the listed floor to unlock its next variant.",
             vec2(xp_rect.x, xp_rect.y + xp_rect.h + 4.0),
         );

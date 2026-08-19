@@ -200,7 +200,7 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
         } else {
             String::new()
         };
-        macroquad_toolkit::ui::draw_tooltip(
+        crate::ui::draw_tooltip(
             &format!(
                 "{}\nCost: {} mana{} · Tier {}\n{}\n{}",
                 template.name, template.base_cost, souls, template.tier, traits, availability,

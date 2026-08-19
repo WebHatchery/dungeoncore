@@ -158,7 +158,7 @@ fn draw_selected_monster(
             },
         );
         if is_hovered_rect(stats_rect) {
-            macroquad_toolkit::ui::draw_tooltip(
+            crate::ui::draw_tooltip(
                 "HP = health. ATK = damage before defense. DEF reduces incoming damage. Cost is mana to summon.",
                 vec2(stats_rect.x, stats_rect.y + stats_rect.h + 4.0),
             );
