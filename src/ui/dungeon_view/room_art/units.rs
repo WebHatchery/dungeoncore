@@ -32,7 +32,7 @@ pub(super) fn draw_room_units(
 
         let zone_w = strip.w * 0.60;
         let max_icons = ((zone_w / step).floor() as usize).max(1);
-        let mut x = strip.x + radius + 1.0;
+        let mut x = strip.x + strip.w - radius - 1.0;
         let mut drawn = 0;
         for monster in &ordered {
             if drawn >= max_icons {
@@ -61,7 +61,7 @@ pub(super) fn draw_room_units(
                     vec2(x, cy + bob),
                     UNIT_SPRITE_SIZE,
                     phase,
-                    false,
+                    true,
                     fighting,
                 );
             if !drawn_sprite {
@@ -75,13 +75,13 @@ pub(super) fn draw_room_units(
             if monster.alive && (fighting || monster.hp < monster.max_hp) {
                 draw_unit_hp_bar(vec2(x, cy), radius, monster.hp, monster.max_hp);
             }
-            x += step;
+            x -= step;
             drawn += 1;
         }
         if ordered.len() > drawn {
-            draw_text_fit(
+            draw_text_fit_right(
                 &format!("+{}", ordered.len() - drawn),
-                x - 2.0,
+                x + radius,
                 cy + 4.0,
                 28.0,
                 11.0,
@@ -94,7 +94,7 @@ pub(super) fn draw_room_units(
         let zone_w = strip.w * 0.36;
         let max_icons = ((zone_w / step).floor() as usize).max(1);
         let shown = adventurers.len().min(max_icons);
-        let mut x = strip.x + strip.w - radius - 1.0;
+        let mut x = strip.x + radius + 1.0;
         for adventurer in adventurers.iter().take(shown) {
             let initial = adventurer
                 .class_name
@@ -110,7 +110,7 @@ pub(super) fn draw_room_units(
                 vec2(x, cy + bob),
                 UNIT_SPRITE_SIZE,
                 phase,
-                true,
+                false,
                 false,
                 fighting,
             );
@@ -134,12 +134,12 @@ pub(super) fn draw_room_units(
             if fighting || adventurer.hp < adventurer.max_hp {
                 draw_unit_hp_bar(vec2(x, cy), radius, adventurer.hp, adventurer.max_hp);
             }
-            x -= step;
+            x += step;
         }
         if adventurers.len() > shown {
-            draw_text_fit_right(
+            draw_text_fit(
                 &format!("+{}", adventurers.len() - shown),
-                x + radius,
+                x - 2.0,
                 cy + 4.0,
                 28.0,
                 11.0,

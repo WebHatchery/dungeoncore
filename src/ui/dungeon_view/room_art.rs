@@ -167,7 +167,8 @@ pub(super) fn draw_room_tile(
     );
     draw_room_label_plate(label_rect, title, room, icon_color);
 
-    // Per-unit icons: defenders on the left, adventurers on the right.
+    // Per-unit icons: adventurers hold the left flank; defenders face them
+    // from the right, so both sides read toward the room's center.
     let strip = Rect::new(
         draw_rect.x + 12.0,
         draw_rect.y + draw_rect.h - 58.0,
