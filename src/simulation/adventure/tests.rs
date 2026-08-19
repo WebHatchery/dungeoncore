@@ -8,6 +8,7 @@ fn expedition_member(id: u64, level: i32) -> Adventurer {
         "Human",
         HeroDrive::Duty,
         50,
+        HeroWard::default(),
         level,
         1.0,
     )
@@ -28,6 +29,7 @@ fn veteran_record(id: u64, level: i32, delves: i32) -> HeroRecord {
         gold_stolen: 0,
         escapes: delves.saturating_sub(1),
         deepest_floor: 2,
+        insights: Vec::new(),
         status: HeroStatus::Inside,
         death_floor: 0,
         death_day: 0,
@@ -135,6 +137,7 @@ fn survival_hardens_confident_heroes_but_grievous_wounds_shake_them() {
     assert_eq!(wounded.resolve, 42);
     assert!(healthy.escapes > 0);
     assert_eq!(healthy.deepest_floor, 3);
+    assert_eq!(healthy.prepared_ward().label(), "Nature I");
 }
 
 #[test]
@@ -142,4 +145,6 @@ fn discovery_heroes_learn_more_from_the_same_escape() {
     let duty = settle_survivor(80, HeroDrive::Duty);
     let discovery = settle_survivor(80, HeroDrive::Discovery);
     assert!(discovery.experience > duty.experience);
+    assert_eq!(duty.prepared_ward().label(), "Nature I");
+    assert_eq!(discovery.prepared_ward().label(), "Nature II");
 }

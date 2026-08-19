@@ -11,6 +11,7 @@ fn adventurer(id: u64, level: i32, alive: bool) -> Adventurer {
         race: "Human".to_string(),
         drive: crate::game_state::HeroDrive::Duty,
         resolve: 50,
+        ward: Default::default(),
         level,
         hp: if alive { 30 } else { 0 },
         max_hp: 30,

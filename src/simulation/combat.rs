@@ -126,7 +126,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectAnchor::Invaders,
         );
     }
-    let adv_attacks: Vec<(u64, f32, String)> = if snared {
+    let adv_attacks: Vec<(u64, f32, String, crate::game_state::HeroWard)> = if snared {
         Vec::new()
     } else {
         state.adventurer_parties[party_idx]
@@ -139,7 +139,12 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                     * adventurer_room_attack_mult
                     * state.floors[floor_idx].rooms[room_idx]
                         .elemental_adventurer_attack_multiplier(&element);
-                (a.id, a.scaled_stats.attack as f32 * attack_mult, element)
+                (
+                    a.id,
+                    a.scaled_stats.attack as f32 * attack_mult,
+                    element,
+                    a.ward.clone(),
+                )
             })
             .collect()
     };
@@ -153,7 +158,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     let mut damage_to_monsters = 0;
     {
         let room = &mut state.floors[floor_idx].rooms[room_idx];
-        for (attacker_id, attack, adv_element) in &adv_attacks {
+        for (attacker_id, attack, adv_element, ward) in &adv_attacks {
             // Taunting monsters soak hits before the rest of the room.
             let Some(target_idx) = target_monster_idx(&room.monsters) else {
                 break;
@@ -170,14 +175,15 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             } else if elem_mult < 1.0 {
                 party_hit_weak = true;
             }
-            let damage = ((*attack - effective_def / 2.0).max(1.0)
+            let damage = (((*attack - effective_def / 2.0).max(1.0)
                 * taken_mult
                 * defender_damage_taken_mult
                 * adventurer_damage_to_monsters_mult
                 * stratum.guard_multiplier_for(&mon_element)
                 * elem_mult)
-                .round()
-                .max(1.0) as i32;
+                * ward.attack_multiplier_against(&mon_element))
+            .round()
+            .max(1.0) as i32;
             monster.hp -= damage;
             damage_to_monsters += damage;
             if monster.hp <= 0 {
@@ -203,7 +209,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     if damage_to_monsters > 0 {
         let impact_element = adv_attacks
             .first()
-            .map(|(_, _, element)| element.as_str())
+            .map(|(_, _, element, _)| element.as_str())
             .unwrap_or_default();
         state.push_effect_at(
             floor_num,
@@ -299,6 +305,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
     let mut adventurer_kills: Vec<(String, i32)> = Vec::new();
     let mut damage_to_party = 0;
     let mut monster_hit_strong = false;
+    let mut hero_ward_triggered = false;
     let mut lifesteal_heals: Vec<(u64, i32)> = Vec::new();
     let mut leeched_mana = 0;
     {
@@ -325,12 +332,15 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             } else {
                 1.0
             };
+            let ward_mult = victim.ward.damage_multiplier_from(&strike.element);
+            hero_ward_triggered |= ward_mult < 1.0;
             let damage = ((strike.attack as f32 - victim_def).max(1.0)
                 * elem_mult
                 * vuln
-                * adventurer_damage_taken_mult(victim))
-            .round()
-            .max(1.0) as i32;
+                * adventurer_damage_taken_mult(victim)
+                * ward_mult)
+                .round()
+                .max(1.0) as i32;
             victim.hp -= damage;
             damage_to_party += damage;
             if strike.lifesteal > 0.0 {
@@ -400,6 +410,15 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
         );
         if let Some(element) = ElementSound::from_id(impact_element) {
             state.queue_sound(SoundEvent::ElementalHit(element));
+        }
+        if hero_ward_triggered {
+            state.push_effect_at(
+                floor_num,
+                room_pos,
+                "Ward!",
+                EffectKind::Ability,
+                EffectAnchor::Invaders,
+            );
         }
     }
 

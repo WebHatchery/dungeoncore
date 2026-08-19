@@ -43,6 +43,7 @@ fn every_milestone_condition_is_wired() {
             gold_stolen: 0,
             escapes: 0,
             deepest_floor: 0,
+            insights: Vec::new(),
             status: crate::game_state::HeroStatus::Alive,
             death_floor: 0,
             death_day: 0,

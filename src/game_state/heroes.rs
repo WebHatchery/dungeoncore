@@ -110,6 +110,10 @@ pub struct Adventurer {
     /// Persistent confidence copied from the hero ledger for this delve.
     #[serde(default = "default_resolve")]
     pub resolve: i32,
+    /// Best preparation carried from earlier escapes. Fresh and legacy heroes
+    /// have no ward; veterans equip the strongest stratum insight they know.
+    #[serde(default)]
+    pub ward: HeroWard,
     pub level: i32,
     pub hp: i32,
     pub max_hp: i32,
@@ -147,6 +151,58 @@ pub struct HeroEvent {
     pub text: String,
 }
 
+/// Persistent familiarity with one dungeon stratum. Mastery rises only when a
+/// hero escapes that band alive, so every ward visible to the player is a
+/// consequence of an earlier raid rather than a random modifier.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HeroInsight {
+    pub stratum_id: String,
+    pub mastery: u8,
+}
+
+/// The single countermeasure a veteran brings into the current delve.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HeroWard {
+    pub stratum_name: String,
+    pub element: String,
+    pub mastery: u8,
+}
+
+impl HeroWard {
+    pub fn label(&self) -> String {
+        if self.mastery == 0 || self.element.is_empty() {
+            "None".to_string()
+        } else {
+            format!("{} {}", self.element, roman_rank(self.mastery))
+        }
+    }
+
+    pub fn attack_multiplier_against(&self, element: &str) -> f32 {
+        if self.mastery > 0 && self.element == element {
+            1.0 + self.mastery.min(3) as f32 * 0.04
+        } else {
+            1.0
+        }
+    }
+
+    pub fn damage_multiplier_from(&self, element: &str) -> f32 {
+        if self.mastery > 0 && self.element == element {
+            1.0 - self.mastery.min(3) as f32 * 0.08
+        } else {
+            1.0
+        }
+    }
+}
+
+fn roman_rank(rank: u8) -> &'static str {
+    match rank.min(3) {
+        1 => "I",
+        2 => "II",
+        3 => "III",
+        _ => "",
+    }
+}
+
 /// Persistent ledger entry for an adventurer who has entered the dungeon.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HeroRecord {
@@ -176,6 +232,10 @@ pub struct HeroRecord {
     /// returned from it. Old saves begin at the surface.
     #[serde(default)]
     pub deepest_floor: i32,
+    /// Strata this hero has escaped and learned to counter. There are only a
+    /// handful of authored bands, keeping this collection naturally bounded.
+    #[serde(default)]
+    pub insights: Vec<HeroInsight>,
     pub status: HeroStatus,
     /// Floor and day of death (only meaningful when status is Dead).
     #[serde(default)]
@@ -211,6 +271,76 @@ impl HeroRecord {
     /// notoriety they had built raiding the dungeon.
     pub fn bounty(&self) -> (i32, i32) {
         (1 + self.delves / 2, 40 + self.kills * 10)
+    }
+
+    /// Strongest known countermeasure, with a later-learned insight winning a
+    /// tie. This makes the prepared ward deterministic and visible in saves.
+    pub fn prepared_ward(&self) -> HeroWard {
+        self.insights
+            .iter()
+            .enumerate()
+            .filter_map(|(index, insight)| {
+                let stratum = crate::data::strata::get_stratum(&insight.stratum_id)?;
+                Some((index, insight, stratum))
+            })
+            .max_by_key(|(index, insight, _)| (insight.mastery, *index))
+            .map(|(_, insight, stratum)| HeroWard {
+                stratum_name: stratum.name.clone(),
+                element: stratum.element.clone(),
+                mastery: insight.mastery.min(3),
+            })
+            .unwrap_or_default()
+    }
+
+    /// Learn from an escape. Returns the newly strengthened ward so settlement
+    /// can write one concise journal line; capped mastery prevents runaway
+    /// veteran scaling during very long campaigns.
+    pub fn learn_stratum(&mut self, floor: i32, lessons: u8) -> Option<HeroWard> {
+        let stratum = crate::data::strata::stratum_for_floor(floor);
+        let existing = self
+            .insights
+            .iter_mut()
+            .find(|insight| insight.stratum_id == stratum.id);
+        let mastery = match existing {
+            Some(insight) => {
+                let before = insight.mastery;
+                insight.mastery = insight.mastery.saturating_add(lessons).min(3);
+                if insight.mastery == before {
+                    return None;
+                }
+                insight.mastery
+            }
+            None => {
+                let mastery = lessons.clamp(1, 3);
+                self.insights.push(HeroInsight {
+                    stratum_id: stratum.id.clone(),
+                    mastery,
+                });
+                mastery
+            }
+        };
+        Some(HeroWard {
+            stratum_name: stratum.name.clone(),
+            element: stratum.element.clone(),
+            mastery,
+        })
+    }
+
+    pub fn insight_summary(&self) -> String {
+        let labels: Vec<String> = self
+            .insights
+            .iter()
+            .filter_map(|insight| {
+                crate::data::strata::get_stratum(&insight.stratum_id).map(|stratum| {
+                    format!("{} {}", stratum.short_label(), roman_rank(insight.mastery))
+                })
+            })
+            .collect();
+        if labels.is_empty() {
+            "None".to_string()
+        } else {
+            labels.join(" · ")
+        }
     }
 }
 

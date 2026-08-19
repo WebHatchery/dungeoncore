@@ -60,6 +60,7 @@ fn party_with_drive(drive: HeroDrive) -> AdventurerParty {
         race: "Human".to_string(),
         drive,
         resolve: 50,
+        ward: Default::default(),
         level: 2,
         hp: 100,
         max_hp: 100,

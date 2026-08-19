@@ -15,6 +15,7 @@ fn hero(id: u64, delves: i32, kills: i32) -> HeroRecord {
         gold_stolen: 0,
         escapes: 0,
         deepest_floor: 0,
+        insights: Vec::new(),
         status: HeroStatus::Inside,
         death_floor: 0,
         death_day: 0,
@@ -166,8 +167,56 @@ fn legacy_heroes_gain_safe_drive_and_resolve_defaults() {
     let object = value.as_object_mut().unwrap();
     object.remove("drive");
     object.remove("resolve");
+    object.remove("insights");
 
     let restored: HeroRecord = serde_json::from_value(value).unwrap();
     assert_eq!(restored.drive, HeroDrive::Duty);
     assert_eq!(restored.resolve, 50);
+    assert!(restored.insights.is_empty());
+}
+
+#[test]
+fn escaped_strata_build_bounded_deterministic_hero_wards() {
+    let mut record = hero(11, 4, 2);
+    assert_eq!(record.learn_stratum(5, 1).unwrap().label(), "Fire I");
+    assert_eq!(record.learn_stratum(5, 2).unwrap().label(), "Fire III");
+    assert!(record.learn_stratum(5, 1).is_none(), "mastery caps at III");
+    assert_eq!(record.learn_stratum(9, 3).unwrap().label(), "Water III");
+
+    let prepared = record.prepared_ward();
+    assert_eq!(prepared.label(), "Water III", "later tie wins");
+    assert_eq!(prepared.attack_multiplier_against("Water"), 1.12);
+    assert_eq!(prepared.damage_multiplier_from("Water"), 0.76);
+    assert_eq!(prepared.damage_multiplier_from("Fire"), 1.0);
+}
+
+#[test]
+fn legacy_live_adventurers_return_without_an_invented_ward() {
+    let adventurer = Adventurer {
+        id: 7,
+        name: "Mara".to_string(),
+        class_name: "Warrior".to_string(),
+        race: "Human".to_string(),
+        drive: HeroDrive::Duty,
+        resolve: 50,
+        ward: HeroWard::default(),
+        level: 2,
+        hp: 40,
+        max_hp: 40,
+        alive: true,
+        experience: 0,
+        gold: 0,
+        equipment: Equipment::default(),
+        conditions: Vec::new(),
+        scaled_stats: Stats {
+            hp: 40,
+            attack: 8,
+            defense: 3,
+        },
+    };
+    let mut value = serde_json::to_value(adventurer).unwrap();
+    value.as_object_mut().unwrap().remove("ward");
+
+    let restored: Adventurer = serde_json::from_value(value).unwrap();
+    assert_eq!(restored.ward, HeroWard::default());
 }

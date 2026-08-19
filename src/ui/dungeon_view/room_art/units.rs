@@ -118,8 +118,20 @@ pub(super) fn draw_room_units(
             if !drawn_sprite {
                 draw_icon_disc(vec2(x, cy), radius, WARNING, &initial);
             }
+            if adventurer.ward.mastery > 0 {
+                let ward_color = element_color(&adventurer.ward.element);
+                draw_circle_lines(x, cy, radius + 2.5, 1.4, with_alpha(ward_color, 0.84));
+                if adventurer.ward.mastery >= 2 {
+                    draw_circle_lines(x, cy, radius + 5.0, 1.0, with_alpha(ward_color, 0.50));
+                }
+            }
             if is_rival {
-                draw_circle_lines(x, cy, radius + 2.5, 1.6, TREASURE);
+                let rival_radius = if adventurer.ward.mastery > 0 {
+                    radius + 7.5
+                } else {
+                    radius + 2.5
+                };
+                draw_circle_lines(x, cy, rival_radius, 1.6, TREASURE);
             }
             if fighting || adventurer.hp < adventurer.max_hp {
                 draw_unit_hp_bar(vec2(x, cy), radius, adventurer.hp, adventurer.max_hp);

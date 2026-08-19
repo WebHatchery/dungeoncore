@@ -16,6 +16,12 @@ pub(super) enum HeroesTabAction {
     Close,
 }
 
+fn hero_page_offset(current: usize, total: usize, visible: usize, delta: isize) -> usize {
+    current
+        .saturating_add_signed(delta)
+        .min(total.saturating_sub(visible))
+}
+
 pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -> HeroesTabAction {
     // A hero's own page takes over the tab while one is open.
     if let Some(hero) = state
@@ -119,7 +125,10 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
     let list_top = rect.y + 116.0;
     let list_h = (rect.y + rect.h - list_top).max(0.0);
     let row_h = 44.0;
-    let visible = (list_h / row_h) as usize;
+    let raw_visible = (list_h / row_h) as usize;
+    let needs_pager = order.len() > raw_visible;
+    let pager_h = if needs_pager { 32.0 } else { 0.0 };
+    let visible = ((list_h - pager_h).max(row_h) / row_h) as usize;
     let max_scroll = order.len().saturating_sub(visible) as f32;
     if rect.contains(vec2(mouse_position().0, mouse_position().1)) {
         let (_, wheel_y) = mouse_wheel();
@@ -197,6 +206,24 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
     }
 
     if order.len() > visible {
+        let y = rect.y + rect.h - 27.0;
+        let button_w = 66.0;
+        if draw_command_button(
+            Rect::new(rect.x, y, button_w, 25.0),
+            "Prev",
+            ButtonTone::Ghost,
+            first > 0,
+        ) {
+            *scroll = hero_page_offset(first, order.len(), visible, -1) as f32;
+        }
+        if draw_command_button(
+            Rect::new(rect.x + rect.w - button_w, y, button_w, 25.0),
+            "Next",
+            ButtonTone::Ghost,
+            first + visible < order.len(),
+        ) {
+            *scroll = hero_page_offset(first, order.len(), visible, 1) as f32;
+        }
         draw_text_fit_right(
             &format!(
                 "{}-{} of {}",
@@ -204,9 +231,9 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
                 (first + visible).min(order.len()),
                 order.len()
             ),
-            rect.x + rect.w,
-            rect.y + rect.h - 2.0,
-            rect.w,
+            rect.x + rect.w - button_w - 8.0,
+            y + 17.0,
+            rect.w - button_w * 2.0 - 16.0,
             9.0,
             TEXT_DIM,
         );
@@ -214,6 +241,9 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
 
     action
 }
+
+#[cfg(test)]
+mod tests;
 
 /// One hero's page: who they are, what they have taken from the dungeon, and
 /// their own history in it. The ledger, not a live tracker — a hero inside the
@@ -305,6 +335,11 @@ fn draw_hero_journal(hero: &HeroRecord, rect: Rect) -> HeroesTabAction {
         ("Escapes", hero.escapes.to_string(), EMERALD),
         ("Deepest floor", hero.deepest_floor.to_string(), SOUL),
         ("Resolve", format!("{} / 100", hero.resolve), WARNING),
+        (
+            "Prepared ward",
+            hero.prepared_ward().label(),
+            element_color(&hero.prepared_ward().element),
+        ),
         ("Defenders slain", hero.kills.to_string(), DANGER),
         ("Gold carried off", hero.gold_stolen.to_string(), TREASURE),
     ];
@@ -312,6 +347,26 @@ fn draw_hero_journal(hero: &HeroRecord, rect: Rect) -> HeroesTabAction {
         draw_text_fit(label, rect.x, y, rect.w * 0.62, 11.0, TEXT_MUTED);
         draw_text_fit_right(&value, rect.x + rect.w, y, rect.w * 0.34, 12.0, color);
         y += 18.0;
+    }
+
+    if !hero.insights.is_empty() {
+        draw_text_fit(
+            &format!("Known strata: {}", hero.insight_summary()),
+            rect.x,
+            y + 2.0,
+            rect.w,
+            10.0,
+            SOUL,
+        );
+        draw_text_fit(
+            "Ward rank grants +4% attack and -8% damage per rank vs its element.",
+            rect.x,
+            y + 16.0,
+            rect.w,
+            9.0,
+            TEXT_MUTED,
+        );
+        y += 30.0;
     }
     if hero.status == HeroStatus::Dead {
         draw_text_fit(

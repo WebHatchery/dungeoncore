@@ -11,7 +11,8 @@ mod rooms;
 pub use effects::{EffectAnchor, EffectKind, ElementSound, RoomEffect, SoundEvent};
 pub use floor::Floor;
 pub use heroes::{
-    Adventurer, AdventurerParty, Condition, Equipment, HeroDrive, HeroRecord, HeroStatus,
+    Adventurer, AdventurerParty, Condition, Equipment, HeroDrive, HeroInsight, HeroRecord,
+    HeroStatus, HeroWard,
 };
 pub use reputation::{ReputationBand, VisitorQuality, REPUTATION_MAX, REPUTATION_MIN};
 pub use rooms::{Room, RoomBattleOrder, RoomType, RoomUpgrade, RoomUpgradeType};

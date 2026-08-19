@@ -41,6 +41,10 @@ pub fn get_all_strata() -> &'static [StratumData] {
     &data().strata
 }
 
+pub fn get_stratum(id: &str) -> Option<&'static StratumData> {
+    data().strata.iter().find(|stratum| stratum.id == id)
+}
+
 pub fn stratum_for_floor(floor: i32) -> &'static StratumData {
     let floor = floor.max(1);
     data()

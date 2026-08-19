@@ -1,5 +1,5 @@
 use super::*;
-use crate::game_state::{Adventurer, AdventurerParty, Monster, Room, RoomType, Stats};
+use crate::game_state::{Adventurer, AdventurerParty, HeroWard, Monster, Room, RoomType, Stats};
 
 fn sturdy_monster() -> Monster {
     Monster {
@@ -29,6 +29,7 @@ fn lone_invader(hp: i32) -> AdventurerParty {
             race: "Human".to_string(),
             drive: crate::game_state::HeroDrive::Duty,
             resolve: 50,
+            ward: Default::default(),
             level: 3,
             hp,
             max_hp: hp,
@@ -76,6 +77,47 @@ fn damage_taken(snared: bool) -> i32 {
     before - s.adventurer_parties[0].members[0].hp
 }
 
+fn nature_damage_taken_with_ward(element: &str, mastery: u8) -> i32 {
+    let mut state = GameState::new();
+    let mut monster = sturdy_monster();
+    monster.type_name = "Green Slime".to_string();
+    let mut room = Room::new(99, RoomType::Normal, 2, 1);
+    room.monsters.push(monster);
+    state.floors[0].rooms.push(room);
+    let room_idx = state.floors[0].rooms.len() - 1;
+    let mut party = lone_invader(300);
+    party.members[0].ward = HeroWard {
+        stratum_name: "Test".to_string(),
+        element: element.to_string(),
+        mastery,
+    };
+    state.adventurer_parties.push(party);
+    let before = state.adventurer_parties[0].members[0].hp;
+    resolve_combat(&mut state, 0, 0, room_idx);
+    before - state.adventurer_parties[0].members[0].hp
+}
+
+fn nature_damage_dealt_with_ward(element: &str, mastery: u8) -> i32 {
+    let mut state = GameState::new();
+    let mut monster = sturdy_monster();
+    monster.type_name = "Green Slime".to_string();
+    let mut room = Room::new(99, RoomType::Normal, 2, 1);
+    room.monsters.push(monster);
+    state.floors[0].rooms.push(room);
+    let room_idx = state.floors[0].rooms.len() - 1;
+    let mut party = lone_invader(300);
+    party.members[0].scaled_stats.attack = 20;
+    party.members[0].ward = HeroWard {
+        stratum_name: "Test".to_string(),
+        element: element.to_string(),
+        mastery,
+    };
+    state.adventurer_parties.push(party);
+    let before = state.floors[0].rooms[room_idx].monsters[0].hp;
+    resolve_combat(&mut state, 0, 0, room_idx);
+    before - state.floors[0].rooms[room_idx].monsters[0].hp
+}
+
 fn damage_to_room_monster(upgrade_name: Option<&str>) -> i32 {
     let mut state = GameState::new();
     let mut room = Room::new(99, RoomType::Normal, 2, 1);
@@ -104,6 +146,23 @@ fn snared_party_takes_amplified_damage() {
         held > free,
         "a held party takes more ({held}) than a free one ({free})"
     );
+}
+
+#[test]
+fn veteran_ward_reduces_only_the_element_it_has_learned() {
+    let unprepared = nature_damage_taken_with_ward("", 0);
+    let wrong = nature_damage_taken_with_ward("Fire", 3);
+    let prepared = nature_damage_taken_with_ward("Nature", 3);
+
+    assert_eq!(wrong, unprepared);
+    assert!(prepared < unprepared);
+}
+
+#[test]
+fn veteran_ward_improves_counterattacks_against_its_learned_element() {
+    let wrong = nature_damage_dealt_with_ward("Fire", 3);
+    let prepared = nature_damage_dealt_with_ward("Nature", 3);
+    assert!(prepared > wrong);
 }
 
 #[test]

@@ -7,7 +7,7 @@ use crate::data::adventurers::{
 use crate::data::constants::{ADVENTURER_SPAWN_CHANCE, MAX_PARTY_SIZE, MIN_PARTY_SIZE};
 use crate::game_state::{
     Adventurer, AdventurerParty, DungeonStatus, GameState, HeroDrive, HeroRecord, HeroStatus,
-    LogEntry, Stats, PARTY_MOVE_SECONDS,
+    HeroWard, LogEntry, Stats, PARTY_MOVE_SECONDS,
 };
 
 /// Build a combat-ready adventurer from a class, level, and identity. `stat_mult`
@@ -19,6 +19,7 @@ fn build_adventurer(
     race: &str,
     drive: HeroDrive,
     resolve: i32,
+    ward: HeroWard,
     level: i32,
     stat_mult: f32,
 ) -> Adventurer {
@@ -46,6 +47,7 @@ fn build_adventurer(
         race: race.to_string(),
         drive,
         resolve,
+        ward,
         level,
         hp,
         max_hp: hp,
@@ -170,16 +172,17 @@ pub fn spawn_party(state: &mut GameState) {
                 record.delves += 1;
                 let delve = record.delves;
                 record.remember(day, format!("Returned for delve {delve}"));
-                let (name, class, race, drive, resolve, level) = (
+                let (name, class, race, drive, resolve, ward, level) = (
                     record.name.clone(),
                     record.class_name.clone(),
                     record.race.clone(),
                     record.drive,
                     record.resolve,
+                    record.prepared_ward(),
                     record.level,
                 );
                 members.push(build_adventurer(
-                    hero_id, name, &class, &race, drive, resolve, level, stat_mult,
+                    hero_id, name, &class, &race, drive, resolve, ward, level, stat_mult,
                 ));
                 continue;
             }
@@ -211,6 +214,7 @@ pub fn spawn_party(state: &mut GameState) {
             gold_stolen: 0,
             escapes: 0,
             deepest_floor: 0,
+            insights: Vec::new(),
             status: HeroStatus::Inside,
             death_floor: 0,
             death_day: 0,
@@ -230,6 +234,7 @@ pub fn spawn_party(state: &mut GameState) {
             &race,
             drive,
             resolve,
+            HeroWard::default(),
             level,
             stat_mult,
         ));
@@ -563,6 +568,21 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
                 record.status = HeroStatus::Alive;
                 record.escapes += 1;
                 record.deepest_floor = record.deepest_floor.max(party_floor);
+                let lessons = if record.drive == HeroDrive::Discovery {
+                    2
+                } else {
+                    1
+                };
+                if let Some(ward) = record.learn_stratum(party_floor, lessons) {
+                    record.remember(
+                        day,
+                        format!(
+                            "Prepared {} ward from the {}",
+                            ward.label(),
+                            ward.stratum_name
+                        ),
+                    );
+                }
                 // Deep expeditions are the main route to veteran growth. A
                 // hero who repeatedly skims floor 1 improves much more slowly
                 // than one who survives the lower strata.

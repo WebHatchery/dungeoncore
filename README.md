@@ -23,6 +23,6 @@ Protect the dungeon core while expanding into a stronger and more dangerous lair
 
 ## Current Scope
 
-Playable dungeon-building and wave-defense loop with rooms, monsters, adventurer parties, resources, unlocks, and upgrades. Stat-driven combat with an elemental matchup matrix, 56 monsters across 8 complete tier-I-to-IV species lines, three-rank defender fusion, behaviour-typed traps, touch-selectable room battle orders and deep-room defender paging, persistent heroes with drives and resolve, five elemental dungeon strata, and a threat → siege → prestige endgame are all in; balance data lives in `assets/*.json`.
+Playable dungeon-building and wave-defense loop with rooms, monsters, adventurer parties, resources, unlocks, and upgrades. Stat-driven combat with an elemental matchup matrix, 56 monsters across 8 complete tier-I-to-IV species lines, three-rank defender fusion, behaviour-typed traps, touch-selectable room battle orders and deep-room defender paging, persistent heroes with drives, resolve, rival histories, and learned stratum wards, five elemental dungeon strata, and a threat → siege → prestige endgame are all in; balance data lives in `assets/*.json`.
 
 Remaining work is tracked in `TODO.md`.

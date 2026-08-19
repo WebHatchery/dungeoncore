@@ -121,6 +121,7 @@ pub(super) fn seed(state: &mut crate::game_state::GameState) {
         race: "Elf".to_string(),
         drive: crate::game_state::HeroDrive::Discovery,
         resolve: 60,
+        ward: Default::default(),
         level: 3,
         hp: 26,
         max_hp: 40,
