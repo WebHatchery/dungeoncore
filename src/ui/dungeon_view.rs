@@ -44,6 +44,15 @@ const BASE_SLAB_H: f32 = 14.0;
 const BASE_SHAFT_W: f32 = 54.0;
 const WORLD_MARGIN: f32 = 18.0;
 const BOARD_HEADER_H: f32 = 60.0;
+const COMPACT_BOARD_HEADER_H: f32 = 100.0;
+
+fn board_header_height(rect: Rect) -> f32 {
+    if rect.w < 760.0 {
+        COMPACT_BOARD_HEADER_H
+    } else {
+        BOARD_HEADER_H
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DungeonAction {
@@ -128,13 +137,14 @@ pub fn draw_dungeon_board(
     sprites: &DungeonSprites,
 ) -> DungeonAction {
     let mut action = DungeonAction::None;
+    let header_h = board_header_height(rect);
     draw_rectangle(rect.x, rect.y, rect.w, rect.h, BG_DEEP);
-    draw_rectangle(rect.x, rect.y, rect.w, BOARD_HEADER_H, PANEL);
+    draw_rectangle(rect.x, rect.y, rect.w, header_h, PANEL);
     draw_line(
         rect.x,
-        rect.y + BOARD_HEADER_H,
+        rect.y + header_h,
         rect.x + rect.w,
-        rect.y + BOARD_HEADER_H,
+        rect.y + header_h,
         1.0,
         with_alpha(TREASURE, 0.22),
     );
@@ -148,17 +158,19 @@ pub fn draw_dungeon_board(
         TEXT_MUTED,
     );
 
-    if let Some(monster) = &state.selected_monster {
-        draw_placement_badge(state, monster, rect);
+    if rect.w >= 760.0 {
+        if let Some(monster) = &state.selected_monster {
+            draw_placement_badge(state, monster, rect);
+        }
     }
     draw_route_choice(state, rect);
     draw_zoom_controls(state, rect);
 
     let content = Rect::new(
         rect.x + 2.0,
-        rect.y + BOARD_HEADER_H + 1.0,
+        rect.y + header_h + 1.0,
         rect.w - 4.0,
-        rect.h - BOARD_HEADER_H - 3.0,
+        rect.h - header_h - 3.0,
     );
     draw_board_surface(content);
 

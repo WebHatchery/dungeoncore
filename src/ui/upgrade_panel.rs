@@ -328,13 +328,16 @@ fn draw_upgrade_choices(
     action: &mut UpgradeAction,
 ) {
     let max_h = bounds.y + bounds.h - y;
-    if max_h < 56.0 {
+    if max_h < 78.0 {
         return;
     }
 
     draw_section_rule(bounds.x, y + 18.0, bounds.w, "ACTIONS");
     let mut row_y = y + 36.0;
 
+    if row_y + 32.0 > bounds.y + bounds.h {
+        return;
+    }
     if draw_command_button(
         Rect::new(bounds.x, row_y, bounds.w, 32.0),
         "Add defender",
@@ -357,6 +360,9 @@ fn draw_upgrade_choices(
     } else {
         format!("Add upgrade ({remaining})")
     };
+    if row_y + 32.0 > bounds.y + bounds.h {
+        return;
+    }
     if draw_command_button(
         Rect::new(bounds.x, row_y, bounds.w, 32.0),
         &label,

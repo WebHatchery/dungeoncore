@@ -99,6 +99,44 @@ async fn main() {
     // no simulation drift, and the player's save file is left untouched.
     if let Some(configs) = capture::CaptureConfig::all_from_env(CAPTURE_PREFIX) {
         for config in configs {
+            if matches!(
+                config.scene.as_str(),
+                "title" | "new_game" | "settings" | "save_slots" | "overwrite"
+            ) {
+                let mut seed_input = String::new();
+                let settings = macroquad_toolkit::settings::GameSettings::default();
+                let save_states = [
+                    persistence::SlotState::Ready {
+                        day: 18,
+                        difficulty: "Keeper".to_string(),
+                        deepest_floor: 4,
+                        prestige: 2,
+                        dungeon_open: false,
+                    },
+                    persistence::SlotState::Empty,
+                    persistence::SlotState::Corrupt,
+                ];
+                capture::run_capture_once(&config, |_dt| match config.scene.as_str() {
+                    "title" => {
+                        let _ = draw_title_screen(&assets, true, None);
+                    }
+                    "new_game" => {
+                        let _ = draw_new_game_setup(&assets, &mut seed_input, None);
+                    }
+                    "settings" => {
+                        let _ = draw_title_settings_screen(&assets, &settings, None);
+                    }
+                    "save_slots" => {
+                        let _ = draw_save_slots_screen(&assets, &save_states, None);
+                    }
+                    "overwrite" => {
+                        let _ = draw_slot_overwrite_confirmation(&assets, "Slot 1");
+                    }
+                    _ => {}
+                })
+                .await;
+                continue;
+            }
             let mut cap_state = create_new_game(data::difficulty::Difficulty::default(), 1);
             capture_scenes::seed_capture_scene(&mut cap_state, &config.scene);
             // Most scenes show the Monsters tab; a couple open the tab they exist
@@ -113,14 +151,14 @@ async fn main() {
             let mut upgrade_section = UpgradeSection::Traps;
             let mut drawer_open = matches!(
                 config.scene.as_str(),
-                "build" | "variants" | "traps" | "journal"
+                "build" | "variants" | "traps" | "journal" | "placement"
             );
-            let mut event_log_expanded = false;
+            let mut event_log_expanded = config.scene == "log";
             let mut species_scroll = 0.0;
             let mut defender_scroll = 0.0;
             let mut heroes_scroll = 0.0;
-            let mut show_codex = false;
-            let mut show_controls = false;
+            let mut show_codex = config.scene == "codex";
+            let mut show_controls = config.scene == "controls";
             let mut codex_scroll = 0.0;
             // The `coretree` scene boots straight into the core-power tree overlay.
             let mut show_core_tree = config.scene == "coretree";

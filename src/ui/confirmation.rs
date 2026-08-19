@@ -26,10 +26,10 @@ pub fn draw_confirmation_overlay(
         Color::new(0.0, 0.0, 0.0, 0.58),
     );
     let card = Rect::new(
-        (screen_w - 360.0) * 0.5,
-        (screen_h - 170.0) * 0.5,
-        360.0,
-        170.0,
+        (screen_w - 430.0) * 0.5,
+        (screen_h - 210.0) * 0.5,
+        430.0,
+        210.0,
     );
     draw_panel(card, Some("Confirm action"), DANGER);
     let (question, confirm_label) = match action {
@@ -48,7 +48,7 @@ pub fn draw_confirmation_overlay(
         y += 16.0;
     }
     if draw_command_button(
-        Rect::new(card.x + 14.0, card.y + card.h - 42.0, 154.0, 28.0),
+        Rect::new(card.x + 18.0, card.y + card.h - 56.0, 188.0, 40.0),
         "Cancel",
         ButtonTone::Ghost,
         true,
@@ -56,7 +56,7 @@ pub fn draw_confirmation_overlay(
         return ConfirmationChoice::Cancel;
     }
     if draw_command_button(
-        Rect::new(card.x + card.w - 168.0, card.y + card.h - 42.0, 154.0, 28.0),
+        Rect::new(card.x + card.w - 206.0, card.y + card.h - 56.0, 188.0, 40.0),
         confirm_label,
         ButtonTone::Danger,
         true,

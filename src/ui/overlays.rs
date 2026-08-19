@@ -13,8 +13,8 @@ use macroquad_toolkit::colors::with_alpha;
 /// so the player can *see* whether the build worked. Returns true when
 /// dismissed.
 pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
-    let w = 300.0_f32.min(area.w - 24.0);
-    let h = 218.0;
+    let w = 360.0_f32.min(area.w - 24.0);
+    let h = 256.0;
     let x = area.x + (area.w - w) * 0.5;
     let y = area.y + 16.0;
     let card = Rect::new(x, y, w, h);
@@ -103,7 +103,7 @@ pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
             },
         ),
     ];
-    let mut ry = card.y + 96.0;
+    let mut ry = card.y + 100.0;
     for (label, value, color) in &rows {
         draw_text_fit(label, card.x + 16.0, ry, card.w * 0.6, 11.0, TEXT_MUTED);
         draw_text_fit_right(
@@ -114,11 +114,11 @@ pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
             12.0,
             *color,
         );
-        ry += 15.0;
+        ry += 18.0;
     }
 
     draw_command_button(
-        Rect::new(card.x + 14.0, card.y + card.h - 30.0, card.w - 28.0, 22.0),
+        Rect::new(card.x + 14.0, card.y + card.h - 46.0, card.w - 28.0, 36.0),
         "Dismiss",
         ButtonTone::Ghost,
         true,
@@ -165,7 +165,7 @@ pub fn draw_siege_overlay(sw: f32, sh: f32) {
 /// dungeon has discovered. Returns true when the player closes it.
 pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool {
     draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.8));
-    let w = (sw - 120.0).min(940.0);
+    let w = (sw - 80.0).min(1080.0);
     let h = (sh - 80.0).min(620.0);
     let x = (sw - w) / 2.0;
     let y = (sh - h) / 2.0;
@@ -173,7 +173,7 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
     draw_panel(panel, Some("Codex"), ARCANE);
 
     let mut close = false;
-    if draw_close_button(Rect::new(x + w - 40.0, y + 14.0, 30.0, 26.0)) {
+    if draw_close_button(Rect::new(x + w - 48.0, y + 8.0, 40.0, 34.0)) {
         close = true;
     }
     if is_key_pressed(KeyCode::C) || is_key_pressed(KeyCode::Escape) {
@@ -181,21 +181,22 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
     }
 
     // Left column: element effectiveness wheel.
-    let col_gap = 24.0;
-    let left_w = (w * 0.36).clamp(240.0, 340.0);
+    let col_gap = 22.0;
+    let left_w = (w * 0.40).clamp(320.0, 420.0);
     let left = Rect::new(x + 20.0, y + 52.0, left_w, h - 72.0);
     draw_text_fit("ELEMENTS", left.x, left.y + 14.0, left.w, 13.0, SOUL);
     draw_text_fit(
-        "Attacker is strong vs:",
+        "ATTACKER ADVANTAGE",
         left.x,
         left.y + 34.0,
         left.w,
         10.0,
         TEXT_DIM,
     );
-    let mut ey = left.y + 52.0;
+    let mut ey = left.y + 48.0;
     for element in get_all_elements() {
-        if ey + 24.0 > left.y + left.h {
+        let row_h = 47.0;
+        if ey + row_h > left.y + left.h - 12.0 {
             break;
         }
         let targets = if element.strong_against.is_empty() {
@@ -203,23 +204,42 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
         } else {
             element.strong_against.join(", ")
         };
+        let color = element_color(&element.id);
+        let row = Rect::new(left.x, ey, left.w, row_h - 5.0);
+        draw_card(row, with_alpha(color, 0.07), with_alpha(color, 0.28));
+        draw_rectangle(
+            row.x + 1.0,
+            row.y + 1.0,
+            3.0,
+            row.h - 2.0,
+            with_alpha(color, 0.72),
+        );
+        draw_element_badge(vec2(row.x + 22.0, row.y + row.h * 0.5), &element.id);
         draw_text_fit(
-            &format!("{}  {}", element.emoji, element.id),
-            left.x,
-            ey + 12.0,
-            left.w * 0.42,
-            11.0,
+            &element.id,
+            row.x + 42.0,
+            row.y + 18.0,
+            row.w * 0.34,
+            13.0,
             TEXT,
         );
         draw_text_fit(
-            &format!("› {}", targets),
-            left.x + left.w * 0.42,
-            ey + 12.0,
-            left.w * 0.58,
-            10.0,
-            EMERALD,
+            "Strong against",
+            row.x + 42.0,
+            row.y + 34.0,
+            row.w * 0.34,
+            9.0,
+            TEXT_DIM,
         );
-        ey += 22.0;
+        draw_text_fit_right(
+            &targets,
+            row.x + row.w - 12.0,
+            row.y + 27.0,
+            row.w * 0.50,
+            11.0,
+            color,
+        );
+        ey += row_h;
     }
 
     // Right column: discovered monsters (unlocked only), scrollable.
@@ -243,7 +263,7 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
     );
 
     let list = Rect::new(right.x, right.y + 30.0, right.w, right.h - 30.0);
-    let row_h = 46.0;
+    let row_h = 76.0;
     let visible = (list.h / row_h) as usize;
     let max_scroll = discovered.len().saturating_sub(visible) as f32;
     if list.contains(vec2(mouse_position().0, mouse_position().1)) {
@@ -266,16 +286,19 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
         );
     }
     for (slot, m) in discovered.iter().skip(first).take(visible).enumerate() {
-        let row = Rect::new(list.x, list.y + slot as f32 * row_h, list.w, row_h - 6.0);
-        draw_card(row, CARD, with_alpha(BORDER, 0.2));
-        draw_text_fit(
-            &format!("{}  {}", m.emoji, m.name),
-            row.x + 10.0,
-            row.y + 16.0,
-            row.w * 0.5,
-            12.0,
-            TEXT,
+        let row = Rect::new(list.x, list.y + slot as f32 * row_h, list.w, row_h - 8.0);
+        let element = m.element.as_deref().unwrap_or("Neutral");
+        let color = element_color(element);
+        draw_card(row, with_alpha(color, 0.055), with_alpha(color, 0.24));
+        draw_rectangle(
+            row.x + 1.0,
+            row.y + 1.0,
+            3.0,
+            row.h - 2.0,
+            with_alpha(color, 0.62),
         );
+        draw_element_badge(vec2(row.x + 20.0, row.y + 22.0), element);
+        draw_text_fit(&m.name, row.x + 40.0, row.y + 23.0, row.w * 0.5, 14.0, TEXT);
         draw_text_fit(
             &format!(
                 "T{} {} · {}",
@@ -283,19 +306,19 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
                 get_species_display_name(&m.species),
                 m.element.as_deref().unwrap_or("Neutral")
             ),
-            row.x + 10.0,
-            row.y + 33.0,
+            row.x + 40.0,
+            row.y + 44.0,
             row.w * 0.5,
-            9.0,
+            10.0,
             TEXT_MUTED,
         );
         draw_text_fit_right(
             &format!("HP {}  ATK {}  DEF {}", m.hp, m.attack, m.defense),
             row.x + row.w - 10.0,
-            row.y + 18.0,
+            row.y + 24.0,
             row.w * 0.46,
-            10.0,
-            TEXT_MUTED,
+            11.0,
+            color,
         );
         if !m.traits.is_empty() {
             let names: Vec<String> = m
@@ -306,16 +329,16 @@ pub fn draw_codex(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) -> bool
             draw_text_fit_right(
                 &names.join(", "),
                 row.x + row.w - 10.0,
-                row.y + 34.0,
+                row.y + 48.0,
                 row.w * 0.46,
-                9.0,
+                10.0,
                 ARCANE,
             );
         }
     }
 
     draw_text_fit(
-        "Press C or Esc to close.",
+        "Tap X to close and return to the dungeon.",
         x + 20.0,
         y + h - 14.0,
         w - 40.0,
@@ -387,21 +410,32 @@ pub fn draw_controls_reference(
         11.0,
         TEXT_DIM,
     );
-    draw_centered_text(
-        &format!(
-            "Press {} or Esc to return",
-            bindings.label(BindingAction::Help)
-        ),
-        Rect::new(card.x + 22.0, card.y + 326.0, card.w - 44.0, 26.0),
-        11.0,
-        TEXT_MUTED,
+    let close = draw_command_button(
+        Rect::new(card.x + 130.0, card.y + 326.0, card.w - 260.0, 34.0),
+        "Close",
+        ButtonTone::Ghost,
+        true,
     );
-    bindings.pressed(BindingAction::Help) || is_key_pressed(KeyCode::Escape)
+    close || bindings.pressed(BindingAction::Help) || is_key_pressed(KeyCode::Escape)
 }
 
 /// Full-screen "the core has fallen" overlay. Returns true when the player
 /// clicks to begin a new dungeon.
 pub fn draw_game_over_overlay(state: &GameState, sw: f32, sh: f32) -> bool {
+    let pulse = (get_time() as f32 * 1.25).sin() * 0.5 + 0.5;
+    draw_circle(
+        sw * 0.5,
+        sh * 0.5,
+        sw.min(sh) * 0.48,
+        with_alpha(DANGER, 0.025 + pulse * 0.018),
+    );
+    draw_circle_lines(
+        sw * 0.5,
+        sh * 0.5,
+        sw.min(sh) * 0.38,
+        2.0,
+        with_alpha(SOUL, 0.10),
+    );
     let w = 520.0_f32.min(sw - 40.0);
     let h = 330.0_f32.min(sh - 40.0);
     let x = (sw - w) / 2.0;

@@ -72,6 +72,21 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.tutorial_active = false;
             state.status = DungeonStatus::Closed;
         }
+        "confirmation" => {
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            state.pending_confirmation = Some(game_state::PendingConfirmation::ResetRun);
+        }
+        "pause" => {
+            if let Some(species) = first_starter_species() {
+                let _ = simulation::unlock_species(state, &species);
+            }
+            state.tutorial_active = false;
+            let _ = simulation::add_room(state, None);
+            state.paused = true;
+        }
         "tutorial" => {
             if let Some(species) = first_starter_species() {
                 let _ = simulation::unlock_species(state, &species);
@@ -90,6 +105,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             if let Some(species) = first_starter_species() {
                 let _ = simulation::unlock_species(state, &species);
             }
+            let _ = simulation::unlock_species(state, "Elemental");
             state.tutorial_active = false;
             let _ = simulation::add_room(state, None);
             // Attune the first combat room to Fire so the synergy hint shows.

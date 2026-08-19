@@ -6,14 +6,14 @@ use macroquad_toolkit::ui::{
 };
 use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
 
-pub const BG: Color = Color::new(0.010, 0.014, 0.022, 1.0);
-pub const BG_DEEP: Color = Color::new(0.004, 0.006, 0.011, 1.0);
-pub const PANEL: Color = Color::new(0.024, 0.031, 0.047, 1.0);
-pub const PANEL_ALT: Color = Color::new(0.035, 0.043, 0.064, 1.0);
-pub const PANEL_HEADER: Color = Color::new(0.050, 0.053, 0.076, 1.0);
-pub const CARD: Color = Color::new(0.026, 0.033, 0.050, 0.86);
-pub const BORDER: Color = Color::new(0.240, 0.270, 0.340, 0.48);
-pub const BORDER_MUTED: Color = Color::new(0.140, 0.165, 0.220, 0.36);
+pub const BG: Color = Color::new(0.009, 0.013, 0.021, 1.0);
+pub const BG_DEEP: Color = Color::new(0.003, 0.005, 0.009, 1.0);
+pub const PANEL: Color = Color::new(0.020, 0.027, 0.041, 1.0);
+pub const PANEL_ALT: Color = Color::new(0.032, 0.041, 0.061, 1.0);
+pub const PANEL_HEADER: Color = Color::new(0.043, 0.048, 0.070, 1.0);
+pub const CARD: Color = Color::new(0.024, 0.032, 0.049, 0.92);
+pub const BORDER: Color = Color::new(0.270, 0.300, 0.380, 0.54);
+pub const BORDER_MUTED: Color = Color::new(0.150, 0.180, 0.240, 0.42);
 pub const TEXT: Color = Color::new(0.890, 0.870, 0.810, 1.0);
 pub const TEXT_MUTED: Color = Color::new(0.560, 0.585, 0.650, 1.0);
 pub const TEXT_DIM: Color = Color::new(0.350, 0.380, 0.450, 1.0);
@@ -82,11 +82,12 @@ pub fn draw_game_background(sw: f32, sh: f32) {
     clear_background(BG_DEEP);
     draw_rectangle(0.0, 0.0, sw, sh, BG);
 
-    draw_rectangle(0.0, 0.0, sw, 100.0, Color::new(0.0, 0.0, 0.0, 0.34));
-    draw_rectangle(0.0, sh - 116.0, sw, 116.0, Color::new(0.0, 0.0, 0.0, 0.30));
-    draw_line(0.0, 88.0, sw, 88.0, 1.0, with_alpha(TREASURE, 0.18));
+    draw_rectangle(0.0, 0.0, sw, 108.0, Color::new(0.0, 0.0, 0.0, 0.32));
+    draw_rectangle(0.0, sh - 140.0, sw, 140.0, Color::new(0.0, 0.0, 0.0, 0.28));
+    draw_circle(sw * 0.76, sh * 0.14, sw * 0.42, with_alpha(SOUL, 0.015));
+    draw_circle(sw * 0.18, sh * 0.88, sw * 0.34, with_alpha(MANA, 0.012));
 
-    let grid_color = Color::new(0.24, 0.30, 0.40, 0.014);
+    let grid_color = Color::new(0.24, 0.30, 0.40, 0.010);
     let mut x = 0.0;
     while x <= sw {
         draw_line(x, 0.0, x, sh, 1.0, grid_color);
@@ -101,27 +102,47 @@ pub fn draw_game_background(sw: f32, sh: f32) {
 
 pub fn draw_panel(rect: Rect, title: Option<&str>, accent: Color) {
     let style = SurfaceStyle::new(PANEL)
-        .with_shadow(vec2(4.0, 5.0), Color::new(0.0, 0.0, 0.0, 0.40))
-        .with_border(1.0, with_alpha(BORDER, 0.42))
-        .with_inner_border(1.0, 1.0, with_alpha(accent, 0.09));
+        .with_shadow(vec2(5.0, 7.0), Color::new(0.0, 0.0, 0.0, 0.48))
+        .with_border(1.0, with_alpha(BORDER, 0.52))
+        .with_inner_border(1.0, 1.0, with_alpha(accent, 0.10));
     draw_surface(rect, &style);
+    draw_rectangle(
+        rect.x + 1.0,
+        rect.y + 1.0,
+        3.0,
+        rect.h - 2.0,
+        with_alpha(accent, 0.42),
+    );
+    draw_rectangle(
+        rect.x + 4.0,
+        rect.y + 1.0,
+        (rect.w - 5.0).min(92.0),
+        2.0,
+        with_alpha(accent, 0.34),
+    );
 
     if let Some(title) = title {
-        draw_rectangle(rect.x, rect.y, rect.w, 30.0_f32.min(rect.h), PANEL_HEADER);
+        draw_rectangle(
+            rect.x + 4.0,
+            rect.y + 1.0,
+            rect.w - 5.0,
+            32.0_f32.min(rect.h),
+            PANEL_HEADER,
+        );
         draw_line(
             rect.x,
-            rect.y + 30.0,
+            rect.y + 33.0,
             rect.x + rect.w,
-            rect.y + 30.0,
+            rect.y + 33.0,
             1.0,
             BORDER_MUTED,
         );
         draw_text_fit(
             title,
-            rect.x + 12.0,
-            rect.y + 20.0,
-            rect.w - 24.0,
-            16.0,
+            rect.x + 16.0,
+            rect.y + 22.0,
+            rect.w - 30.0,
+            15.0,
             accent,
         );
     }
@@ -132,6 +153,14 @@ pub fn draw_card(rect: Rect, fill: Color, border: Color) {
         .with_border(1.0, border)
         .with_inner_border(1.0, 1.0, Color::new(1.0, 1.0, 1.0, 0.028));
     draw_surface(rect, &style);
+    draw_line(
+        rect.x + 2.0,
+        rect.y + 1.0,
+        rect.x + rect.w - 2.0,
+        rect.y + 1.0,
+        1.0,
+        Color::new(1.0, 1.0, 1.0, 0.028),
+    );
 }
 
 pub fn draw_text_fit(text: &str, x: f32, baseline_y: f32, max_width: f32, size: f32, color: Color) {
@@ -232,6 +261,15 @@ pub fn draw_command_button(rect: Rect, text: &str, tone: ButtonTone, enabled: bo
             with_alpha(BORDER, 0.36)
         },
     );
+    if enabled {
+        draw_rectangle(
+            rect.x + 1.0,
+            rect.y + 1.0,
+            3.0,
+            rect.h - 2.0,
+            with_alpha(border, if hovered { 0.90 } else { 0.58 }),
+        );
+    }
     let y_offset = if pressed { 1.5 } else { 0.0 };
     draw_centered_text(
         text,

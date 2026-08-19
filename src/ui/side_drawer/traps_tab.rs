@@ -80,7 +80,7 @@ pub(super) fn draw_traps_tab(
             TEXT,
         );
         draw_text_fit(
-            "Click a highlighted room; reclick entry to stop.",
+            "Tap lit rooms to install. Tap again to cancel.",
             hint.x + 10.0,
             hint.y + 39.0,
             hint.w - 20.0,
@@ -156,7 +156,7 @@ fn draw_upgrade_option(
         } else if !can_afford {
             "The dungeon cannot afford this upgrade yet."
         } else {
-            "Choose it, then click a highlighted combat room. A room can hold one of each upgrade type."
+            "Choose it, then tap a highlighted combat room. A room can hold one of each upgrade type."
         };
         let souls = if template.souls_cost > 0 {
             format!(" + {} souls", template.souls_cost)

@@ -23,8 +23,8 @@ use macroquad_toolkit::colors::with_alpha;
 use monster_tab::draw_monster_tab;
 use traps_tab::draw_traps_tab;
 
-pub const DRAWER_OPEN_WIDTH: f32 = 246.0;
-pub const DRAWER_COLLAPSED_WIDTH: f32 = 56.0;
+pub const DRAWER_OPEN_WIDTH: f32 = 326.0;
+pub const DRAWER_COLLAPSED_WIDTH: f32 = 72.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DrawerTab {
@@ -97,6 +97,7 @@ pub fn draw_side_drawer(
     active_tab: &mut DrawerTab,
     open: &mut bool,
     upgrade_section: &mut UpgradeSection,
+    monster_scroll: &mut f32,
     heroes_scroll: &mut f32,
 ) -> DrawerAction {
     let mut action = DrawerAction::None;
@@ -112,9 +113,9 @@ pub fn draw_side_drawer(
     }
 
     let content = Rect::new(
-        rect.x + rail_w + 12.0,
+        rect.x + rail_w + 14.0,
         rect.y + 16.0,
-        rect.w - rail_w - 24.0,
+        rect.w - rail_w - 28.0,
         rect.h - 32.0,
     );
 
@@ -128,7 +129,7 @@ pub fn draw_side_drawer(
             BuildTabAction::None => {}
         },
         DrawerTab::Monsters => {
-            if let Some(monster) = draw_monster_tab(state, content) {
+            if let Some(monster) = draw_monster_tab(state, content, monster_scroll) {
                 action = DrawerAction::SelectMonster(monster);
             }
         }
@@ -157,8 +158,8 @@ fn draw_tab_rail(
     active_tab: &mut DrawerTab,
     open: &mut bool,
 ) -> bool {
-    let toggle = Rect::new(rect.x + 9.0, rect.y + 12.0, rail_w - 18.0, 34.0);
-    if draw_small_tab(toggle, if *open { "<" } else { ">" }, ARCANE, true) {
+    let toggle = Rect::new(rect.x + 8.0, rect.y + 10.0, rail_w - 16.0, 42.0);
+    if draw_small_tab(toggle, if *open { "CLOSE" } else { "MENU" }, ARCANE, true) {
         *open = !*open;
     }
     if is_hovered_rect(toggle) {
@@ -172,16 +173,16 @@ fn draw_tab_rail(
         );
     }
 
-    let mut y = rect.y + 54.0;
-    for (tab, icon, color) in [
-        (DrawerTab::Monsters, "M", SOUL),
-        (DrawerTab::Traps, "T", DANGER),
-        (DrawerTab::Build, "B", TREASURE),
-        (DrawerTab::Evolution, "V", MANA),
-        (DrawerTab::Heroes, "H", WARNING),
+    let mut y = rect.y + 60.0;
+    for (tab, icon, label, color) in [
+        (DrawerTab::Monsters, "M", "MONSTERS", SOUL),
+        (DrawerTab::Traps, "T", "OUTFITS", DANGER),
+        (DrawerTab::Build, "B", "BUILD", TREASURE),
+        (DrawerTab::Evolution, "V", "VARIANTS", MANA),
+        (DrawerTab::Heroes, "H", "HEROES", WARNING),
     ] {
-        let tab_rect = Rect::new(rect.x + 7.0, y, rail_w - 14.0, 54.0);
-        if draw_rail_tab(tab_rect, icon, color, *active_tab == tab) {
+        let tab_rect = Rect::new(rect.x + 6.0, y, rail_w - 12.0, 60.0);
+        if draw_rail_tab(tab_rect, icon, label, color, *active_tab == tab) {
             *active_tab = tab;
             *open = true;
         }
@@ -197,7 +198,7 @@ fn draw_tab_rail(
             };
             macroquad_toolkit::ui::draw_tooltip(help, vec2(tab_rect.x + tab_rect.w, tab_rect.y));
         }
-        y += 60.0;
+        y += 66.0;
     }
 
     false
@@ -233,7 +234,7 @@ fn draw_small_tab(rect: Rect, text: &str, color: Color, active: bool) -> bool {
     was_clicked_rect(rect)
 }
 
-fn draw_rail_tab(rect: Rect, icon: &str, color: Color, active: bool) -> bool {
+fn draw_rail_tab(rect: Rect, icon: &str, label: &str, color: Color, active: bool) -> bool {
     let hovered = is_hovered_rect(rect);
     draw_card(
         rect,
@@ -246,6 +247,17 @@ fn draw_rail_tab(rect: Rect, icon: &str, color: Color, active: bool) -> bool {
         },
         with_alpha(color, if active { 0.48 } else { 0.16 }),
     );
-    draw_centered_text(icon, rect, 24.0, if active { color } else { TEXT_DIM });
+    draw_centered_text(
+        icon,
+        Rect::new(rect.x, rect.y + 4.0, rect.w, 31.0),
+        21.0,
+        if active { color } else { TEXT_MUTED },
+    );
+    draw_centered_text(
+        label,
+        Rect::new(rect.x + 2.0, rect.y + 37.0, rect.w - 4.0, 15.0),
+        8.0,
+        if active { TEXT } else { TEXT_DIM },
+    );
     was_clicked_rect(rect)
 }

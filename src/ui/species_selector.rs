@@ -38,13 +38,17 @@ pub fn draw_species_selector(
     });
 
     let mut selected = None;
-    let card_h = 96.0;
-    let gap = 10.0;
-    let list_top = y + 64.0;
-    let list_bottom = y + h - 14.0;
+    let columns = if w >= 700.0 { 2 } else { 1 };
+    let card_h = 112.0;
+    let gap = 12.0;
+    let side_pad = 16.0;
+    let card_w = (w - side_pad * 2.0 - gap * (columns - 1) as f32) / columns as f32;
+    let list_top = y + 66.0;
+    let list_bottom = y + h - 16.0;
 
     // Mouse-wheel scrolling: the list outgrew the modal at 8 species.
-    let total_h = species_list.len() as f32 * (card_h + gap) - gap;
+    let rows = species_list.len().div_ceil(columns);
+    let total_h = rows as f32 * (card_h + gap) - gap;
     let max_scroll = (total_h - (list_bottom - list_top)).max(0.0);
     let mouse = vec2(mouse_position().0, mouse_position().1);
     if panel.contains(mouse) {
@@ -55,12 +59,15 @@ pub fn draw_species_selector(
     }
     *scroll = scroll.clamp(0.0, max_scroll);
 
-    let mut cy = list_top - *scroll;
+    let mut row_y = list_top - *scroll;
 
-    for species in species_list {
+    for (index, species) in species_list.into_iter().enumerate() {
+        let column = index % columns;
+        if column == 0 && index > 0 {
+            row_y += card_h + gap;
+        }
         // Skip cards fully or partially outside the visible list area.
-        if cy < list_top - 1.0 || cy + card_h > list_bottom {
-            cy += card_h + gap;
+        if row_y < list_top - 1.0 || row_y + card_h > list_bottom {
             continue;
         }
 
@@ -81,12 +88,24 @@ pub fn draw_species_selector(
             roster.join(", ")
         };
 
-        let card = Rect::new(x + 14.0, cy, w - 28.0, card_h);
+        let card = Rect::new(
+            x + side_pad + column as f32 * (card_w + gap),
+            row_y,
+            card_w,
+            card_h,
+        );
         let accent = if selectable { SOUL } else { BORDER_MUTED };
         draw_card(
             card,
             with_alpha(accent, if selectable { 0.06 } else { 0.02 }),
             with_alpha(accent, if selectable { 0.44 } else { 0.16 }),
+        );
+        draw_rectangle(
+            card.x + 1.0,
+            card.y + 1.0,
+            4.0,
+            card.h - 2.0,
+            with_alpha(accent, if selectable { 0.62 } else { 0.18 }),
         );
 
         draw_text_fit(
@@ -115,7 +134,7 @@ pub fn draw_species_selector(
         draw_text_fit(
             &species.description,
             card.x + 14.0,
-            card.y + 48.0,
+            card.y + 53.0,
             card.w - 28.0,
             12.0,
             TEXT_MUTED,
@@ -123,7 +142,7 @@ pub fn draw_species_selector(
         draw_text_fit(
             &format!("Units: {}", roster_text),
             card.x + 14.0,
-            card.y + 70.0,
+            card.y + 81.0,
             card.w - 130.0,
             11.0,
             if selectable { EMERALD } else { TEXT_DIM },
@@ -145,12 +164,10 @@ pub fn draw_species_selector(
         } else {
             ButtonTone::Arcane
         };
-        let btn = Rect::new(card.x + card.w - 116.0, card.y + card.h - 38.0, 102.0, 28.0);
+        let btn = Rect::new(card.x + card.w - 126.0, card.y + card.h - 40.0, 112.0, 30.0);
         if draw_command_button(btn, &label, tone, selectable) {
             selected = Some(species.name.clone());
         }
-
-        cy += card_h + gap;
     }
 
     selected

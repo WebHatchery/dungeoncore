@@ -22,7 +22,7 @@ pub fn draw_milestones(state: &GameState, sw: f32, sh: f32, scroll: &mut f32) ->
     draw_panel(panel, Some("Goals"), ARCANE);
 
     let mut close = false;
-    if draw_close_button(Rect::new(x + w - 40.0, y + 14.0, 30.0, 26.0))
+    if draw_close_button(Rect::new(x + w - 48.0, y + 8.0, 40.0, 34.0))
         || is_key_pressed(KeyCode::K)
         || is_key_pressed(KeyCode::Escape)
     {

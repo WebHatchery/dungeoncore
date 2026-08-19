@@ -14,7 +14,7 @@ use super::previews::{monster_variant_status, template_trait_summary};
 use super::UpgradeAction;
 
 pub(super) const DEFENDER_ROW_H: f32 = 46.0;
-pub(super) const MAX_DEFENDER_ROWS: usize = 4;
+pub(super) const MAX_DEFENDER_ROWS: usize = 2;
 
 /// Vertical list of every defender in the room — one card each carrying the
 /// creature's condition (health, whether it has fallen), what it hits for, its

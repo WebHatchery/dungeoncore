@@ -5,12 +5,12 @@ use crate::game_state::{DungeonStatus, GameState, RoomType};
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
 
-pub const HUD_HEIGHT: f32 = 68.0;
-pub const LOG_BAR_COLLAPSED_HEIGHT: f32 = 38.0;
-pub const LOG_BAR_EXPANDED_HEIGHT: f32 = 108.0;
-pub const OUTER_MARGIN: f32 = 8.0;
-pub const PANEL_GAP: f32 = 12.0;
-pub const SIDE_PANEL_WIDTH: f32 = 246.0;
+pub const HUD_HEIGHT: f32 = 76.0;
+pub const LOG_BAR_COLLAPSED_HEIGHT: f32 = 42.0;
+pub const LOG_BAR_EXPANDED_HEIGHT: f32 = 132.0;
+pub const OUTER_MARGIN: f32 = 10.0;
+pub const PANEL_GAP: f32 = 10.0;
+pub const SIDE_PANEL_WIDTH: f32 = 326.0;
 
 /// The two top-shell controls that mutate simulation state. The older controls
 /// panel had extra actions but is no longer rendered anywhere.
@@ -20,6 +20,9 @@ pub enum ControlAction {
     TogglePause,
     SetSpeed(i32),
     ToggleDungeon,
+    OpenHelp,
+    OpenCodex,
+    OpenGoals,
 }
 
 /// The simulation may advance only for an interactive, unpaused frame.
@@ -32,12 +35,17 @@ pub fn simulation_active(simulate: bool, paused: bool) -> bool {
 /// (speed and dungeon open/close). Returns any control action triggered.
 pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
     let mut action = ControlAction::None;
+    draw_card(
+        rect,
+        Color::new(0.012, 0.017, 0.027, 0.98),
+        with_alpha(TREASURE, 0.24),
+    );
     draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        Color::new(0.0, 0.0, 0.0, 0.34),
+        rect.x + 1.0,
+        rect.y + rect.h - 4.0,
+        rect.w - 2.0,
+        3.0,
+        with_alpha(TREASURE, 0.16),
     );
     draw_line(
         rect.x,
@@ -48,34 +56,41 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
         with_alpha(TREASURE, 0.22),
     );
 
-    let title_w = (rect.w * 0.15).clamp(156.0, 196.0);
-    let title_rect = Rect::new(rect.x + 14.0, rect.y + 10.0, title_w, rect.h - 20.0);
+    let title_w = (rect.w * 0.155).clamp(176.0, 208.0);
+    let title_rect = Rect::new(rect.x + 14.0, rect.y + 9.0, title_w, rect.h - 18.0);
     draw_brand_mark(
         vec2(title_rect.x + 20.0, title_rect.y + title_rect.h * 0.5),
-        17.0,
+        19.0,
     );
     draw_text_fit(
         "DUNGEON CORE",
         title_rect.x + 44.0,
         title_rect.y + title_rect.h * 0.5 + 2.0,
         title_rect.w - 48.0,
-        18.0,
+        19.0,
         TEXT,
     );
-    draw_text_fit(
-        "[H] Help  [C] Codex  [K] Goals",
-        title_rect.x + 44.0,
-        title_rect.y + title_rect.h * 0.5 + 22.0,
-        title_rect.w - 48.0,
-        10.0,
-        TEXT_DIM,
-    );
+    let utility_y = title_rect.y + title_rect.h - 18.0;
+    let utility_x = title_rect.x + 44.0;
+    for (index, (label, next_action)) in [
+        ("HELP", ControlAction::OpenHelp),
+        ("CODEX", ControlAction::OpenCodex),
+        ("GOALS", ControlAction::OpenGoals),
+    ]
+    .iter()
+    .enumerate()
+    {
+        let link = Rect::new(utility_x + index as f32 * 48.0, utility_y, 44.0, 17.0);
+        if draw_header_link(link, label) {
+            action = *next_action;
+        }
+    }
 
     // Right-hand control cluster: speed selector + dungeon toggle.
-    let dungeon_w = 150.0_f32.min(rect.w * 0.14).max(120.0);
-    let speed_w = 132.0_f32.min(rect.w * 0.13).max(112.0);
+    let dungeon_w = 156.0_f32.min(rect.w * 0.14).max(128.0);
+    let speed_w = 138.0_f32.min(rect.w * 0.13).max(116.0);
     let cluster_gap = 10.0;
-    let control_h = 38.0;
+    let control_h = 44.0;
     let control_y = rect.y + (rect.h - control_h) * 0.5;
     let dungeon_x = rect.x + rect.w - 14.0 - dungeon_w;
     let speed_x = dungeon_x - cluster_gap - speed_w;
@@ -102,11 +117,11 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
     }
 
     // Resource + status stats fill the space between the title and controls.
-    let stats_x = title_rect.x + title_rect.w + 16.0;
-    let stats_w = speed_x - stats_x - 16.0;
+    let stats_x = title_rect.x + title_rect.w + 12.0;
+    let stats_w = speed_x - stats_x - 12.0;
     let stat_w = (stats_w / 5.0).clamp(90.0, 156.0);
-    let y = rect.y + 14.0;
-    let stat_h = rect.h - 28.0;
+    let y = rect.y + 10.0;
+    let stat_h = rect.h - 20.0;
 
     draw_top_stat(
         Rect::new(stats_x, y, stat_w, stat_h),
@@ -158,7 +173,14 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
     // Prestige reads as a named rank to climb, not a bare counter. The number
     // leads so it survives truncation in the narrow stat cell; the rank name
     // follows as flavour.
-    let time_label = if state.prestige > 0 {
+    let compact_stats = stat_w < 118.0;
+    let time_label = if compact_stats {
+        if state.prestige > 0 {
+            format!("Prestige {}", state.prestige)
+        } else {
+            "Core Rank".to_string()
+        }
+    } else if state.prestige > 0 {
         format!(
             "P{} {}",
             state.prestige,
@@ -167,10 +189,15 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
     } else {
         crate::simulation::milestones::prestige_rank(0).to_string()
     };
+    let time_value = if compact_stats {
+        format!("D{} {:02}:00", state.day, state.hour)
+    } else {
+        format!("Day {} {:02}:00", state.day, state.hour)
+    };
     draw_top_stat(
         Rect::new(stats_x + stat_w * 4.0, y, stat_w, stat_h),
         &time_label,
-        &format!("Day {} {:02}:00", state.day, state.hour),
+        &time_value,
         TEXT,
         StatIcon::Time,
         None,
@@ -182,23 +209,24 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
 /// A visible frozen-state marker. The board remains inspectable beneath it;
 /// only the authoritative simulation has stopped.
 pub fn draw_pause_overlay(rect: Rect) -> bool {
-    let card = Rect::new(rect.x + (rect.w - 260.0) * 0.5, rect.y + 18.0, 260.0, 94.0);
-    draw_card(card, with_alpha(DANGER, 0.20), with_alpha(DANGER, 0.68));
+    let top = if rect.w < 760.0 { 110.0 } else { 72.0 };
+    let card = Rect::new(rect.x + (rect.w - 300.0) * 0.5, rect.y + top, 300.0, 112.0);
+    draw_card(card, with_alpha(BG_DEEP, 0.96), with_alpha(DANGER, 0.72));
     draw_centered_text(
         "PAUSED",
-        Rect::new(card.x, card.y + 10.0, card.w, 20.0),
-        15.0,
+        Rect::new(card.x, card.y + 12.0, card.w, 22.0),
+        18.0,
         TEXT,
     );
     draw_centered_text(
         "The dungeon is frozen. Inspect or plan freely.",
-        Rect::new(card.x, card.y + 32.0, card.w, 18.0),
-        10.0,
+        Rect::new(card.x + 12.0, card.y + 40.0, card.w - 24.0, 18.0),
+        11.0,
         TEXT_MUTED,
     );
     draw_command_button(
-        Rect::new(card.x + 42.0, card.y + 58.0, card.w - 84.0, 26.0),
-        "Resume  [Space]",
+        Rect::new(card.x + 42.0, card.y + 68.0, card.w - 84.0, 34.0),
+        "Resume Dungeon",
         ButtonTone::Primary,
         true,
     )
@@ -251,6 +279,18 @@ fn draw_top_stat(
     icon: StatIcon,
     bar: Option<(f32, f32)>,
 ) {
+    let compact = rect.w < 118.0;
+    let icon_x = if compact {
+        rect.x + 16.0
+    } else {
+        rect.x + 28.0
+    };
+    let text_x = if compact {
+        rect.x + 31.0
+    } else {
+        rect.x + 50.0
+    };
+    let text_w = (rect.x + rect.w - text_x - 5.0).max(22.0);
     draw_line(
         rect.x,
         rect.y,
@@ -260,36 +300,42 @@ fn draw_top_stat(
         with_alpha(BORDER, 0.20),
     );
     draw_stat_icon(
-        vec2(rect.x + 28.0, rect.y + rect.h * 0.54),
-        13.0,
+        vec2(icon_x, rect.y + rect.h * 0.54),
+        if compact { 10.0 } else { 13.0 },
         icon,
         color,
     );
     if !label.is_empty() {
         draw_text_fit(
             label,
-            rect.x + 50.0,
+            text_x,
             rect.y + 16.0,
-            rect.w - 56.0,
-            11.0,
+            text_w,
+            if compact { 9.0 } else { 11.0 },
             TEXT_MUTED,
         );
     }
     draw_text_fit(
         value,
-        rect.x + 50.0,
+        text_x,
         if label.is_empty() {
             rect.y + 29.0
         } else {
             rect.y + 38.0
         },
-        rect.w - 56.0,
-        if label.is_empty() { 17.0 } else { 18.0 },
+        text_w,
+        if compact {
+            14.0
+        } else if label.is_empty() {
+            17.0
+        } else {
+            18.0
+        },
         color,
     );
     if let Some((current, max)) = bar {
         draw_bar(
-            Rect::new(rect.x + 50.0, rect.y + rect.h - 4.0, rect.w - 70.0, 3.0),
+            Rect::new(text_x, rect.y + rect.h - 4.0, (text_w - 8.0).max(12.0), 3.0),
             current,
             max,
             color,
@@ -347,6 +393,16 @@ fn draw_speed_segments(rect: Rect, speed: i32, paused: bool) -> Option<ControlAc
         }
     }
     action
+}
+
+fn draw_header_link(rect: Rect, label: &str) -> bool {
+    let pointer = vec2(mouse_position().0, mouse_position().1);
+    let hovered = rect.contains(pointer);
+    if hovered {
+        draw_rectangle(rect.x, rect.y, rect.w, rect.h, with_alpha(SOUL, 0.14));
+    }
+    draw_centered_text(label, rect, 8.0, if hovered { TEXT } else { TEXT_DIM });
+    hovered && is_mouse_button_released(MouseButton::Left)
 }
 
 fn draw_brand_mark(center: Vec2, radius: f32) {

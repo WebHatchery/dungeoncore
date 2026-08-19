@@ -23,22 +23,22 @@ struct StepDef {
 const STEPS: [StepDef; 7] = [
     StepDef {
         title: "Build a room",
-        instruction: "Open the BUILD tab on the left (or click the glowing room on the map) to add a combat room.",
+        instruction: "Tap BUILD on the left, or tap the glowing room in the dungeon, to add a combat room.",
         anchor: TutorialAnchor::Drawer,
     },
     StepDef {
         title: "Place a defender",
-        instruction: "Open the MONSTERS tab, pick a unit, then click your new combat room to summon it.",
+        instruction: "Tap MONSTERS, choose a unit, then tap your new combat room to summon it.",
         anchor: TutorialAnchor::Drawer,
     },
     StepDef {
         title: "Learn the elements",
-        instruction: "Press C to open the Codex — it shows each element and what it beats.",
+        instruction: "Tap CODEX in the top bar to see each element and what it beats.",
         anchor: TutorialAnchor::Hud,
     },
     StepDef {
         title: "Set a trap",
-        instruction: "Select a room, then apply a Trap upgrade from the right panel.",
+        instruction: "Select a room, tap ADD UPGRADE, choose a trap, then tap a highlighted room.",
         anchor: TutorialAnchor::Board,
     },
     StepDef {
@@ -48,7 +48,7 @@ const STEPS: [StepDef; 7] = [
     },
     StepDef {
         title: "Open the dungeon",
-        instruction: "Press 'Open Dungeon' in the top bar to invite adventurers inside.",
+        instruction: "Tap OPEN DUNGEON in the top bar to invite adventurers inside.",
         anchor: TutorialAnchor::Hud,
     },
     StepDef {

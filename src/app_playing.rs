@@ -101,7 +101,7 @@ pub fn render_playing_frame(
 
     // Game over: the core has fallen. Offer a fresh dungeon.
     if state.game_over {
-        draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.82));
+        draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.72));
         if draw_game_over_overlay(state, sw, sh) {
             // A fresh dungeon keeps the fallen run's chosen difficulty.
             *state = create_new_game(state.difficulty, 1);
@@ -113,8 +113,8 @@ pub fn render_playing_frame(
 
     // Modal overlay: Species Selection (Prioritize over everything else)
     if state.unlocked_species.is_empty() {
-        let modal_w = 460.0;
-        let modal_h = 540.0;
+        let modal_w = (sw - 80.0).clamp(620.0, 980.0);
+        let modal_h = (sh - 80.0).clamp(520.0, 620.0);
         let modal_x = (sw - modal_w) / 2.0;
         let modal_y = (sh - modal_h) / 2.0;
 
@@ -165,6 +165,18 @@ pub fn render_playing_frame(
             audio.play(SoundCue::Ui, sfx_volume);
             simulation::toggle_dungeon_status(state);
         }
+        ControlAction::OpenHelp => {
+            audio.play(SoundCue::Ui, sfx_volume);
+            *show_controls = true;
+        }
+        ControlAction::OpenCodex => {
+            audio.play(SoundCue::Ui, sfx_volume);
+            *show_codex = true;
+        }
+        ControlAction::OpenGoals => {
+            audio.play(SoundCue::Ui, sfx_volume);
+            *show_milestones = true;
+        }
         _ => {}
     }
 
@@ -184,7 +196,11 @@ pub fn render_playing_frame(
     let body_bottom = log_rect.y - PANEL_GAP;
     let body_h = (body_bottom - body_top).max(220.0);
 
-    let has_inspector = state.selected_room.is_some() || state.selected_monster.is_some();
+    let inspector_requested = state.selected_room.is_some() || state.selected_monster.is_some();
+    // The catalogue and inspector take turns at the edge of the board. This
+    // keeps at least three room widths readable on a 1280px viewport while
+    // preserving the player's armed selection as panels change.
+    let has_inspector = inspector_requested && !*drawer_open;
     let drawer_w = responsive_drawer_width(has_inspector, *drawer_open, sw);
     let drawer_rect = Rect::new(OUTER_MARGIN, body_top, drawer_w, body_h);
     let drawer_action = draw_side_drawer(
@@ -193,12 +209,21 @@ pub fn render_playing_frame(
         drawer_tab,
         drawer_open,
         upgrade_section,
+        species_scroll,
         heroes_scroll,
     );
+    let reveal_selected_room = state.selected_room.is_some()
+        && matches!(
+            &drawer_action,
+            DrawerAction::SelectMonster(_) | DrawerAction::SelectUpgrade(_)
+        );
     apply_drawer_action(drawer_action, state, show_core_tree, audio, sfx_volume);
+    if reveal_selected_room {
+        *drawer_open = false;
+    }
 
     let right_panel_w = if has_inspector {
-        (sw * 0.18).clamp(220.0, 240.0)
+        (sw * 0.22).clamp(252.0, 286.0)
     } else {
         0.0
     };
@@ -256,6 +281,7 @@ pub fn render_playing_frame(
                 *defender_scroll = 0.0;
             } else {
                 state.selected_room = Some((floor_num, room_pos));
+                *drawer_open = false;
                 *defender_scroll = 0.0;
             }
         }

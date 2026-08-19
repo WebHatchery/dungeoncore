@@ -48,7 +48,7 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
     );
     draw_text_fit(
         if can_build {
-            "Click the glowing room or build here."
+            "Tap the glowing room or build here."
         } else if state.adventurer_parties.is_empty() {
             "Gather more mana."
         } else {
@@ -151,7 +151,7 @@ pub(super) fn draw_build_tab(state: &GameState, rect: Rect) -> BuildTabAction {
     let powers_rect = Rect::new(rect.x, y + 26.0, rect.w, 40.0);
     if draw_command_button(
         powers_rect,
-        "Core Power Tree  [P]",
+        "Open Core Power Tree",
         ButtonTone::Arcane,
         true,
     ) {

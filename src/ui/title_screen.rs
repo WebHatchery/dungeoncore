@@ -157,7 +157,7 @@ pub fn draw_new_game_setup(
         TEXT,
     );
     draw_text_fit(
-        "Difficulty is fixed for the run. It scales invaders, siege timing, income, and core resilience.",
+        "Tap a difficulty to begin. Your choice fixes invaders, siege timing, income, and core resilience for the run.",
         panel.x + 28.0,
         panel.y + 62.0,
         panel.w - 56.0,
@@ -203,8 +203,13 @@ pub fn draw_new_game_setup(
             profile.name,
             card.x + 16.0,
             card.y + 26.0,
-            card.w - 32.0,
+            card.w - 112.0,
             17.0,
+            accent,
+        );
+        draw_pill(
+            Rect::new(card.x + card.w - 82.0, card.y + 12.0, 66.0, 20.0),
+            "BEGIN",
             accent,
         );
         draw_wrapped_blurb(profile.blurb, card.x + 16.0, card.y + 46.0, card.w - 32.0);
@@ -301,11 +306,12 @@ pub fn draw_title_settings_screen(
     draw_title_background(assets, sw, sh);
 
     let panel_w = sw.min(1280.0) * 0.32;
+    let panel_h = (sh - 40.0).min(680.0);
     let panel = Rect::new(
         (sw - panel_w.clamp(320.0, 430.0)) * 0.5,
-        (sh - 728.0) * 0.5,
+        (sh - panel_h) * 0.5,
         panel_w.clamp(320.0, 430.0),
-        728.0,
+        panel_h,
     );
     draw_title_panel(panel);
 
@@ -463,7 +469,7 @@ pub(super) fn draw_title_background(assets: &AssetManager, sw: f32, sh: f32) {
 pub(super) fn draw_title_panel(rect: Rect) {
     draw_card(
         rect,
-        Color::new(0.018, 0.020, 0.034, 0.72),
+        Color::new(0.014, 0.017, 0.029, 0.88),
         with_alpha(SOUL, 0.28),
     );
     draw_rectangle(rect.x, rect.y, 3.0, rect.h, with_alpha(SOUL, 0.68));

@@ -38,28 +38,32 @@ pub(super) fn update(state: &mut GameState, viewport: Rect, max_pan_x: f32, max_
 }
 
 pub(super) fn draw_zoom_controls(state: &mut GameState, rect: Rect) {
-    let zoom_x = if rect.w >= 560.0 {
+    let compact_header = rect.w < 760.0;
+    let zoom_x = if compact_header {
+        rect.x + 22.0
+    } else if rect.w >= 560.0 {
         rect.x + 220.0
     } else {
-        rect.x + rect.w - 148.0
+        rect.x + rect.w - 160.0
     };
-    let zoom = Rect::new(zoom_x, rect.y + 17.0, 126.0, 24.0);
-    let minus = Rect::new(zoom.x, zoom.y, 26.0, zoom.h);
-    let reset = Rect::new(zoom.x + 29.0, zoom.y, 66.0, zoom.h);
-    let plus = Rect::new(zoom.x + 98.0, zoom.y, 26.0, zoom.h);
+    let zoom_y = rect.y + if compact_header { 60.0 } else { 14.0 };
+    let zoom = Rect::new(zoom_x, zoom_y, 142.0, 32.0);
+    let minus = Rect::new(zoom.x, zoom.y, 32.0, zoom.h);
+    let reset = Rect::new(zoom.x + 35.0, zoom.y, 72.0, zoom.h);
+    let plus = Rect::new(zoom.x + 110.0, zoom.y, 32.0, zoom.h);
     draw_card(zoom, with_alpha(BG_DEEP, 0.90), with_alpha(BORDER, 0.60));
     draw_centered_text("−", minus, 16.0, TEXT);
     draw_centered_text(
         &format!("Zoom {:.0}%", state.board_zoom * 100.0),
         reset,
-        9.0,
+        10.0,
         TEXT_MUTED,
     );
     draw_centered_text("+", plus, 16.0, TEXT);
     draw_text_fit(
         "Drag to pan",
         zoom.x + zoom.w + 10.0,
-        zoom.y + 16.0,
+        zoom.y + 20.0,
         82.0,
         10.0,
         TEXT_DIM,

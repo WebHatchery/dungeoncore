@@ -62,14 +62,14 @@ pub fn draw_event_log(state: &mut GameState, rect: Rect, expanded: &mut bool) {
         (LogFilter::Building, "BLD"),
         (LogFilter::System, "SYS"),
     ];
-    let filter_w = 34.0;
-    let filter_y = rect.y + 7.0;
+    let filter_w = 44.0;
+    let filter_y = rect.y + 5.0;
     for (index, (filter, label)) in filters.iter().enumerate() {
         let filter_rect = Rect::new(
             rect.x + rect.w - 12.0 - filter_w * (filters.len() - index) as f32,
             filter_y,
-            filter_w - 3.0,
-            17.0,
+            filter_w - 4.0,
+            22.0,
         );
         let active = state.log_filter == *filter;
         let hovered = filter_rect.contains(vec2(mouse_position().0, mouse_position().1));
@@ -93,7 +93,7 @@ pub fn draw_event_log(state: &mut GameState, rect: Rect, expanded: &mut bool) {
         draw_centered_text(
             label,
             filter_rect,
-            8.0,
+            9.0,
             if active { TEXT } else { TEXT_DIM },
         );
     }
@@ -154,7 +154,7 @@ pub fn draw_event_log(state: &mut GameState, rect: Rect, expanded: &mut bool) {
     if matching.len() > max_lines {
         draw_text_fit_right(
             &format!("{}-{} of {} · scroll", start + 1, end, matching.len()),
-            inner.x + inner.w,
+            rect.x + rect.w - filter_w * filters.len() as f32 - 20.0,
             rect.y + 21.0,
             120.0,
             9.0,

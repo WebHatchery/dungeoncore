@@ -11,7 +11,7 @@ use crate::ui::theme::*;
 use super::draw_section_title;
 use macroquad_toolkit::colors::with_alpha;
 
-pub(super) fn draw_monster_tab(state: &GameState, rect: Rect) -> Option<String> {
+pub(super) fn draw_monster_tab(state: &GameState, rect: Rect, scroll: &mut f32) -> Option<String> {
     let mut selected = None;
     draw_section_title(rect, "MONSTERS", "Choose a defender.");
 
@@ -23,14 +23,30 @@ pub(super) fn draw_monster_tab(state: &GameState, rect: Rect) -> Option<String> 
             state.unlocked_species.contains(&t.species) && state.unlocked_monsters.contains(&t.name)
         })
         .collect();
-    let available_h = (rect.h - 138.0).max(0.0);
-    let row_h = (available_h / templates.len().max(1) as f32).clamp(58.0, 76.0);
+    let has_scroll_controls = templates.len() > 5;
+    let list_top = rect.y + if has_scroll_controls { 106.0 } else { 72.0 };
+    let list_bottom = rect.y + rect.h - 68.0;
     let row_gap = 6.0;
-    let mut y = rect.y + 72.0;
-    for template in &templates {
-        if y + row_h > rect.y + rect.h - 68.0 {
-            break;
+    let row_h = 68.0;
+    let visible_rows =
+        (((list_bottom - list_top + row_gap) / (row_h + row_gap)).floor() as usize).max(1);
+    let max_first = templates.len().saturating_sub(visible_rows);
+    *scroll = scroll.clamp(0.0, max_first as f32);
+
+    if has_scroll_controls {
+        draw_scroll_controls(rect, scroll, max_first, visible_rows);
+    }
+
+    let list_rect = Rect::new(rect.x, list_top, rect.w, (list_bottom - list_top).max(0.0));
+    if is_hovered_rect(list_rect) {
+        let wheel = mouse_wheel().1;
+        if wheel.abs() > f32::EPSILON {
+            *scroll = (*scroll - wheel.signum()).clamp(0.0, max_first as f32);
         }
+    }
+
+    let mut y = list_top;
+    for template in templates.iter().skip(*scroll as usize).take(visible_rows) {
         let row = Rect::new(rect.x, y, rect.w, row_h);
         if draw_monster_option(state, template, row) {
             selected = Some(template.name.clone());
@@ -50,7 +66,7 @@ pub(super) fn draw_monster_tab(state: &GameState, rect: Rect) -> Option<String> 
             TEXT,
         );
         draw_text_fit(
-            "Click rooms to place; reclick entry to stop.",
+            "Tap lit rooms to place. Tap again to cancel.",
             hint.x + 10.0,
             hint.y + 39.0,
             hint.w - 20.0,
@@ -60,6 +76,38 @@ pub(super) fn draw_monster_tab(state: &GameState, rect: Rect) -> Option<String> 
     }
 
     selected
+}
+
+fn draw_scroll_controls(rect: Rect, scroll: &mut f32, max_first: usize, page_size: usize) {
+    let controls = Rect::new(rect.x, rect.y + 68.0, rect.w, 30.0);
+    let button_w = 50.0;
+    let up = Rect::new(controls.x, controls.y, button_w, controls.h);
+    let down = Rect::new(
+        controls.x + controls.w - button_w,
+        controls.y,
+        button_w,
+        controls.h,
+    );
+    if draw_command_button(up, "UP", ButtonTone::Ghost, *scroll > 0.0) {
+        *scroll = (*scroll - page_size as f32).max(0.0);
+    }
+    if draw_command_button(down, "DOWN", ButtonTone::Ghost, *scroll < max_first as f32) {
+        *scroll = (*scroll + page_size as f32).min(max_first as f32);
+    }
+
+    let first = *scroll as usize + 1;
+    let last = (*scroll as usize + page_size).min(max_first + page_size);
+    draw_centered_text(
+        &format!("{}–{}", first, last),
+        Rect::new(
+            up.x + up.w + 4.0,
+            controls.y,
+            controls.w - button_w * 2.0 - 8.0,
+            controls.h,
+        ),
+        12.0,
+        TEXT_MUTED,
+    );
 }
 
 fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect) -> bool {
@@ -145,7 +193,7 @@ fn draw_monster_option(state: &GameState, template: &MonsterTemplate, rect: Rect
         } else if template.boss_only {
             "Place this defender only in a boss room."
         } else {
-            "Choose it, then click a combat room with a free defender slot."
+            "Choose it, then tap a combat room with a free defender slot."
         };
         let souls = if template.souls_cost > 0 {
             format!(" + {} souls", template.souls_cost)

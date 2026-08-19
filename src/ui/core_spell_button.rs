@@ -81,7 +81,7 @@ pub fn draw_core_spell_button(state: &GameState, rect: Rect) -> bool {
     } else if !affordable {
         format!("Need {} mana", CORE_SMITE_MANA_COST)
     } else {
-        format!("[Q]   {} mana", CORE_SMITE_MANA_COST)
+        format!("Cast · {} mana", CORE_SMITE_MANA_COST)
     };
     let sub_color = if !ready {
         with_alpha(SOUL, 0.9)
