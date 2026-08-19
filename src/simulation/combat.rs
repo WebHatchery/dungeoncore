@@ -32,8 +32,9 @@ use crate::game_state::{EffectAnchor, EffectKind, ElementSound, GameState, LogEn
 
 use abilities::{resolve_abilities, tick_conditions};
 use helpers::{
-    adventurer_element, attunement_mult, has_passive, monster_attack_value,
-    monster_damage_taken_mult, monster_element, passive_value, split_spawn, target_monster_idx,
+    adventurer_attack_mult, adventurer_damage_taken_mult, adventurer_element, attunement_mult,
+    has_passive, monster_attack_value, monster_damage_taken_mult, monster_element, passive_value,
+    split_spawn, target_monster_idx,
 };
 use rewards::{reward_adventurer_kills, reward_monster_kills};
 use traps::resolve_trap;
@@ -81,7 +82,20 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
         state.queue_sound(SoundEvent::Combat);
     }
 
-    let reinforcement_mult = state.floors[floor_idx].rooms[room_idx].reinforcement_multiplier();
+    let room = &state.floors[floor_idx].rooms[room_idx];
+    let reinforcement_mult = room.reinforcement_multiplier();
+    let defender_damage_taken_mult = room.defender_damage_taken_multiplier();
+    let adventurer_room_attack_mult = room.adventurer_attack_multiplier();
+    let adventurer_damage_to_monsters_mult = room.adventurer_damage_to_monsters_multiplier();
+    let monster_regeneration_rate = room.monster_regeneration_rate();
+
+    if monster_regeneration_rate > 0.0 {
+        let room = &mut state.floors[floor_idx].rooms[room_idx];
+        for monster in room.monsters.iter_mut().filter(|monster| monster.alive) {
+            let healing = (monster.max_hp as f32 * monster_regeneration_rate).round() as i32;
+            monster.hp = (monster.hp + healing.max(1)).min(monster.max_hp);
+        }
+    }
 
     // Phase 0: lingering afflictions (poison, burn) tick on the party
     tick_conditions(state, party_idx, floor_idx, room_idx);
@@ -110,7 +124,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectAnchor::Invaders,
         );
     }
-    let adv_attacks: Vec<(u64, i32, String)> = if snared {
+    let adv_attacks: Vec<(u64, f32, String)> = if snared {
         Vec::new()
     } else {
         state.adventurer_parties[party_idx]
@@ -118,11 +132,12 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             .iter()
             .filter(|a| a.alive)
             .map(|a| {
-                (
-                    a.id,
-                    a.scaled_stats.attack,
-                    adventurer_element(&a.class_name),
-                )
+                let element = adventurer_element(&a.class_name);
+                let attack_mult = adventurer_attack_mult(a)
+                    * adventurer_room_attack_mult
+                    * state.floors[floor_idx].rooms[room_idx]
+                        .elemental_adventurer_attack_multiplier(&element);
+                (a.id, a.scaled_stats.attack as f32 * attack_mult, element)
             })
             .collect()
     };
@@ -153,7 +168,11 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             } else if elem_mult < 1.0 {
                 party_hit_weak = true;
             }
-            let damage = ((*attack as f32 - effective_def / 2.0).max(1.0) * taken_mult * elem_mult)
+            let damage = ((*attack - effective_def / 2.0).max(1.0)
+                * taken_mult
+                * defender_damage_taken_mult
+                * adventurer_damage_to_monsters_mult
+                * elem_mult)
                 .round()
                 .max(1.0) as i32;
             monster.hp -= damage;
@@ -309,9 +328,12 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             } else {
                 1.0
             };
-            let damage = ((strike.attack as f32 - victim_def).max(1.0) * elem_mult * vuln)
-                .round()
-                .max(1.0) as i32;
+            let damage = ((strike.attack as f32 - victim_def).max(1.0)
+                * elem_mult
+                * vuln
+                * adventurer_damage_taken_mult(victim))
+            .round()
+            .max(1.0) as i32;
             victim.hp -= damage;
             damage_to_party += damage;
             if strike.lifesteal > 0.0 {

@@ -17,6 +17,14 @@ pub struct UpgradeTemplate {
     /// Trap behavior kind; see RoomUpgrade::effect_kind
     #[serde(default)]
     pub effect_kind: String,
+    /// Second, simulation-facing room rule. Every current catalogue entry
+    /// declares one; defaults keep older authored data and saves readable.
+    #[serde(default)]
+    pub secondary_effect: String,
+    #[serde(default)]
+    pub secondary_kind: String,
+    #[serde(default)]
+    pub secondary_value: f32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,6 +77,9 @@ impl UpgradeTemplate {
             multiplier: self.multiplier,
             element: self.element.clone(),
             effect_kind: self.effect_kind.clone(),
+            secondary_effect: self.secondary_effect.clone(),
+            secondary_kind: self.secondary_kind.clone(),
+            secondary_value: self.secondary_value,
             disarmed: false,
         }
     }

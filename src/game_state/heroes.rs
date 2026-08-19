@@ -33,6 +33,10 @@ pub struct Condition {
     pub ticks: i32,
     /// Damage dealt per tick
     pub power: i32,
+    /// Multiplier carried by non-damaging conditions such as Weakened and
+    /// Brittle. Legacy conditions default to a neutral multiplier.
+    #[serde(default = "super::default_condition_multiplier")]
+    pub multiplier: f32,
 }
 
 /// Individual adventurer in a party

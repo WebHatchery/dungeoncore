@@ -7,7 +7,10 @@
             "multiplier": 12,
             "souls_cost": 0,
             "mana_cost": 25,
-            "effect_kind": "Damage"
+            "effect_kind": "Damage",
+            "secondary_effect": "Bleeding targets lose 3 HP for 3 ticks",
+            "secondary_kind": "Bleed",
+            "secondary_value": 3.0
         },
         {
             "type": "trap",
@@ -16,7 +19,10 @@
             "multiplier": 4,
             "souls_cost": 0,
             "mana_cost": 40,
-            "effect_kind": "Poison"
+            "effect_kind": "Poison",
+            "secondary_effect": "Venom weakens a random victim's attacks by 15% for 4 ticks",
+            "secondary_kind": "Weaken",
+            "secondary_value": 0.85
         },
         {
             "type": "trap",
@@ -25,7 +31,10 @@
             "multiplier": 25,
             "souls_cost": 1,
             "mana_cost": 60,
-            "effect_kind": "Damage"
+            "effect_kind": "Damage",
+            "secondary_effect": "The impact holds the victim for 1 combat tick",
+            "secondary_kind": "Snare",
+            "secondary_value": 1.0
         },
         {
             "type": "trap",
@@ -35,7 +44,10 @@
             "souls_cost": 0,
             "mana_cost": 45,
             "effect_kind": "Burn",
-            "element": "Fire"
+            "element": "Fire",
+            "secondary_effect": "A random target takes 20% more monster damage after the vent ignites",
+            "secondary_kind": "Brittle",
+            "secondary_value": 1.2
         },
         {
             "type": "trap",
@@ -45,7 +57,10 @@
             "souls_cost": 0,
             "mana_cost": 50,
             "effect_kind": "Snare",
-            "element": "Water"
+            "element": "Water",
+            "secondary_effect": "A random target takes 10% more monster damage while the party is held",
+            "secondary_kind": "Brittle",
+            "secondary_value": 1.1
         },
         {
             "type": "trap",
@@ -54,7 +69,10 @@
             "multiplier": 1.25,
             "souls_cost": 0,
             "mana_cost": 35,
-            "effect_kind": "Alarm"
+            "effect_kind": "Alarm",
+            "secondary_effect": "The rattled party deals 10% less damage for 4 ticks",
+            "secondary_kind": "PartyWeaken",
+            "secondary_value": 0.9
         },
         {
             "type": "trap",
@@ -64,7 +82,10 @@
             "souls_cost": 1,
             "mana_cost": 35,
             "effect_kind": "ManaSiphon",
-            "element": "Arcane"
+            "element": "Arcane",
+            "secondary_effect": "Arcane users lose 15% of their attack for 4 ticks",
+            "secondary_kind": "ArcaneWeaken",
+            "secondary_value": 0.85
         },
         {
             "type": "trap",
@@ -73,7 +94,10 @@
             "multiplier": 25,
             "souls_cost": 1,
             "mana_cost": 45,
-            "effect_kind": "GoldSteal"
+            "effect_kind": "GoldSteal",
+            "secondary_effect": "Greed emboldens the party, increasing its attacks by 10% for 4 ticks",
+            "secondary_kind": "PartyRally",
+            "secondary_value": 1.1
         },
         {
             "type": "trap",
@@ -83,7 +107,10 @@
             "souls_cost": 3,
             "mana_cost": 90,
             "effect_kind": "Damage",
-            "element": "Death"
+            "element": "Death",
+            "secondary_effect": "A random target is left brittle, increasing monster damage by 25%",
+            "secondary_kind": "Brittle",
+            "secondary_value": 1.25
         },
         {
             "type": "treasure",
@@ -91,7 +118,10 @@
             "effect": "Increases gold dropped when adventurers defeat monsters",
             "multiplier": 1.25,
             "souls_cost": 0,
-            "mana_cost": 20
+            "mana_cost": 20,
+            "secondary_effect": "Shimmering coins reveal weak spots: adventurers deal 10% more damage here",
+            "secondary_kind": "AdventurerAttack",
+            "secondary_value": 1.1
         },
         {
             "type": "treasure",
@@ -99,7 +129,10 @@
             "effect": "Significantly increases gold drops",
             "multiplier": 1.5,
             "souls_cost": 0,
-            "mana_cost": 45
+            "mana_cost": 45,
+            "secondary_effect": "The vault lures heroes into a killing ground, but they deal 15% more damage here",
+            "secondary_kind": "AdventurerAttack",
+            "secondary_value": 1.15
         },
         {
             "type": "treasure",
@@ -107,7 +140,10 @@
             "effect": "Massively increases gold drops",
             "multiplier": 2.0,
             "souls_cost": 2,
-            "mana_cost": 80
+            "mana_cost": 80,
+            "secondary_effect": "The hoard emboldens treasure hunters: adventurers deal 20% more damage here",
+            "secondary_kind": "AdventurerAttack",
+            "secondary_value": 1.2
         },
         {
             "type": "reinforcement",
@@ -115,7 +151,10 @@
             "effect": "Increases monster defense in this room",
             "multiplier": 1.15,
             "souls_cost": 0,
-            "mana_cost": 25
+            "mana_cost": 25,
+            "secondary_effect": "Protected defenders take 15% less damage",
+            "secondary_kind": "DefenderDamageReduction",
+            "secondary_value": 0.85
         },
         {
             "type": "reinforcement",
@@ -123,7 +162,10 @@
             "effect": "Boosts all monster stats in this room",
             "multiplier": 1.25,
             "souls_cost": 1,
-            "mana_cost": 40
+            "mana_cost": 40,
+            "secondary_effect": "The aura rattles invaders, reducing their attacks by 10%",
+            "secondary_kind": "AdventurerAttack",
+            "secondary_value": 0.9
         },
         {
             "type": "reinforcement",
@@ -131,7 +173,10 @@
             "effect": "Greatly enhances monster power",
             "multiplier": 1.5,
             "souls_cost": 2,
-            "mana_cost": 65
+            "mana_cost": 65,
+            "secondary_effect": "Monster kills here yield 25% more mana",
+            "secondary_kind": "KillMana",
+            "secondary_value": 1.25
         },
         {
             "type": "evolution",
@@ -139,7 +184,10 @@
             "effect": "Monsters in this room gain experience faster",
             "multiplier": 1.5,
             "souls_cost": 1,
-            "mana_cost": 35
+            "mana_cost": 35,
+            "secondary_effect": "Defenders regenerate 5% of max HP at the start of each combat tick",
+            "secondary_kind": "MonsterRegen",
+            "secondary_value": 0.05
         },
         {
             "type": "evolution",
@@ -147,7 +195,10 @@
             "effect": "Allows monsters to evolve to higher tiers",
             "multiplier": 2.0,
             "souls_cost": 2,
-            "mana_cost": 55
+            "mana_cost": 55,
+            "secondary_effect": "Unstable growth exposes weak points: adventurers deal 15% more damage here",
+            "secondary_kind": "AdventurerDamageToMonsters",
+            "secondary_value": 1.15
         },
         {
             "type": "attunement",
@@ -156,7 +207,10 @@
             "multiplier": 1.3,
             "souls_cost": 1,
             "element": "Fire",
-            "mana_cost": 35
+            "mana_cost": 35,
+            "secondary_effect": "Matching-element adventurers deal 15% more damage here",
+            "secondary_kind": "ElementalAdventurerAttack",
+            "secondary_value": 1.15
         },
         {
             "type": "attunement",
@@ -165,7 +219,10 @@
             "multiplier": 1.3,
             "souls_cost": 1,
             "element": "Water",
-            "mana_cost": 35
+            "mana_cost": 35,
+            "secondary_effect": "Matching-element adventurers deal 15% more damage here",
+            "secondary_kind": "ElementalAdventurerAttack",
+            "secondary_value": 1.15
         },
         {
             "type": "attunement",
@@ -174,7 +231,10 @@
             "multiplier": 1.3,
             "souls_cost": 1,
             "element": "Earth",
-            "mana_cost": 35
+            "mana_cost": 35,
+            "secondary_effect": "Matching-element adventurers deal 15% more damage here",
+            "secondary_kind": "ElementalAdventurerAttack",
+            "secondary_value": 1.15
         },
         {
             "type": "attunement",
@@ -183,7 +243,10 @@
             "multiplier": 1.3,
             "souls_cost": 1,
             "element": "Death",
-            "mana_cost": 35
+            "mana_cost": 35,
+            "secondary_effect": "Matching-element adventurers deal 15% more damage here",
+            "secondary_kind": "ElementalAdventurerAttack",
+            "secondary_value": 1.15
         }
     ]
 }

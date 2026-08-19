@@ -73,6 +73,25 @@ fn damage_taken(snared: bool) -> i32 {
     before - s.adventurer_parties[0].members[0].hp
 }
 
+fn damage_to_room_monster(upgrade_name: Option<&str>) -> i32 {
+    let mut state = GameState::new();
+    let mut room = Room::new(99, RoomType::Normal, 2, 1);
+    if let Some(name) = upgrade_name {
+        room.upgrades.push(
+            crate::data::upgrades::get_upgrade_template(name)
+                .unwrap()
+                .to_room_upgrade(),
+        );
+    }
+    room.monsters.push(sturdy_monster());
+    state.floors[0].rooms.push(room);
+    let room_idx = state.floors[0].rooms.len() - 1;
+    state.adventurer_parties.push(lone_invader(300));
+    let before = state.floors[0].rooms[room_idx].monsters[0].hp;
+    resolve_combat(&mut state, 0, 0, room_idx);
+    before - state.floors[0].rooms[room_idx].monsters[0].hp
+}
+
 #[test]
 fn snared_party_takes_amplified_damage() {
     let free = damage_taken(false);
@@ -82,4 +101,77 @@ fn snared_party_takes_amplified_damage() {
         held > free,
         "a held party takes more ({held}) than a free one ({free})"
     );
+}
+
+#[test]
+fn stone_walls_reduce_damage_to_defenders() {
+    let open = damage_to_room_monster(None);
+    let walled = damage_to_room_monster(Some("Stone Walls"));
+    assert!(open > 0);
+    assert!(
+        walled < open,
+        "Stone Walls should protect defenders: {walled} < {open}"
+    );
+}
+
+#[test]
+fn treasure_and_evolution_rooms_expose_defenders_to_adventurers() {
+    let open = damage_to_room_monster(None);
+    let treasure = damage_to_room_monster(Some("Gold Cache"));
+    let evolution = damage_to_room_monster(Some("Evolution Pit"));
+    assert!(
+        treasure > open,
+        "treasure lure should empower invader attacks"
+    );
+    assert!(
+        evolution > open,
+        "unstable growth should expose weak points"
+    );
+}
+
+#[test]
+fn growth_chamber_regenerates_a_wounded_defender() {
+    let mut state = GameState::new();
+    let mut room = Room::new(99, RoomType::Normal, 2, 1);
+    let mut monster = sturdy_monster();
+    monster.hp = 200;
+    room.monsters.push(monster);
+    room.upgrades.push(
+        crate::data::upgrades::get_upgrade_template("Growth Chamber")
+            .unwrap()
+            .to_room_upgrade(),
+    );
+    state.floors[0].rooms.push(room);
+    let room_idx = state.floors[0].rooms.len() - 1;
+    state.adventurer_parties.push(lone_invader(300));
+
+    resolve_combat(&mut state, 0, 0, room_idx);
+
+    assert!(
+        state.floors[0].rooms[room_idx].monsters[0].hp > 200,
+        "Growth Chamber should heal before the room trades attacks"
+    );
+}
+
+#[test]
+fn spike_trap_applies_its_bleed_secondary_effect() {
+    let mut state = GameState::new();
+    let mut room = Room::new(99, RoomType::Normal, 2, 1);
+    room.upgrades.push(
+        crate::data::upgrades::get_upgrade_template("Spike Trap")
+            .unwrap()
+            .to_room_upgrade(),
+    );
+    state.floors[0].rooms.push(room);
+    let room_idx = state.floors[0].rooms.len() - 1;
+    state.adventurer_parties.push(lone_invader(10_000));
+
+    for _ in 0..100 {
+        super::traps::resolve_trap(&mut state, 0, 0, room_idx);
+    }
+
+    assert!(state.adventurer_parties[0].members[0]
+        .conditions
+        .iter()
+        .any(|condition| condition.kind == "Bleeding"));
 }

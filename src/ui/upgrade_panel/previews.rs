@@ -25,7 +25,7 @@ fn trap_preview(effect_kind: &str, value: f32) -> String {
 }
 
 pub(crate) fn upgrade_preview(upgrade: &UpgradeTemplate) -> String {
-    match upgrade.upgrade_type.as_str() {
+    let primary = match upgrade.upgrade_type.as_str() {
         "trap" => trap_preview(&upgrade.effect_kind, upgrade.multiplier),
         "treasure" => format!("Gold drops x{:.2}", upgrade.multiplier),
         "reinforcement" => format!("Monster survival x{:.2}", upgrade.multiplier),
@@ -36,11 +36,16 @@ pub(crate) fn upgrade_preview(upgrade: &UpgradeTemplate) -> String {
             upgrade.multiplier
         ),
         _ => upgrade.effect.clone(),
+    };
+    if upgrade.secondary_effect.is_empty() {
+        primary
+    } else {
+        format!("{primary} · Extra: {}", upgrade.secondary_effect)
     }
 }
 
 pub(super) fn room_upgrade_preview(upgrade: &RoomUpgrade) -> String {
-    match &upgrade.upgrade_type {
+    let primary = match &upgrade.upgrade_type {
         RoomUpgradeType::Trap => {
             let mut text = trap_preview(&upgrade.effect_kind, upgrade.multiplier);
             if upgrade.disarmed {
@@ -68,6 +73,11 @@ pub(super) fn room_upgrade_preview(upgrade: &RoomUpgrade) -> String {
                 upgrade.multiplier
             )
         }
+    };
+    if upgrade.secondary_effect.is_empty() {
+        primary
+    } else {
+        format!("{primary} · Extra: {}", upgrade.secondary_effect)
     }
 }
 

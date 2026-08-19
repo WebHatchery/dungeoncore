@@ -79,6 +79,7 @@ pub(super) fn resolve_trap(
                         kind: trap.effect_kind.clone(),
                         ticks: CONDITION_TICKS,
                         power,
+                        multiplier: 1.0,
                     });
                     victim.name.clone()
                 })
@@ -214,6 +215,136 @@ pub(super) fn resolve_trap(
                 }
             }
         }
+    }
+
+    apply_secondary_effect(state, party_idx, floor_num, room_pos, &trap);
+}
+
+/// Apply the second rule carried by a trap template. These effects deliberately
+/// live on the party's normal condition list so they survive a room transition
+/// for a few ticks and are visible to the same combat math as poison and burn.
+fn apply_secondary_effect(
+    state: &mut GameState,
+    party_idx: usize,
+    floor_num: i32,
+    room_pos: usize,
+    trap: &crate::game_state::RoomUpgrade,
+) {
+    let kind = trap.secondary_kind.as_str();
+    if kind.is_empty() {
+        return;
+    }
+
+    let condition = |condition_kind: &str, multiplier: f32| Condition {
+        kind: condition_kind.to_string(),
+        ticks: CONDITION_TICKS,
+        power: if condition_kind == "Bleeding" {
+            trap.secondary_value.round().max(1.0) as i32
+        } else {
+            0
+        },
+        multiplier,
+    };
+
+    match kind {
+        "Bleed" => apply_to_random_adventurer(
+            state,
+            party_idx,
+            condition("Bleeding", 1.0),
+            &trap.secondary_effect,
+        ),
+        "Weaken" => apply_to_random_adventurer(
+            state,
+            party_idx,
+            condition("Weakened", trap.secondary_value),
+            &trap.secondary_effect,
+        ),
+        "ArcaneWeaken" => apply_to_random_adventurer(
+            state,
+            party_idx,
+            condition("ArcaneWeakened", trap.secondary_value),
+            &trap.secondary_effect,
+        ),
+        "Brittle" => apply_to_random_adventurer(
+            state,
+            party_idx,
+            condition("Brittle", trap.secondary_value),
+            &trap.secondary_effect,
+        ),
+        "Snare" => {
+            let ticks = trap.secondary_value.round().max(1.0) as i32;
+            state.adventurer_parties[party_idx].snared_ticks =
+                state.adventurer_parties[party_idx].snared_ticks.max(ticks);
+            state.add_log(LogEntry::combat(format!(
+                "{}'s secondary impact holds the party for {} more tick{}.",
+                trap.name,
+                ticks,
+                if ticks == 1 { "" } else { "s" }
+            )));
+        }
+        "PartyWeaken" => apply_to_party(
+            state,
+            party_idx,
+            condition("Weakened", trap.secondary_value),
+            &trap.secondary_effect,
+        ),
+        "PartyRally" => apply_to_party(
+            state,
+            party_idx,
+            condition("Rallied", trap.secondary_value),
+            &trap.secondary_effect,
+        ),
+        _ => return,
+    }
+
+    state.push_effect(
+        floor_num,
+        room_pos,
+        "Secondary effect!",
+        EffectKind::Ability,
+    );
+}
+
+fn apply_to_random_adventurer(
+    state: &mut GameState,
+    party_idx: usize,
+    condition: Condition,
+    description: &str,
+) {
+    let target_name = {
+        let party = &mut state.adventurer_parties[party_idx];
+        random_alive_idx(&mut state.run_rng, party).map(|idx| {
+            let target = &mut party.members[idx];
+            target.conditions.push(condition);
+            target.name.clone()
+        })
+    };
+    if let Some(name) = target_name {
+        state.add_log(LogEntry::combat(format!(
+            "{} suffers an extra room effect.",
+            name
+        )));
+    }
+    if !description.is_empty() {
+        state.add_log(LogEntry::combat(description.to_string()));
+    }
+}
+
+fn apply_to_party(
+    state: &mut GameState,
+    party_idx: usize,
+    condition: Condition,
+    description: &str,
+) {
+    for member in state.adventurer_parties[party_idx]
+        .members
+        .iter_mut()
+        .filter(|member| member.alive)
+    {
+        member.conditions.push(condition.clone());
+    }
+    if !description.is_empty() {
+        state.add_log(LogEntry::combat(description.to_string()));
     }
 }
 

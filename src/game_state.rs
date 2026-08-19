@@ -7,10 +7,16 @@ mod effects;
 mod floor;
 pub(crate) mod heroes;
 mod reputation;
+mod rooms;
 pub use effects::{EffectAnchor, EffectKind, ElementSound, RoomEffect, SoundEvent};
 pub use floor::Floor;
 pub use heroes::{Adventurer, AdventurerParty, Condition, Equipment, HeroRecord, HeroStatus};
 pub use reputation::{ReputationBand, VisitorQuality, REPUTATION_MAX, REPUTATION_MIN};
+pub use rooms::{Room, RoomType, RoomUpgrade, RoomUpgradeType};
+
+fn default_condition_multiplier() -> f32 {
+    1.0
+}
 
 /// A ready (zero-duration) cooldown, used as the `#[serde(skip)]` default for
 /// transient fields — `Cooldown` has no `Default` impl of its own.
@@ -47,44 +53,6 @@ pub struct Stats {
     pub defense: i32,
 }
 
-/// Room type enumeration
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum RoomType {
-    Entrance,
-    Normal,
-    Boss,
-    Core,
-}
-
-/// Room upgrade type
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum RoomUpgradeType {
-    Trap,
-    Treasure,
-    Reinforcement,
-    Evolution,
-    Attunement,
-}
-
-/// Room upgrade applied to a room
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct RoomUpgrade {
-    pub upgrade_type: RoomUpgradeType,
-    pub name: String,
-    pub effect: String,
-    pub multiplier: f32,
-    /// Element this upgrade is keyed to (attunements, elemental traps)
-    #[serde(default)]
-    pub element: Option<String>,
-    /// Trap behavior: "Damage", "Poison", "Burn", "Snare", "Alarm",
-    /// "ManaSiphon", "GoldSteal". Empty = legacy flat-damage trap.
-    #[serde(default)]
-    pub effect_kind: String,
-    /// A Rogue sprung this trap; it re-arms between raids (costs mana).
-    #[serde(default)]
-    pub disarmed: bool,
-}
-
 /// Active trait instance on a monster
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ActiveTrait {
@@ -105,96 +73,6 @@ pub struct Monster {
     pub scaled_stats: Stats,
     #[serde(default)]
     pub active_traits: Vec<ActiveTrait>,
-}
-
-/// Room in a dungeon floor
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Room {
-    pub id: u64,
-    pub room_type: RoomType,
-    /// Stable per-floor node key. No longer implies linear order — it is this
-    /// room's identity within the floor and the endpoint used by `exits`.
-    pub position: usize,
-    /// Child rooms this room routes into (directed graph edges within the
-    /// floor). The Entrance has >= 1 exit; a fork has >= 2 (up to 3); the Core
-    /// sink has none. Empty on pre-graph saves; `GameState::migrate` rebuilds
-    /// the linear chain from `position` order.
-    #[serde(default)]
-    pub exits: Vec<usize>,
-    pub floor_number: i32,
-    pub monsters: Vec<Monster>,
-    /// Installed upgrades — at most one per RoomUpgradeType.
-    #[serde(default)]
-    pub upgrades: Vec<RoomUpgrade>,
-    /// Legacy single-slot field; migrated into `upgrades` on load.
-    #[serde(default, skip_serializing)]
-    pub upgrade: Option<RoomUpgrade>,
-    pub explored: bool,
-    pub loot: i32,
-}
-
-impl Room {
-    pub fn new(id: u64, room_type: RoomType, position: usize, floor_number: i32) -> Self {
-        Self {
-            id,
-            room_type,
-            position,
-            exits: Vec::new(),
-            floor_number,
-            monsters: Vec::new(),
-            upgrades: Vec::new(),
-            upgrade: None,
-            explored: false,
-            loot: 0,
-        }
-    }
-
-    /// The installed upgrade of a given type, if any.
-    pub fn upgrade_of(&self, upgrade_type: RoomUpgradeType) -> Option<&RoomUpgrade> {
-        self.upgrades
-            .iter()
-            .find(|u| u.upgrade_type == upgrade_type)
-    }
-
-    /// Whether the room already holds an upgrade of this type.
-    pub fn has_upgrade_type(&self, upgrade_type: RoomUpgradeType) -> bool {
-        self.upgrade_of(upgrade_type).is_some()
-    }
-
-    /// Get the trap damage multiplier (from trap upgrades)
-    pub fn trap_multiplier(&self) -> f32 {
-        self.upgrade_of(RoomUpgradeType::Trap)
-            .map(|u| u.multiplier)
-            .unwrap_or(1.0)
-    }
-
-    /// Get the treasure/loot multiplier
-    pub fn treasure_multiplier(&self) -> f32 {
-        self.upgrade_of(RoomUpgradeType::Treasure)
-            .map(|u| u.multiplier)
-            .unwrap_or(1.0)
-    }
-
-    /// Get monster stat boost from reinforcement
-    pub fn reinforcement_multiplier(&self) -> f32 {
-        self.upgrade_of(RoomUpgradeType::Reinforcement)
-            .map(|u| u.multiplier)
-            .unwrap_or(1.0)
-    }
-
-    /// Get XP multiplier from evolution upgrade
-    pub fn evolution_multiplier(&self) -> f32 {
-        self.upgrade_of(RoomUpgradeType::Evolution)
-            .map(|u| u.multiplier)
-            .unwrap_or(1.0)
-    }
-
-    /// Element attunement of this room: (element, stat multiplier for
-    /// monsters of that element), if an attunement upgrade is installed.
-    pub fn attunement(&self) -> Option<(&str, f32)> {
-        self.upgrade_of(RoomUpgradeType::Attunement)
-            .and_then(|u| u.element.as_deref().map(|e| (e, u.multiplier)))
-    }
 }
 
 fn default_core_hp() -> i32 {

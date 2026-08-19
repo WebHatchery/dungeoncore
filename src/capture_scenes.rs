@@ -119,6 +119,9 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                             multiplier: 1.3,
                             element: Some("Fire".to_string()),
                             effect_kind: String::new(),
+                            secondary_effect: "Matching-element adventurers deal 15% more damage here".to_string(),
+                            secondary_kind: "ElementalAdventurerAttack".to_string(),
+                            secondary_value: 1.15,
                             disarmed: false,
                         });
                     }

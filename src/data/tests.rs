@@ -209,6 +209,48 @@ fn upgrades_use_known_types_and_elements() {
 }
 
 #[test]
+fn every_room_upgrade_declares_a_secondary_mechanical_effect() {
+    const KNOWN_SECONDARY_KINDS: [&str; 13] = [
+        "Bleed",
+        "Weaken",
+        "Snare",
+        "Brittle",
+        "PartyWeaken",
+        "ArcaneWeaken",
+        "PartyRally",
+        "AdventurerAttack",
+        "DefenderDamageReduction",
+        "KillMana",
+        "MonsterRegen",
+        "AdventurerDamageToMonsters",
+        "ElementalAdventurerAttack",
+    ];
+    for upgrade in upgrades::get_all_upgrades() {
+        assert!(
+            !upgrade.secondary_effect.trim().is_empty(),
+            "upgrade '{}' is missing its player-facing secondary effect",
+            upgrade.name
+        );
+        assert!(
+            !upgrade.secondary_kind.trim().is_empty(),
+            "upgrade '{}' is missing its simulation secondary kind",
+            upgrade.name
+        );
+        assert_ne!(
+            upgrade.secondary_value, 0.0,
+            "upgrade '{}' has a zero-valued secondary effect",
+            upgrade.name
+        );
+        assert!(
+            KNOWN_SECONDARY_KINDS.contains(&upgrade.secondary_kind.as_str()),
+            "upgrade '{}' uses an unwired secondary kind '{}',",
+            upgrade.name,
+            upgrade.secondary_kind
+        );
+    }
+}
+
+#[test]
 fn splitters_break_into_non_splitting_tier_ones() {
     // split_on_death must terminate: no tier-1 monster may carry it.
     for template in monsters::get_monster_templates() {

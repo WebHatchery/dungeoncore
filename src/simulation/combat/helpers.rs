@@ -1,7 +1,7 @@
 //! Stat, trait, and targeting helpers shared across the combat submodules.
 
 use crate::data::traits::get_trait;
-use crate::game_state::{ActiveTrait, AdventurerParty, Monster};
+use crate::game_state::{ActiveTrait, Adventurer, AdventurerParty, Monster};
 use macroquad_toolkit::rng::SeededRng;
 
 /// Whether a monster has a passive trait with the given effect type.
@@ -111,6 +111,37 @@ pub(super) fn monster_damage_taken_mult(monster: &Monster) -> f32 {
         }
     }
     mult
+}
+
+/// Attack multiplier from temporary room conditions on an adventurer.
+pub(super) fn adventurer_attack_mult(adventurer: &Adventurer) -> f32 {
+    let elemental = adventurer_element(&adventurer.class_name);
+    adventurer
+        .conditions
+        .iter()
+        .filter(|condition| {
+            condition.kind == "Weakened"
+                || condition.kind == "Rallied"
+                || (condition.kind == "ArcaneWeakened" && elemental == "Arcane")
+        })
+        .map(|condition| condition.multiplier)
+        .product::<f32>()
+        .max(0.0)
+}
+
+/// Damage multiplier from temporary brittle conditions on an adventurer.
+pub(super) fn adventurer_damage_taken_mult(adventurer: &Adventurer) -> f32 {
+    let multiplier = adventurer
+        .conditions
+        .iter()
+        .filter(|condition| condition.kind == "Brittle")
+        .map(|condition| condition.multiplier)
+        .product::<f32>();
+    if multiplier == 0.0 {
+        1.0
+    } else {
+        multiplier
+    }
 }
 
 /// Effective attack including offensive passives and room reinforcement.
