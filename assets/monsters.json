@@ -169,6 +169,39 @@
             ]
         },
         {
+            "name": "Pyre Ooze",
+            "base_cost": 68,
+            "hp": 118,
+            "attack": 22,
+            "defense": 8,
+            "species": "Slime",
+            "tier": 3,
+            "emoji": "🌋",
+            "element": "Fire",
+            "description": "An engulfing furnace-fluid bred for the Ember Galleries.",
+            "traits": [
+                "fire_breath",
+                "split_on_death"
+            ]
+        },
+        {
+            "name": "Astral Gel",
+            "base_cost": 72,
+            "hp": 92,
+            "attack": 27,
+            "defense": 7,
+            "species": "Slime",
+            "tier": 3,
+            "emoji": "🌌",
+            "element": "Arcane",
+            "description": "A clear ooze filled with captive stars and stolen spell-light.",
+            "traits": [
+                "mana_leech",
+                "shadow_bolt",
+                "split_on_death"
+            ]
+        },
+        {
             "name": "Skeleton",
             "base_cost": 15,
             "hp": 30,
@@ -181,6 +214,53 @@
             "description": "A pile of bones held together by dark magic.",
             "traits": [
                 "undead_resilience"
+            ]
+        },
+        {
+            "name": "Drowned Husk",
+            "base_cost": 17,
+            "hp": 36,
+            "attack": 7,
+            "defense": 4,
+            "species": "Undead",
+            "tier": 1,
+            "emoji": "🫧",
+            "element": "Water",
+            "description": "A waterlogged corpse awakened by the Drowned Hollows.",
+            "traits": [
+                "undead_resilience"
+            ]
+        },
+        {
+            "name": "Drowned Warden",
+            "base_cost": 44,
+            "hp": 82,
+            "attack": 14,
+            "defense": 10,
+            "species": "Undead",
+            "tier": 2,
+            "emoji": "⚓",
+            "element": "Water",
+            "description": "A barnacled jailer that anchors intruders in the black current.",
+            "traits": [
+                "undead_resilience",
+                "taunt"
+            ]
+        },
+        {
+            "name": "Death Tide",
+            "base_cost": 92,
+            "hp": 138,
+            "attack": 25,
+            "defense": 13,
+            "species": "Undead",
+            "tier": 3,
+            "emoji": "🌊",
+            "element": "Water",
+            "description": "A drowned legion collapsed into one advancing wall of dead water.",
+            "traits": [
+                "undead_resilience",
+                "tempest"
             ]
         },
         {
@@ -215,6 +295,67 @@
                 "regenerate_minor",
                 "undead_resilience",
                 "shadow_bolt"
+            ]
+        },
+        {
+            "name": "Cave Wyrmling",
+            "base_cost": 18,
+            "hp": 38,
+            "attack": 8,
+            "defense": 5,
+            "species": "Draconic",
+            "tier": 1,
+            "emoji": "🥚",
+            "element": "Earth",
+            "description": "A young tunnel-drake whose scales have already hardened like shale.",
+            "traits": [
+                "stone_skin"
+            ]
+        },
+        {
+            "name": "Cinder Wyrmling",
+            "base_cost": 18,
+            "hp": 30,
+            "attack": 10,
+            "defense": 3,
+            "species": "Draconic",
+            "tier": 1,
+            "emoji": "🔥",
+            "element": "Fire",
+            "description": "A reckless hatchling that grows bolder as prey surrounds it.",
+            "traits": [
+                "frenzy"
+            ]
+        },
+        {
+            "name": "Storm Drake",
+            "base_cost": 48,
+            "hp": 74,
+            "attack": 17,
+            "defense": 7,
+            "species": "Draconic",
+            "tier": 2,
+            "emoji": "🌩️",
+            "element": "Air",
+            "description": "A winged hunter that brings the pressure of a buried thunderhead.",
+            "traits": [
+                "tempest"
+            ]
+        },
+        {
+            "name": "Mire Drake",
+            "base_cost": 48,
+            "hp": 92,
+            "attack": 14,
+            "defense": 10,
+            "species": "Draconic",
+            "tier": 2,
+            "emoji": "🐊",
+            "element": "Water",
+            "description": "A patient amphibious drake that blocks whole flooded passages.",
+            "traits": [
+                "regenerate_minor",
+                "taunt"
             ]
         },
         {

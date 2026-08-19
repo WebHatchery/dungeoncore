@@ -117,10 +117,13 @@ fn evolution_trees_reference_valid_monsters() {
             "starting monster keyed by unknown species '{}'",
             species_name
         );
-        assert!(
-            monsters::get_monster_template(&starter).is_some(),
-            "starting monster '{}' has no template",
-            starter
+        let template = monsters::get_monster_template(&starter)
+            .unwrap_or_else(|| panic!("starting monster '{starter}' has no template"));
+        assert_eq!(template.species, species_name);
+        assert_eq!(
+            template.tier, 1,
+            "species '{}' must start with a tier-1 creature",
+            species_name
         );
     }
 }
@@ -306,8 +309,8 @@ fn boss_uniques_are_reachable_by_evolution() {
 
 #[test]
 fn every_species_is_summonable_after_unlock() {
-    // unlock_species grants the tier-1 roster, falling back to the
-    // starting_monsters map (e.g. Draconic only has the tier-3 Dragon).
+    // unlock_species grants the tier-1 roster, with starting_monsters retained
+    // as a compatibility fallback for older data packs.
     let starting = evolutions::get_starting_monsters();
     for species in monsters::get_all_species() {
         let has_tier_one = !monsters::get_starter_monsters_for_species(&species.name).is_empty();
@@ -315,6 +318,42 @@ fn every_species_is_summonable_after_unlock() {
             has_tier_one || starting.contains_key(&species.name),
             "species '{}' has neither tier-1 monsters nor a starting_monsters entry",
             species.name
+        );
+    }
+}
+
+#[test]
+fn every_species_has_forms_for_all_four_depth_tiers() {
+    let templates = monsters::get_monster_templates();
+    for species in monsters::get_all_species() {
+        for tier in 1..=4 {
+            assert!(
+                templates
+                    .iter()
+                    .any(|template| template.species == species.name && template.tier == tier),
+                "species '{}' has no tier-{tier} form",
+                species.name
+            );
+        }
+    }
+}
+
+#[test]
+fn evolution_paths_never_skip_a_creature_tier() {
+    for path in evolutions::get_evolution_trees().values().flatten() {
+        let from = monsters::get_monster_template(&path.from_monster).unwrap();
+        let to = monsters::get_monster_template(&path.to_monster).unwrap();
+        assert_eq!(
+            to.tier,
+            from.tier + 1,
+            "{} should grow one tier at a time into {}",
+            from.name,
+            to.name
+        );
+        assert_eq!(
+            from.species, to.species,
+            "{} cannot evolve outside its species into {}",
+            from.name, to.name
         );
     }
 }

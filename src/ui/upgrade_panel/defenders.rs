@@ -15,6 +15,12 @@ use super::UpgradeAction;
 
 pub(super) const DEFENDER_ROW_H: f32 = 58.0;
 pub(super) const MAX_DEFENDER_ROWS: usize = 2;
+pub(super) const DEFENDER_PAGER_H: f32 = 32.0;
+
+fn paged_defender_offset(current: usize, total: usize, delta: isize) -> usize {
+    let max = total.saturating_sub(MAX_DEFENDER_ROWS);
+    current.saturating_add_signed(delta).min(max)
+}
 
 /// Vertical list of every defender in the room — one card each carrying the
 /// creature's condition (health, whether it has fallen), what it hits for, its
@@ -65,11 +71,29 @@ pub(super) fn draw_monster_progress_rows(
     }
 
     if total > visible {
+        let controls_y = rect.y + rect.h + 2.0;
+        let button_w = (rect.w * 0.28).min(76.0);
+        if draw_command_button(
+            Rect::new(rect.x, controls_y, button_w, 25.0),
+            "Prev",
+            ButtonTone::Ghost,
+            first > 0,
+        ) {
+            *defender_scroll = paged_defender_offset(first, total, -1) as f32;
+        }
+        if draw_command_button(
+            Rect::new(rect.x + rect.w - button_w, controls_y, button_w, 25.0),
+            "Next",
+            ButtonTone::Ghost,
+            first + visible < total,
+        ) {
+            *defender_scroll = paged_defender_offset(first, total, 1) as f32;
+        }
         draw_text_fit_right(
-            &format!("{}-{} of {} (scroll)", first + 1, first + visible, total),
-            rect.x + rect.w,
-            rect.y + rect.h + 10.0,
-            rect.w,
+            &format!("{}-{} / {}", first + 1, first + visible, total),
+            rect.x + rect.w - button_w - 8.0,
+            controls_y + 17.0,
+            rect.w - button_w * 2.0 - 16.0,
             9.0,
             TEXT_DIM,
         );
@@ -77,6 +101,9 @@ pub(super) fn draw_monster_progress_rows(
 
     chosen
 }
+
+#[cfg(test)]
+mod tests;
 
 /// One defender's card. While a monster is armed in the drawer the whole card
 /// is a drop target, and states which of the two things a click would do.

@@ -7,6 +7,8 @@ use macroquad::prelude::*;
 use macroquad_toolkit::assets::AssetManager;
 use macroquad_toolkit::sprite::{SpriteAtlas, SpriteClip};
 
+mod adornments;
+
 pub const UNIT_SHEET_KEY: &str = "dungeon_unit_sheet";
 pub const UNIT_SHEET_PATH: &str = "assets/sprites/dungeon_units.png";
 pub const ANIMATED_UNIT_SHEET_KEY: &str = "dungeon_unit_sheet_animated";
@@ -137,8 +139,13 @@ impl DungeonSprites {
                 1.0,
             );
         };
+        adornments::draw_backdrop(name, center, size);
         if style.identity.source == MonsterSpriteSource::GiantRat {
-            return self.draw_giant_rat(center, size, flip_x, style);
+            let drawn = self.draw_giant_rat(center, size, flip_x, style);
+            if drawn {
+                adornments::draw_crest(name, center, size);
+            }
+            return drawn;
         }
         let drawn = match style.identity.source {
             MonsterSpriteSource::Animated => self.draw_monster_animated_frame(
@@ -161,19 +168,21 @@ impl DungeonSprites {
             ),
             MonsterSpriteSource::GiantRat => false,
         };
+        let drawn = drawn
+            || self.draw_frame(
+                monster_frame(name),
+                center,
+                size,
+                elapsed,
+                flip_x,
+                clip,
+                style.tint,
+                style.scale,
+            );
         if drawn {
-            return true;
+            adornments::draw_crest(name, center, size);
         }
-        self.draw_frame(
-            monster_frame(name),
-            center,
-            size,
-            elapsed,
-            flip_x,
-            clip,
-            style.tint,
-            style.scale,
-        )
+        drawn
     }
 
     pub fn draw_adventurer(

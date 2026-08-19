@@ -12,7 +12,7 @@ mod defenders;
 mod orders;
 pub(crate) mod previews;
 
-use defenders::{draw_monster_progress_rows, DEFENDER_ROW_H, MAX_DEFENDER_ROWS};
+use defenders::{draw_monster_progress_rows, DEFENDER_PAGER_H, DEFENDER_ROW_H, MAX_DEFENDER_ROWS};
 use previews::{room_upgrade_preview, template_trait_summary, template_variant_hint};
 
 #[derive(Debug, Clone)]
@@ -208,13 +208,18 @@ fn draw_selected_room(
 ) -> f32 {
     // Card grows with the defender list (up to MAX_DEFENDER_ROWS visible).
     let defender_rows = room.monsters.len().min(MAX_DEFENDER_ROWS);
+    let defender_pager = if room.monsters.len() > MAX_DEFENDER_ROWS {
+        DEFENDER_PAGER_H
+    } else {
+        0.0
+    };
     let combat_room = room.room_type == RoomType::Normal || room.room_type == RoomType::Boss;
     let order_extra = if combat_room { 72.0 } else { 0.0 };
     let rect = Rect::new(
         bounds.x,
         y,
         bounds.w,
-        214.0 + order_extra + defender_rows as f32 * DEFENDER_ROW_H + 10.0,
+        214.0 + order_extra + defender_rows as f32 * DEFENDER_ROW_H + defender_pager + 10.0,
     );
     let tone = room_color(room);
     draw_card(

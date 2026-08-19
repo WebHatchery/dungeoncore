@@ -7,6 +7,7 @@ use macroquad_toolkit::timing::Cooldown;
 use crate::game_state::{self, GameState, PARTY_MOVE_SECONDS};
 use crate::simulation;
 
+mod bestiary;
 mod combat_sprites;
 mod deep_board;
 mod merge;
@@ -68,6 +69,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
         "deep_board" => deep_board::seed(state),
         "strata" => strata::seed(state),
         "combat_sprites" => combat_sprites::seed(state),
+        "bestiary" => bestiary::seed(state),
         "species" => {
             state.unlocked_species.clear();
             state.unlocked_monsters.clear();

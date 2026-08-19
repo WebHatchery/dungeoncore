@@ -77,20 +77,38 @@
             },
             {
                 "from_monster": "Monster Slime",
-                "to_monster": "Slime Empress",
-                "experience_required": 540,
+                "to_monster": "Pyre Ooze",
+                "experience_required": 380,
                 "conditions": {
-                    "min_floor": 3,
-                    "gold_cost": 140
+                    "min_floor": 2,
+                    "gold_cost": 55
                 }
             },
             {
                 "from_monster": "Magic Slime",
-                "to_monster": "Slime Empress",
-                "experience_required": 540,
+                "to_monster": "Astral Gel",
+                "experience_required": 400,
                 "conditions": {
                     "min_floor": 3,
-                    "gold_cost": 140
+                    "gold_cost": 65
+                }
+            },
+            {
+                "from_monster": "Pyre Ooze",
+                "to_monster": "Slime Empress",
+                "experience_required": 620,
+                "conditions": {
+                    "min_floor": 4,
+                    "gold_cost": 160
+                }
+            },
+            {
+                "from_monster": "Astral Gel",
+                "to_monster": "Slime Empress",
+                "experience_required": 620,
+                "conditions": {
+                    "min_floor": 4,
+                    "gold_cost": 160
                 }
             }
         ],
@@ -132,6 +150,33 @@
                 }
             },
             {
+                "from_monster": "Drowned Husk",
+                "to_monster": "Drowned Warden",
+                "experience_required": 210,
+                "conditions": {
+                    "min_floor": 2,
+                    "gold_cost": 20
+                }
+            },
+            {
+                "from_monster": "Drowned Warden",
+                "to_monster": "Death Tide",
+                "experience_required": 430,
+                "conditions": {
+                    "min_floor": 3,
+                    "gold_cost": 75
+                }
+            },
+            {
+                "from_monster": "Death Tide",
+                "to_monster": "Grave King",
+                "experience_required": 680,
+                "conditions": {
+                    "min_floor": 4,
+                    "gold_cost": 200
+                }
+            },
+            {
                 "from_monster": "Lich",
                 "to_monster": "Grave King",
                 "experience_required": 660,
@@ -142,6 +187,42 @@
             }
         ],
         "Draconic": [
+            {
+                "from_monster": "Cave Wyrmling",
+                "to_monster": "Mire Drake",
+                "experience_required": 190,
+                "conditions": {
+                    "min_floor": 1,
+                    "gold_cost": 15
+                }
+            },
+            {
+                "from_monster": "Cinder Wyrmling",
+                "to_monster": "Storm Drake",
+                "experience_required": 190,
+                "conditions": {
+                    "min_floor": 1,
+                    "gold_cost": 15
+                }
+            },
+            {
+                "from_monster": "Mire Drake",
+                "to_monster": "Dragon",
+                "experience_required": 420,
+                "conditions": {
+                    "min_floor": 3,
+                    "gold_cost": 80
+                }
+            },
+            {
+                "from_monster": "Storm Drake",
+                "to_monster": "Dragon",
+                "experience_required": 420,
+                "conditions": {
+                    "min_floor": 3,
+                    "gold_cost": 80
+                }
+            },
             {
                 "from_monster": "Dragon",
                 "to_monster": "Elder Dragon",
@@ -381,7 +462,7 @@
         "Goblinoid": "Goblin",
         "Slime": "Red Slime",
         "Undead": "Skeleton",
-        "Draconic": "Dragon",
+        "Draconic": "Cave Wyrmling",
         "Beast": "Wolf",
         "Demon": "Imp",
         "Elemental": "Ember Wisp",
