@@ -116,7 +116,7 @@ pub(super) fn monster_damage_taken_mult(monster: &Monster) -> f32 {
 /// Attack multiplier from temporary room conditions on an adventurer.
 pub(super) fn adventurer_attack_mult(adventurer: &Adventurer) -> f32 {
     let elemental = adventurer_element(&adventurer.class_name);
-    adventurer
+    let condition_mult = adventurer
         .conditions
         .iter()
         .filter(|condition| {
@@ -126,7 +126,9 @@ pub(super) fn adventurer_attack_mult(adventurer: &Adventurer) -> f32 {
         })
         .map(|condition| condition.multiplier)
         .product::<f32>()
-        .max(0.0)
+        .max(0.0);
+    let resolve_mult = 0.9 + adventurer.resolve.clamp(0, 100) as f32 / 500.0;
+    condition_mult * adventurer.drive.attack_multiplier() * resolve_mult
 }
 
 /// Damage multiplier from temporary brittle conditions on an adventurer.
@@ -137,11 +139,8 @@ pub(super) fn adventurer_damage_taken_mult(adventurer: &Adventurer) -> f32 {
         .filter(|condition| condition.kind == "Brittle")
         .map(|condition| condition.multiplier)
         .product::<f32>();
-    if multiplier == 0.0 {
-        1.0
-    } else {
-        multiplier
-    }
+    let condition_mult = if multiplier == 0.0 { 1.0 } else { multiplier };
+    condition_mult * adventurer.drive.damage_taken_multiplier()
 }
 
 /// Effective attack including offensive passives and room reinforcement.

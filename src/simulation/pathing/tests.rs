@@ -1,5 +1,5 @@
 use super::*;
-use crate::game_state::{Monster, Room, RoomType, Stats};
+use crate::game_state::{Adventurer, HeroDrive, Monster, Room, RoomType, Stats};
 
 /// Entrance(0) → {1, 2} → Core(3). Room 1 is a treasure lure (no guards);
 /// room 2 is a guarded killbox. Both reconverge at the Core.
@@ -50,6 +50,32 @@ fn party() -> AdventurerParty {
     }
 }
 
+fn party_with_drive(drive: HeroDrive) -> AdventurerParty {
+    let mut party = party();
+    party.members.push(Adventurer {
+        id: 7,
+        name: "Mara".to_string(),
+        class_name: "Warrior".to_string(),
+        race: "Human".to_string(),
+        drive,
+        resolve: 50,
+        level: 2,
+        hp: 100,
+        max_hp: 100,
+        alive: true,
+        experience: 0,
+        gold: 0,
+        equipment: Default::default(),
+        conditions: Vec::new(),
+        scaled_stats: Stats {
+            hp: 100,
+            attack: 20,
+            defense: 10,
+        },
+    });
+    party
+}
+
 #[test]
 fn greedy_party_takes_the_loot_lure_over_the_killbox() {
     let s = GameState::new(); // threat 0 → greedy
@@ -90,4 +116,25 @@ fn distance_to_core_counts_rooms() {
     assert_eq!(distance_to_core(&floor, 3), Some(0));
     assert_eq!(distance_to_core(&floor, 1), Some(1));
     assert_eq!(distance_to_core(&floor, 0), Some(2));
+}
+
+#[test]
+fn glory_seekers_choose_a_fight_that_other_heroes_avoid() {
+    let s = GameState::new();
+    let mut floor = forked_floor();
+    floor
+        .rooms
+        .iter_mut()
+        .find(|room| room.position == 1)
+        .unwrap()
+        .loot = 5;
+
+    assert_eq!(
+        choose_exit(&s, &floor, &party_with_drive(HeroDrive::Duty), &[1, 2]),
+        1
+    );
+    assert_eq!(
+        choose_exit(&s, &floor, &party_with_drive(HeroDrive::Glory), &[1, 2]),
+        2
+    );
 }

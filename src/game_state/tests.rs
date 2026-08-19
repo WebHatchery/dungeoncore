@@ -6,6 +6,8 @@ fn hero(id: u64, delves: i32, kills: i32) -> HeroRecord {
         name: "Sable the Bold".to_string(),
         class_name: "Rogue".to_string(),
         race: "Halfling".to_string(),
+        drive: HeroDrive::Glory,
+        resolve: 65,
         level: 4,
         experience: 0,
         delves,
@@ -155,4 +157,17 @@ fn cosmetic_sound_queue_is_bounded_and_drains_once() {
     assert_eq!(queued.len(), 12);
     assert_eq!(queued.last(), Some(&SoundEvent::Trap));
     assert!(state.take_sound_events().is_empty());
+}
+
+#[test]
+fn legacy_heroes_gain_safe_drive_and_resolve_defaults() {
+    let record = hero(9, 2, 1);
+    let mut value = serde_json::to_value(record).unwrap();
+    let object = value.as_object_mut().unwrap();
+    object.remove("drive");
+    object.remove("resolve");
+
+    let restored: HeroRecord = serde_json::from_value(value).unwrap();
+    assert_eq!(restored.drive, HeroDrive::Duty);
+    assert_eq!(restored.resolve, 50);
 }

@@ -7,6 +7,64 @@ use super::{ready_cooldown, Stats};
 use macroquad_toolkit::timing::Cooldown;
 use serde::{Deserialize, Serialize};
 
+/// What keeps a hero returning to the dungeon. A drive is persistent identity,
+/// not a temporary combat buff: it shapes route choice, risk tolerance, and
+/// the reward that hero values across every delve.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum HeroDrive {
+    /// Seeks dangerous defenders and hits harder, but takes greater risks.
+    Glory,
+    /// Values treasure above a safe route and increases the party's haul.
+    Fortune,
+    /// Pushes expeditions deeper and learns faster from surviving them.
+    Discovery,
+    /// Protects companions and holds the line when a party might break.
+    #[default]
+    Duty,
+}
+
+impl HeroDrive {
+    pub const ALL: [Self; 4] = [Self::Glory, Self::Fortune, Self::Discovery, Self::Duty];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Glory => "Glory",
+            Self::Fortune => "Fortune",
+            Self::Discovery => "Discovery",
+            Self::Duty => "Duty",
+        }
+    }
+
+    pub fn description(self) -> &'static str {
+        match self {
+            Self::Glory => "seeks danger; attacks harder",
+            Self::Fortune => "chases treasure; lifts loot",
+            Self::Discovery => "delves deeper; learns faster",
+            Self::Duty => "steadies party; resists damage",
+        }
+    }
+
+    pub fn attack_multiplier(self) -> f32 {
+        if self == Self::Glory {
+            1.10
+        } else {
+            1.0
+        }
+    }
+
+    pub fn damage_taken_multiplier(self) -> f32 {
+        if self == Self::Duty {
+            0.90
+        } else {
+            1.0
+        }
+    }
+}
+
+fn default_resolve() -> i32 {
+    50
+}
+
 /// Adventurer equipment
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Equipment {
@@ -47,6 +105,11 @@ pub struct Adventurer {
     pub class_name: String,
     #[serde(default = "default_race")]
     pub race: String,
+    #[serde(default)]
+    pub drive: HeroDrive,
+    /// Persistent confidence copied from the hero ledger for this delve.
+    #[serde(default = "default_resolve")]
+    pub resolve: i32,
     pub level: i32,
     pub hp: i32,
     pub max_hp: i32,
@@ -91,6 +154,12 @@ pub struct HeroRecord {
     pub name: String,
     pub class_name: String,
     pub race: String,
+    #[serde(default)]
+    pub drive: HeroDrive,
+    /// Confidence earned or lost through survival. It influences combat and
+    /// party nerve when the hero returns; bounded to 20..100 by settlement.
+    #[serde(default = "default_resolve")]
+    pub resolve: i32,
     pub level: i32,
     pub experience: i32,
     /// Times this hero has entered the dungeon.

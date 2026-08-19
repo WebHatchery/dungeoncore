@@ -26,6 +26,8 @@ fn lone_invader(hp: i32) -> AdventurerParty {
             name: "Tess".to_string(),
             class_name: "Warrior".to_string(),
             race: "Human".to_string(),
+            drive: crate::game_state::HeroDrive::Duty,
+            resolve: 50,
             level: 3,
             hp,
             max_hp: hp,
@@ -174,4 +176,37 @@ fn spike_trap_applies_its_bleed_secondary_effect() {
         .conditions
         .iter()
         .any(|condition| condition.kind == "Bleeding"));
+}
+
+#[test]
+fn duty_and_resolve_change_how_a_hero_fights() {
+    let mut hero = lone_invader(100).members.remove(0);
+    hero.drive = crate::game_state::HeroDrive::Glory;
+    hero.resolve = 80;
+    let bold_attack = helpers::adventurer_attack_mult(&hero);
+
+    hero.drive = crate::game_state::HeroDrive::Duty;
+    hero.resolve = 30;
+    let shaken_attack = helpers::adventurer_attack_mult(&hero);
+    assert!(bold_attack > shaken_attack);
+    assert!(helpers::adventurer_damage_taken_mult(&hero) < 1.0);
+}
+
+fn monster_loot_for(drive: crate::game_state::HeroDrive) -> i32 {
+    let mut state = GameState::new();
+    let mut party = lone_invader(100);
+    party.members[0].drive = drive;
+    state.adventurer_parties.push(party);
+    rewards::reward_monster_kills(&mut state, 0, 0, 1, &[("Goblin".to_string(), false)]);
+    state.adventurer_parties[0].loot
+}
+
+#[test]
+fn fortune_seekers_increase_the_partys_monster_loot() {
+    let duty = monster_loot_for(crate::game_state::HeroDrive::Duty);
+    let fortune = monster_loot_for(crate::game_state::HeroDrive::Fortune);
+    assert!(
+        fortune > duty,
+        "Fortune haul {fortune} should exceed {duty}"
+    );
 }

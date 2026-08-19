@@ -11,7 +11,7 @@
 //! Floors are still linear today (one exit), so this is dormant until the fork
 //! build op (Phase C) — but it is fully unit-tested against hand-built forks.
 
-use crate::game_state::{AdventurerParty, Floor, GameState};
+use crate::game_state::{AdventurerParty, Floor, GameState, HeroDrive};
 
 /// Threat tier at which adventurers turn desperate and beeline for the Core.
 const BEELINE_THREAT_TIER: i32 = 3;
@@ -52,13 +52,13 @@ pub fn choice_reason(state: &GameState, party: &AdventurerParty, exits: &[usize]
     match exits {
         [] | [_] => "following the only route",
         _ if is_beelining(state, party) => "beelining for the Core",
-        _ => "following the lure of loot",
+        _ => "weighing loot, danger, and personal ambitions",
     }
 }
 
 /// How appealing a candidate room is to a *greedy* party: loot pulls them in,
 /// visible defenders push them away, and nearness to the Core gently breaks ties.
-fn appeal(floor: &Floor, pos: usize) -> f32 {
+fn appeal(floor: &Floor, party: &AdventurerParty, pos: usize) -> f32 {
     let Some(room) = floor.room_at(pos) else {
         return f32::MIN;
     };
@@ -72,7 +72,26 @@ fn appeal(floor: &Floor, pos: usize) -> f32 {
     let core_bias = distance_to_core(floor, pos)
         .map(|d| -(d as f32) * 0.5)
         .unwrap_or(0.0);
-    loot - threat as f32 + core_bias
+    let fortune = party
+        .members
+        .iter()
+        .filter(|member| member.alive && member.drive == HeroDrive::Fortune)
+        .count() as f32;
+    let glory = party
+        .members
+        .iter()
+        .filter(|member| member.alive && member.drive == HeroDrive::Glory)
+        .count() as f32;
+    let discovery = party
+        .members
+        .iter()
+        .filter(|member| member.alive && member.drive == HeroDrive::Discovery)
+        .count() as f32;
+
+    let loot_pull = loot * (1.0 + fortune * 0.40);
+    let danger_pull = threat as f32 * (glory * 1.25 - 1.0);
+    let depth_pull = core_bias * (1.0 + discovery);
+    loot_pull + danger_pull + depth_pull
 }
 
 /// Choose which exit a party takes. `exits` must be non-empty (the caller treats
@@ -99,8 +118,8 @@ pub fn choose_exit(
                 *exits
                     .iter()
                     .max_by(|&&a, &&b| {
-                        appeal(floor, a)
-                            .partial_cmp(&appeal(floor, b))
+                        appeal(floor, party, a)
+                            .partial_cmp(&appeal(floor, party, b))
                             .unwrap_or(std::cmp::Ordering::Equal)
                     })
                     .unwrap_or(&exits[0])

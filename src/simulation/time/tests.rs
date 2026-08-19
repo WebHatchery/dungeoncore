@@ -9,6 +9,8 @@ fn adventurer(id: u64, level: i32, alive: bool) -> Adventurer {
         name: format!("Delver {id}"),
         class_name: "Warrior".to_string(),
         race: "Human".to_string(),
+        drive: crate::game_state::HeroDrive::Duty,
+        resolve: 50,
         level,
         hp: if alive { 30 } else { 0 },
         max_hp: 30,

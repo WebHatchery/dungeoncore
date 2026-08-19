@@ -8,6 +8,8 @@ fn party_with(hp: i32, count: usize, floor: i32, room: usize) -> AdventurerParty
             name: format!("Hero{i}"),
             class_name: "Warrior".to_string(),
             race: "Human".to_string(),
+            drive: crate::game_state::HeroDrive::Duty,
+            resolve: 50,
             level: 2,
             hp,
             max_hp: hp,

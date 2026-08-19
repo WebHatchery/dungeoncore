@@ -6,8 +6,8 @@ use crate::data::adventurers::{
 };
 use crate::data::constants::{ADVENTURER_SPAWN_CHANCE, MAX_PARTY_SIZE, MIN_PARTY_SIZE};
 use crate::game_state::{
-    Adventurer, AdventurerParty, DungeonStatus, GameState, HeroRecord, HeroStatus, LogEntry, Stats,
-    PARTY_MOVE_SECONDS,
+    Adventurer, AdventurerParty, DungeonStatus, GameState, HeroDrive, HeroRecord, HeroStatus,
+    LogEntry, Stats, PARTY_MOVE_SECONDS,
 };
 
 /// Build a combat-ready adventurer from a class, level, and identity. `stat_mult`
@@ -17,6 +17,8 @@ fn build_adventurer(
     name: String,
     class_name: &str,
     race: &str,
+    drive: HeroDrive,
+    resolve: i32,
     level: i32,
     stat_mult: f32,
 ) -> Adventurer {
@@ -42,6 +44,8 @@ fn build_adventurer(
         name,
         class_name: class.name.clone(),
         race: race.to_string(),
+        drive,
+        resolve,
         level,
         hp,
         max_hp: hp,
@@ -100,8 +104,12 @@ fn expedition_target_floor(state: &GameState, members: &[Adventurer]) -> i32 {
     let veteran_depth = (veteran_delves - 1).max(0) / 2;
     let realm_pressure = state.threat_tier();
     let prestige_pressure = state.prestige.min(2);
+    let discovery_depth = members
+        .iter()
+        .any(|member| member.drive == HeroDrive::Discovery) as i32;
 
-    (2 + strength_depth + veteran_depth + realm_pressure + prestige_pressure).clamp(1, available)
+    (2 + strength_depth + veteran_depth + realm_pressure + prestige_pressure + discovery_depth)
+        .clamp(1, available)
 }
 
 /// Try to spawn a new adventurer party
@@ -162,14 +170,16 @@ pub fn spawn_party(state: &mut GameState) {
                 record.delves += 1;
                 let delve = record.delves;
                 record.remember(day, format!("Returned for delve {delve}"));
-                let (name, class, race, level) = (
+                let (name, class, race, drive, resolve, level) = (
                     record.name.clone(),
                     record.class_name.clone(),
                     record.race.clone(),
+                    record.drive,
+                    record.resolve,
                     record.level,
                 );
                 members.push(build_adventurer(
-                    hero_id, name, &class, &race, level, stat_mult,
+                    hero_id, name, &class, &race, drive, resolve, level, stat_mult,
                 ));
                 continue;
             }
@@ -185,11 +195,15 @@ pub fn spawn_party(state: &mut GameState) {
             .unwrap_or_else(|| "Human".to_string());
         let level = state.run_rng.range_i32(level_min, level_max + 1);
         let id = state.run_rng.next_u64();
+        let drive = HeroDrive::ALL[state.run_rng.below(HeroDrive::ALL.len())];
+        let resolve = 50;
         state.known_adventurers.push(HeroRecord {
             id,
             name: name.clone(),
             class_name: class.name.clone(),
             race: race.clone(),
+            drive,
+            resolve,
             level,
             experience: 0,
             delves: 1,
@@ -204,13 +218,18 @@ pub fn spawn_party(state: &mut GameState) {
         });
         let day = state.day;
         if let Some(record) = state.hero_mut(id) {
-            record.remember(day, "First delve into the dungeon");
+            record.remember(
+                day,
+                format!("First delve, driven by {}", drive.label().to_lowercase()),
+            );
         }
         members.push(build_adventurer(
             id,
             name,
             &class.name,
             &race,
+            drive,
+            resolve,
             level,
             stat_mult,
         ));
@@ -538,6 +557,11 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
                 // hero who repeatedly skims floor 1 improves much more slowly
                 // than one who survives the lower strata.
                 let xp_gain = 15 + party_floor * 8 + record.delves * 3;
+                let xp_gain = if record.drive == HeroDrive::Discovery {
+                    (xp_gain as f32 * 1.25).round() as i32
+                } else {
+                    xp_gain
+                };
                 record.experience += xp_gain;
                 record.gold_stolen += loot_share;
                 let level_before = record.level;
@@ -554,7 +578,10 @@ fn settle_departing_party(state: &mut GameState, party_idx: usize) {
                 };
                 record.remember(day, escaped);
                 if hp * 4 <= max_hp.max(1) {
+                    record.resolve = (record.resolve - 8).max(20);
                     record.remember(day, "Survived with grievous wounds");
+                } else {
+                    record.resolve = (record.resolve + 5).min(100);
                 }
                 if record.level > level_before {
                     let level = record.level;

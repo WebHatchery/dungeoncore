@@ -178,8 +178,12 @@ pub(super) fn draw_heroes_tab(state: &GameState, rect: Rect, scroll: &mut f32) -
                 hero.race, hero.class_name, hero.death_floor, hero.death_day
             ),
             _ => format!(
-                "{} {} · {} escapes · deepest F{}",
-                hero.race, hero.class_name, hero.escapes, hero.deepest_floor
+                "{} {} · {} · {} escapes · F{}",
+                hero.race,
+                hero.class_name,
+                hero.drive.label(),
+                hero.escapes,
+                hero.deepest_floor
             ),
         };
         draw_text_fit(
@@ -245,7 +249,13 @@ fn draw_hero_journal(hero: &HeroRecord, rect: Rect) -> HeroesTabAction {
         },
     );
     draw_text_fit(
-        &format!("Level {} {} {}", hero.level, hero.race, hero.class_name),
+        &format!(
+            "Level {} {} {} · {}",
+            hero.level,
+            hero.race,
+            hero.class_name,
+            hero.drive.label()
+        ),
         rect.x,
         rect.y + 96.0,
         rect.w - 8.0,
@@ -253,9 +263,17 @@ fn draw_hero_journal(hero: &HeroRecord, rect: Rect) -> HeroesTabAction {
         TEXT_MUTED,
     );
     draw_pill(Rect::new(rect.x, rect.y + 106.0, 118.0, 16.0), tag, tone);
+    draw_text_fit(
+        hero.drive.description(),
+        rect.x,
+        rect.y + 138.0,
+        rect.w,
+        10.0,
+        TEXT_MUTED,
+    );
 
     // A rival is a grudge with a price on it — say both plainly.
-    let mut y = rect.y + 140.0;
+    let mut y = rect.y + 158.0;
     if hero.is_rival() {
         let (souls, gold) = hero.bounty();
         draw_card(
@@ -286,6 +304,7 @@ fn draw_hero_journal(hero: &HeroRecord, rect: Rect) -> HeroesTabAction {
         ("Delves", hero.delves.to_string(), TEXT),
         ("Escapes", hero.escapes.to_string(), EMERALD),
         ("Deepest floor", hero.deepest_floor.to_string(), SOUL),
+        ("Resolve", format!("{} / 100", hero.resolve), WARNING),
         ("Defenders slain", hero.kills.to_string(), DANGER),
         ("Gold carried off", hero.gold_stolen.to_string(), TREASURE),
     ];

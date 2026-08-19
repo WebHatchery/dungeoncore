@@ -115,6 +115,8 @@ pub(super) fn seed(state: &mut crate::game_state::GameState) {
         name: "Nia".to_string(),
         class_name: "Ranger".to_string(),
         race: "Elf".to_string(),
+        drive: crate::game_state::HeroDrive::Discovery,
+        resolve: 60,
         level: 3,
         hp: 26,
         max_hp: 40,

@@ -425,8 +425,8 @@ struct MonsterStrike {
 /// (Halflings) bail early; brave ones (Dwarves, Paladins) hold longer.
 fn party_nerve(party: &crate::game_state::AdventurerParty) -> i32 {
     let mut threshold = RETREAT_THRESHOLD;
-    let living = party.members.iter().filter(|a| a.alive);
-    for member in living {
+    let living: Vec<_> = party.members.iter().filter(|a| a.alive).collect();
+    for member in &living {
         match member.race.as_str() {
             "Halfling" => threshold -= 1,
             "Dwarf" => threshold += 1,
@@ -436,6 +436,28 @@ fn party_nerve(party: &crate::game_state::AdventurerParty) -> i32 {
             threshold += 1;
         }
     }
+    if living
+        .iter()
+        .any(|member| member.drive == crate::game_state::HeroDrive::Glory)
+    {
+        threshold += 1;
+    }
+    if living
+        .iter()
+        .any(|member| member.drive == crate::game_state::HeroDrive::Duty)
+    {
+        threshold += 1;
+    }
+    let average_resolve = if living.is_empty() {
+        50
+    } else {
+        living.iter().map(|member| member.resolve).sum::<i32>() / living.len() as i32
+    };
+    threshold += match average_resolve {
+        70.. => 1,
+        ..=35 => -1,
+        _ => 0,
+    };
     threshold.clamp(1, 5)
 }
 

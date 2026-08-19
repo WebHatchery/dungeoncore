@@ -34,6 +34,8 @@ fn every_milestone_condition_is_wired() {
             name: String::new(),
             class_name: String::new(),
             race: String::new(),
+            drive: crate::game_state::HeroDrive::Duty,
+            resolve: 50,
             level: 1,
             experience: 0,
             delves: 0,
