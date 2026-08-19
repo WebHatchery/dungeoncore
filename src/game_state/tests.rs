@@ -119,6 +119,15 @@ fn saved_run_rng_continues_the_same_future() {
 }
 
 #[test]
+fn restored_runs_start_with_a_visible_board_zoom() {
+    let original = GameState::new();
+    let serialized = serde_json::to_string(&original).expect("state serializes");
+    let restored: GameState = serde_json::from_str(&serialized).expect("state restores");
+
+    assert_eq!(restored.board_zoom, 1.0);
+}
+
+#[test]
 fn event_log_keeps_chronological_order_when_it_trims() {
     let mut state = GameState::new();
     state.log.clear();

@@ -18,6 +18,10 @@ pub(crate) fn ready_cooldown() -> Cooldown {
     Cooldown::new(0.0)
 }
 
+pub(crate) fn default_board_zoom() -> f32 {
+    1.0
+}
+
 fn legacy_run_seed() -> u64 {
     0
 }
@@ -445,7 +449,7 @@ pub struct GameState {
     #[serde(skip)]
     pub board_scroll: f32,
     /// Player-controlled camera scale for the dungeon cross-section.
-    #[serde(skip)]
+    #[serde(skip, default = "default_board_zoom")]
     pub board_zoom: f32,
     /// Horizontal camera offset in world pixels. Rooms keep their world size
     /// as the dungeon grows; this offset reveals the larger structure.
