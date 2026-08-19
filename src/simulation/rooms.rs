@@ -231,6 +231,16 @@ fn create_new_floor(state: &mut GameState) -> Result<(), String> {
         if floor.is_deepest {
             floor.is_deepest = false;
             floor.rooms.retain(|r| r.room_type != RoomType::Core);
+            // The old Core was the sink for every route. Once it moves to the
+            // new floor, discard those stale edge targets so visitors end at
+            // the last room and descend instead of walking into a missing
+            // room forever. This matters most at the maximum-dungeon soak,
+            // where every earlier floor loses its Core in turn.
+            let valid_positions: std::collections::HashSet<usize> =
+                floor.rooms.iter().map(|room| room.position).collect();
+            for room in &mut floor.rooms {
+                room.exits.retain(|exit| valid_positions.contains(exit));
+            }
         }
     }
 

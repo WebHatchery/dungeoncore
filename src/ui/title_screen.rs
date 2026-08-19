@@ -36,6 +36,43 @@ pub enum TitleSettingsAction {
     Back,
 }
 
+/// Responsive geometry for the ten settings controls. The compact layout is
+/// deliberately calculated without macroquad input, so narrow-browser checks
+/// can prove every control remains inside the panel before a screenshot runs.
+pub(crate) fn settings_layout(screen_w: f32, screen_h: f32) -> (Rect, [Rect; 10]) {
+    let compact = screen_h < 700.0 || screen_w < 540.0;
+    let panel_w = (screen_w.min(1280.0) * 0.32).clamp(320.0, 430.0);
+    let panel_h = if compact {
+        (screen_h - 24.0).max(360.0).min(screen_h - 12.0)
+    } else {
+        (screen_h - 40.0).min(680.0)
+    };
+    let panel = Rect::new(
+        (screen_w - panel_w) * 0.5,
+        (screen_h - panel_h) * 0.5,
+        panel_w,
+        panel_h,
+    );
+    let gap = if compact { 4.0 } else { 12.0 };
+    let content_top = if compact { 76.0 } else { 96.0 };
+    let row_h = if compact {
+        ((panel.h - content_top - 22.0 - gap * 9.0) / 10.0).clamp(28.0, 42.0)
+    } else {
+        42.0
+    };
+    let button_w = panel.w - 56.0;
+    let button_x = panel.x + 28.0;
+    let rows = std::array::from_fn(|index| {
+        Rect::new(
+            button_x,
+            panel.y + content_top + index as f32 * (row_h + gap),
+            button_w,
+            row_h,
+        )
+    });
+    (panel, rows)
+}
+
 pub fn draw_title_screen(
     assets: &AssetManager,
     has_save: bool,
@@ -303,16 +340,10 @@ pub fn draw_title_settings_screen(
 ) -> TitleSettingsAction {
     let sw = screen_width();
     let sh = screen_height();
+    let compact = sh < 700.0 || sw < 540.0;
     draw_title_background(assets, sw, sh);
 
-    let panel_w = sw.min(1280.0) * 0.32;
-    let panel_h = (sh - 40.0).min(680.0);
-    let panel = Rect::new(
-        (sw - panel_w.clamp(320.0, 430.0)) * 0.5,
-        (sh - panel_h) * 0.5,
-        panel_w.clamp(320.0, 430.0),
-        panel_h,
-    );
+    let (panel, rows) = settings_layout(sw, sh);
     draw_title_panel(panel);
 
     draw_text_fit(
@@ -320,7 +351,7 @@ pub fn draw_title_settings_screen(
         panel.x + 28.0,
         panel.y + 38.0,
         panel.w - 56.0,
-        24.0,
+        if compact { 20.0 } else { 24.0 },
         TEXT,
     );
     draw_text_fit(
@@ -328,14 +359,13 @@ pub fn draw_title_settings_screen(
         panel.x + 28.0,
         panel.y + 64.0,
         panel.w - 56.0,
-        13.0,
+        if compact { 11.0 } else { 13.0 },
         TEXT_MUTED,
     );
 
-    let button_w = panel.w - 56.0;
-    let button_x = panel.x + 28.0;
+    let row = |index: usize| rows[index];
     if draw_title_button(
-        Rect::new(button_x, panel.y + 96.0, button_w, 48.0),
+        row(0),
         if settings.fullscreen {
             "Fullscreen: On"
         } else {
@@ -348,7 +378,7 @@ pub fn draw_title_settings_screen(
     }
 
     if draw_title_button(
-        Rect::new(button_x, panel.y + 158.0, button_w, 42.0),
+        row(1),
         &format!("Master volume: {:.0}%", settings.master_volume * 100.0),
         true,
         ButtonTone::Ghost,
@@ -356,7 +386,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustMasterVolume;
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 212.0, button_w, 42.0),
+        row(2),
         &format!("SFX volume: {:.0}%", settings.sfx_volume * 100.0),
         true,
         ButtonTone::Ghost,
@@ -364,7 +394,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustSfxVolume;
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 266.0, button_w, 42.0),
+        row(3),
         &format!("Music volume: {:.0}%", settings.music_volume * 100.0),
         true,
         ButtonTone::Ghost,
@@ -372,7 +402,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustMusicVolume;
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 320.0, button_w, 42.0),
+        row(4),
         &format!("UI scale: {:.0}%", settings.ui_text_scale * 100.0),
         true,
         ButtonTone::Ghost,
@@ -380,7 +410,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustUiScale(1);
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 374.0, button_w, 42.0),
+        row(5),
         if settings.screen_shake {
             "Reduced motion: Off"
         } else {
@@ -392,7 +422,7 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::ToggleReducedMotion;
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 428.0, button_w, 42.0),
+        row(6),
         &format!("Autosave: {:.0}s", settings.autosave_interval),
         true,
         ButtonTone::Ghost,
@@ -400,27 +430,17 @@ pub fn draw_title_settings_screen(
         return TitleSettingsAction::AdjustAutosave(1);
     }
     if draw_title_button(
-        Rect::new(button_x, panel.y + 482.0, button_w, 42.0),
+        row(7),
         &format!("New-run speed: {}x", settings.default_speed),
         true,
         ButtonTone::Ghost,
     ) {
         return TitleSettingsAction::AdjustDefaultSpeed;
     }
-    if draw_title_button(
-        Rect::new(button_x, panel.y + 536.0, button_w, 42.0),
-        "Keyboard bindings",
-        true,
-        ButtonTone::Ghost,
-    ) {
+    if draw_title_button(row(8), "Keyboard bindings", true, ButtonTone::Ghost) {
         return TitleSettingsAction::OpenKeybindings;
     }
-    if draw_title_button(
-        Rect::new(button_x, panel.y + 590.0, button_w, 48.0),
-        "Back",
-        true,
-        ButtonTone::Ghost,
-    ) || is_key_pressed(KeyCode::Escape)
+    if draw_title_button(row(9), "Back", true, ButtonTone::Ghost) || is_key_pressed(KeyCode::Escape)
     {
         return TitleSettingsAction::Back;
     }
@@ -505,7 +525,7 @@ pub(super) fn draw_title_button(rect: Rect, text: &str, enabled: bool, tone: But
     draw_centered_text(
         text,
         Rect::new(rect.x + 10.0, rect.y, rect.w - 20.0, rect.h),
-        18.0,
+        if rect.h < 36.0 { 14.0 } else { 18.0 },
         if enabled { text_color } else { TEXT_DIM },
     );
 
@@ -526,3 +546,6 @@ pub(super) fn draw_title_notice(message: &str, sw: f32, sh: f32) {
         TEXT,
     );
 }
+
+#[cfg(test)]
+mod tests;

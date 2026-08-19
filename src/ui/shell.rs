@@ -12,6 +12,15 @@ pub const OUTER_MARGIN: f32 = 10.0;
 pub const PANEL_GAP: f32 = 10.0;
 pub const SIDE_PANEL_WIDTH: f32 = 326.0;
 
+/// Narrow browser HUDs stack the same controls into three readable rows.
+pub fn hud_height(screen_width: f32) -> f32 {
+    if screen_width < 760.0 {
+        150.0
+    } else {
+        HUD_HEIGHT
+    }
+}
+
 /// The two top-shell controls that mutate simulation state. The older controls
 /// panel had extra actions but is no longer rendered anywhere.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,6 +64,10 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
         1.0,
         with_alpha(TREASURE, 0.22),
     );
+
+    if rect.w < 760.0 {
+        return draw_narrow_top_hud(state, rect);
+    }
 
     let title_w = (rect.w * 0.155).clamp(176.0, 208.0);
     let title_rect = Rect::new(rect.x + 14.0, rect.y + 9.0, title_w, rect.h - 18.0);
@@ -203,6 +216,118 @@ pub fn draw_top_hud(state: &GameState, rect: Rect) -> ControlAction {
         None,
     );
 
+    action
+}
+
+fn draw_narrow_top_hud(state: &GameState, rect: Rect) -> ControlAction {
+    let mut action = ControlAction::None;
+    draw_brand_mark(vec2(rect.x + 24.0, rect.y + 25.0), 13.0);
+    draw_text_fit(
+        "DUNGEON CORE",
+        rect.x + 44.0,
+        rect.y + 30.0,
+        rect.w * 0.42,
+        16.0,
+        TEXT,
+    );
+    for (index, (label, next_action)) in [
+        ("HELP", ControlAction::OpenHelp),
+        ("CODEX", ControlAction::OpenCodex),
+        ("GOALS", ControlAction::OpenGoals),
+    ]
+    .iter()
+    .enumerate()
+    {
+        let link = Rect::new(
+            rect.x + 12.0 + index as f32 * 48.0,
+            rect.y + 38.0,
+            44.0,
+            17.0,
+        );
+        if draw_header_link(link, label) {
+            action = *next_action;
+        }
+    }
+
+    let stats_x = rect.x + 10.0;
+    let stat_w = ((rect.w - 20.0) / 5.0).max(54.0);
+    let stat_y = rect.y + 58.0;
+    let stat_h = 38.0;
+    draw_top_stat(
+        Rect::new(stats_x, stat_y, stat_w, stat_h),
+        "Mana",
+        &format!("{}/{}", state.mana, state.max_mana),
+        MANA,
+        StatIcon::Mana,
+        Some((state.mana as f32, state.max_mana as f32)),
+    );
+    draw_top_stat(
+        Rect::new(stats_x + stat_w, stat_y, stat_w, stat_h),
+        "Gold",
+        &state.gold.to_string(),
+        TREASURE,
+        StatIcon::Gold,
+        None,
+    );
+    draw_top_stat(
+        Rect::new(stats_x + stat_w * 2.0, stat_y, stat_w, stat_h),
+        "Souls",
+        &state.souls.to_string(),
+        SOUL,
+        StatIcon::Soul,
+        None,
+    );
+    let (threat_label, threat_color) = threat_display(state);
+    let threat_value = if state.siege_active {
+        format!("{}/{}", state.core_hp, state.core_max_hp)
+    } else {
+        threat_label
+    };
+    draw_top_stat(
+        Rect::new(stats_x + stat_w * 3.0, stat_y, stat_w, stat_h),
+        if state.siege_active { "CORE" } else { "Threat" },
+        &threat_value,
+        if state.siege_active {
+            DANGER
+        } else {
+            threat_color
+        },
+        StatIcon::Threat,
+        Some(if state.siege_active {
+            (state.core_hp as f32, state.core_max_hp as f32)
+        } else {
+            (state.total_deaths as f32, state.siege_threshold() as f32)
+        }),
+    );
+    draw_top_stat(
+        Rect::new(stats_x + stat_w * 4.0, stat_y, stat_w, stat_h),
+        "Rank",
+        &format!("P{} D{}", state.prestige, state.day),
+        TEXT,
+        StatIcon::Time,
+        None,
+    );
+
+    let control_y = rect.y + 104.0;
+    let speed_w = 142.0_f32.min(rect.w * 0.42).max(118.0);
+    let speed_rect = Rect::new(rect.x + 10.0, control_y, speed_w, 40.0);
+    if let Some(time_action) = draw_speed_segments(speed_rect, state.speed, state.paused) {
+        action = time_action;
+    }
+    let dungeon_rect = Rect::new(
+        speed_rect.right() + 8.0,
+        control_y,
+        (rect.right() - speed_rect.right() - 18.0).max(100.0),
+        40.0,
+    );
+    let (status_text, status_tone, enabled) = match state.status {
+        DungeonStatus::Open => ("Close Dungeon", ButtonTone::Danger, true),
+        DungeonStatus::Closed => ("Open Dungeon", ButtonTone::Primary, true),
+        DungeonStatus::Closing => ("Closing...", ButtonTone::Ghost, false),
+    };
+    if draw_command_button(dungeon_rect, status_text, status_tone, enabled) {
+        action = ControlAction::ToggleDungeon;
+    }
     action
 }
 

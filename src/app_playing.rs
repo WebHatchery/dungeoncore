@@ -3,7 +3,9 @@
 use macroquad::prelude::*;
 
 use crate::app_actions::apply_drawer_action;
-use crate::app_support::{create_new_game, reset_timers, responsive_drawer_width};
+use crate::app_support::{
+    create_new_game, reset_timers, responsive_drawer_width, should_pause_after_frame_gap,
+};
 use crate::game_audio::{GameAudio, SoundCue};
 use crate::game_state::{self, GameState};
 use crate::keybindings::{BindingAction, KeyBindings};
@@ -46,6 +48,21 @@ pub fn render_playing_frame(
     let now = get_time();
     let sw = screen_width();
     let sh = screen_height();
+    let frame_seconds = get_frame_time();
+    if simulate {
+        state.visual_time = now as f32;
+        crate::ui::set_visual_time(None);
+        if !state.paused && should_pause_after_frame_gap(frame_seconds) {
+            state.paused = true;
+            state.add_log(game_state::LogEntry::system(
+                "Dungeon paused after the browser or window was suspended. Tap Resume Dungeon to continue.",
+            ));
+            reset_timers(last_time_advance, last_adventure_tick, last_save);
+        }
+    } else {
+        state.visual_time += 1.0 / 60.0;
+        crate::ui::set_visual_time(Some(state.visual_time));
+    }
     draw_game_background(sw, sh);
 
     // A pause is a first-class simulation state: the UI remains available for
@@ -146,7 +163,7 @@ pub fn render_playing_frame(
         OUTER_MARGIN,
         OUTER_MARGIN,
         sw - OUTER_MARGIN * 2.0,
-        HUD_HEIGHT,
+        hud_height(sw),
     );
     match draw_top_hud(state, hud_rect) {
         ControlAction::TogglePause => {
@@ -204,6 +221,7 @@ pub fn render_playing_frame(
     // keeps at least three room widths readable on a 1280px viewport while
     // preserving the player's armed selection as panels change.
     let has_inspector = inspector_requested && !*drawer_open;
+    let inline_inspector = has_inspector && sw >= 860.0;
     let drawer_w = responsive_drawer_width(has_inspector, *drawer_open, sw);
     let drawer_rect = Rect::new(OUTER_MARGIN, body_top, drawer_w, body_h);
     let drawer_action = draw_side_drawer(
@@ -225,7 +243,7 @@ pub fn render_playing_frame(
         *drawer_open = false;
     }
 
-    let right_panel_w = if has_inspector {
+    let right_panel_w = if inline_inspector {
         (sw * 0.22).clamp(252.0, 286.0)
     } else {
         0.0
@@ -305,7 +323,7 @@ pub fn render_playing_frame(
     }
 
     // Inspector panel (room, monster, and upgrade context)
-    if has_inspector {
+    if inline_inspector {
         let upgrade_panel_w = right_panel_w;
         let upgrade_panel_h = dungeon_h;
         let upgrade_panel_x = sw - upgrade_panel_w - OUTER_MARGIN;
@@ -450,7 +468,7 @@ pub fn render_playing_frame(
 
     // A siege turns the whole screen into an alarm state.
     if state.siege_active {
-        draw_siege_overlay(sw, sh);
+        draw_siege_overlay(sw, sh, state.reduced_motion);
     }
 
     // Onboarding tutorial: highlight the relevant panel and advance as the

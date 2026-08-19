@@ -9,6 +9,7 @@ use crate::simulation;
 
 mod combat_sprites;
 mod deep_board;
+mod vfx;
 
 /// First species flagged as a starter, used to seed capture scenes.
 pub fn first_starter_species() -> Option<String> {
@@ -32,6 +33,13 @@ pub fn find_combat_room(state: &GameState) -> Option<(i32, usize)> {
     None
 }
 
+/// Capture names may carry a viewport suffix while still using the same game
+/// fixture. Keeping the suffix out of the fixture match lets one manifest
+/// prove both desktop and narrow browser layouts.
+pub fn base_scene(scene: &str) -> &str {
+    scene.strip_suffix("_narrow").unwrap_or(scene)
+}
+
 /// Seed `state` into a representative scene for a screenshot. Scenes:
 /// `species` (starter-race modal), `tutorial` (onboarding overlay), and
 /// `gameplay` (default: a mid-raid dungeon showing icons, effects, threat, log).
@@ -44,20 +52,16 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
     state.max_mana = 999;
     state.gold = 500;
 
-    match scene {
+    let narrow = scene.ends_with("_narrow");
+    if vfx::seed(state, base_scene(scene), narrow) {
+        return;
+    }
+    match base_scene(scene) {
         "gameover" => {
             state.game_over = true;
             state.day = 47;
             state.prestige = 3;
             state.total_deaths = 186;
-        }
-        "prestige_vfx" => {
-            if let Some(species) = first_starter_species() {
-                let _ = simulation::unlock_species(state, &species);
-            }
-            state.tutorial_active = false;
-            state.prestige = 2;
-            simulation::endgame::repel_siege(state);
         }
         "deep_board" => deep_board::seed(state),
         "combat_sprites" => combat_sprites::seed(state),
@@ -484,6 +488,9 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             simulation::endgame::maybe_launch_siege(state);
             state.core_hp = 380;
             state.core_max_hp = 500;
+            if narrow {
+                state.board_pan_x = 340.0;
+            }
         }
         "summary" => {
             if let Some(species) = first_starter_species() {

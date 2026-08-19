@@ -14,6 +14,18 @@ mod tests;
 /// Env-var prefix for the screenshot capture harness (DUNGEON_CORE_CAPTURE_*).
 pub const CAPTURE_PREFIX: &str = "DUNGEON_CORE";
 
+/// A browser tab or native window can stop delivering frames while it is
+/// hidden. When it resumes, treating the whole gap as live simulation would
+/// turn a focus change into an unearned raid or even a lost core.
+pub const SUSPENSION_FRAME_GAP: f32 = 0.5;
+
+/// Whether a frame gap is large enough to be treated as a focus/visibility
+/// suspension. Kept pure so the browser-safety rule is covered without a
+/// window in tests.
+pub fn should_pause_after_frame_gap(frame_seconds: f32) -> bool {
+    frame_seconds.is_finite() && frame_seconds > SUSPENSION_FRAME_GAP
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AppScreen {
     Title,

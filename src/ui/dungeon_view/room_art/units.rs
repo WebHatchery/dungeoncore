@@ -52,7 +52,7 @@ pub(super) fn draw_room_units(
                 .next()
                 .map(|c| c.to_ascii_uppercase().to_string())
                 .unwrap_or_else(|| "?".to_string());
-            let phase = get_time() as f32 + monster.id as f32 * 0.173;
+            let phase = crate::ui::visual_time() + monster.id as f32 * 0.173;
             let bob = phase.sin() * if monster.alive { 1.5 } else { 0.0 };
             let drawn_sprite = monster.alive
                 && sprites.draw_monster(
@@ -97,7 +97,7 @@ pub(super) fn draw_room_units(
                 .map(|c| c.to_ascii_uppercase().to_string())
                 .unwrap_or_else(|| "A".to_string());
             let is_rival = rival_ids.contains(&adventurer.id);
-            let phase = get_time() as f32 + adventurer.id as f32 * 0.173;
+            let phase = crate::ui::visual_time() + adventurer.id as f32 * 0.173;
             let bob = phase.sin() * 1.5;
             let drawn_sprite = sprites.draw_adventurer(
                 &adventurer.class_name,

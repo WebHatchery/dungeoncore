@@ -19,14 +19,22 @@ param(
         "opening", "tutorial", "build", "defenders", "traps", "variants", "placement",
         "gameplay", "transit", "branching", "deep_board", "journal", "rival",
         "swap", "codex", "coretree", "goals", "controls", "log", "pause",
-        "summary", "siege", "confirmation", "overwrite", "gameover"
+        "summary", "siege", "prestige_vfx", "vfx_showcase", "confirmation",
+        "overwrite", "gameover"
     ),
     [int]$Frames = 90,
     [int]$WindowWidth = 0,
     [int]$WindowHeight = 0,
     [string]$OutputDir = "docs\verification",
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$Narrow
 )
+
+if ($Narrow) {
+    if ($WindowWidth -le 0) { $WindowWidth = 390 }
+    if ($WindowHeight -le 0) { $WindowHeight = 844 }
+    $Scenes = @($Scenes | ForEach-Object { "${_}_narrow" })
+}
 
 $shared = Join-Path $PSScriptRoot "..\..\macroquad-toolkit\scripts\capture_ui.ps1"
 & $shared -GameDir (Join-Path $PSScriptRoot "..") -Scenes $Scenes -Frames $Frames `

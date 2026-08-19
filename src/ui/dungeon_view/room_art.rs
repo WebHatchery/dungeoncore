@@ -52,7 +52,11 @@ pub(super) fn draw_room_tile(
         );
     }
     if fighting {
-        let pulse = (get_time() as f32 * 5.5).sin().abs();
+        let pulse = if state.reduced_motion {
+            0.45
+        } else {
+            (crate::ui::visual_time() * 5.5).sin().abs()
+        };
         draw_rectangle_lines(
             draw_rect.x - 2.0,
             draw_rect.y - 2.0,
@@ -513,7 +517,7 @@ pub(super) fn draw_party_transit(
             &member.class_name,
             center,
             22.0,
-            get_time() as f32 + member.id as f32 * 0.173,
+            crate::ui::visual_time() + member.id as f32 * 0.173,
             false,
             false,
             true,

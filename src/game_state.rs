@@ -339,6 +339,13 @@ pub struct GameState {
     /// Prevent a drag release from also selecting the room beneath it.
     #[serde(skip)]
     pub board_dragged: bool,
+    /// User preference mirrored from title settings; never part of a save.
+    #[serde(skip)]
+    pub reduced_motion: bool,
+    /// Renderer clock. Interactive play follows wall time; capture runs step
+    /// it at a fixed cadence so VFX screenshots are repeatable.
+    #[serde(skip)]
+    pub visual_time: f32,
 
     // Log
     pub log: Vec<LogEntry>,
@@ -414,6 +421,8 @@ impl GameState {
             board_pan_x: 0.0,
             board_drag_last: None,
             board_dragged: false,
+            reduced_motion: false,
+            visual_time: 0.0,
             log: vec![LogEntry::system(
                 "Welcome to Dungeon Core! Choose a starter race to awaken your first defenders.",
             )],

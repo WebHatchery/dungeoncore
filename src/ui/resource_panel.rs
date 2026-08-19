@@ -98,3 +98,6 @@ pub fn draw_time_display(state: &GameState, x: f32, y: f32) {
     };
     draw_ui_text(&speed_text, x + 180.0, y, 24.0, speed_color);
 }
+
+#[cfg(test)]
+mod tests;

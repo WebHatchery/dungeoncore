@@ -1,5 +1,20 @@
-use macroquad::prelude::Vec2;
+use macroquad::prelude::{get_time, Vec2};
+use std::cell::Cell;
 use std::cell::RefCell;
+
+thread_local! {
+    static VISUAL_TIME: Cell<Option<f32>> = const { Cell::new(None) };
+}
+
+/// Use the fixed capture clock when a scene is being photographed, otherwise
+/// keep normal interactive animation on wall time.
+pub(crate) fn set_visual_time(time: Option<f32>) {
+    VISUAL_TIME.with(|clock| clock.set(time));
+}
+
+pub(crate) fn visual_time() -> f32 {
+    VISUAL_TIME.with(|clock| clock.get().unwrap_or_else(|| get_time() as f32))
+}
 
 struct PendingTooltip {
     text: String,

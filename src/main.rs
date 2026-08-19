@@ -12,6 +12,7 @@ mod game_audio;
 mod game_state;
 mod keybindings;
 mod persistence;
+mod readiness;
 mod simulation;
 mod ui;
 
@@ -100,8 +101,9 @@ async fn main() {
     // no simulation drift, and the player's save file is left untouched.
     if let Some(configs) = capture::CaptureConfig::all_from_env(CAPTURE_PREFIX) {
         for config in configs {
+            let scene = capture_scenes::base_scene(&config.scene);
             if matches!(
-                config.scene.as_str(),
+                scene,
                 "title" | "new_game" | "settings" | "save_slots" | "overwrite"
             ) {
                 let mut seed_input = String::new();
@@ -117,7 +119,7 @@ async fn main() {
                     persistence::SlotState::Empty,
                     persistence::SlotState::Corrupt,
                 ];
-                capture::run_capture_once(&config, |_dt| match config.scene.as_str() {
+                capture::run_capture_once(&config, |_dt| match scene {
                     "title" => {
                         let _ = draw_title_screen(&assets, true, None);
                     }
@@ -142,7 +144,7 @@ async fn main() {
             capture_scenes::seed_capture_scene(&mut cap_state, &config.scene);
             // Most scenes show the Monsters tab; a couple open the tab they exist
             // to show off.
-            let mut drawer_tab = match config.scene.as_str() {
+            let mut drawer_tab = match scene {
                 "build" => DrawerTab::Build,
                 "variants" => DrawerTab::Evolution,
                 "traps" => DrawerTab::Traps,
@@ -151,27 +153,29 @@ async fn main() {
             };
             let mut upgrade_section = UpgradeSection::Traps;
             let mut drawer_open = matches!(
-                config.scene.as_str(),
+                scene,
                 "build" | "variants" | "traps" | "journal" | "placement"
             );
-            let mut event_log_expanded = config.scene == "log";
+            let mut event_log_expanded = scene == "log";
             let mut species_scroll = 0.0;
             let mut defender_scroll = 0.0;
             let mut heroes_scroll = 0.0;
-            let mut show_codex = config.scene == "codex";
-            let mut show_controls = config.scene == "controls";
+            let mut show_codex = scene == "codex";
+            let mut show_controls = scene == "controls";
             let mut codex_scroll = 0.0;
             // The `coretree` scene boots straight into the core-power tree overlay.
-            let mut show_core_tree = config.scene == "coretree";
+            let mut show_core_tree = scene == "coretree";
             // The `goals` scene boots straight into the milestone overlay.
-            let mut show_milestones = config.scene == "goals";
+            let mut show_milestones = scene == "goals";
             let mut milestones_scroll = 0.0;
             let mut t0 = get_time();
             let mut t1 = t0;
             let mut t2 = t0;
             let strip = capture::filmstrip::StripConfig::from_env(CAPTURE_PREFIX);
             if let Some(strip) = strip {
-                capture::filmstrip::run_filmstrip(&config, &strip, |_dt| {
+                capture::filmstrip::run_filmstrip(&config, &strip, |dt| {
+                    cap_state.visual_time += dt;
+                    crate::ui::set_visual_time(Some(cap_state.visual_time));
                     render_playing_frame(
                         &mut cap_state,
                         &mut drawer_tab,
@@ -202,7 +206,9 @@ async fn main() {
                 })
                 .await;
             } else {
-                capture::run_capture_once(&config, |_dt| {
+                capture::run_capture_once(&config, |dt| {
+                    cap_state.visual_time += dt;
+                    crate::ui::set_visual_time(Some(cap_state.visual_time));
                     render_playing_frame(
                         &mut cap_state,
                         &mut drawer_tab,
@@ -419,6 +425,7 @@ async fn main() {
             AppScreen::Playing => {}
         }
 
+        state.reduced_motion = !settings.screen_shake;
         render_playing_frame(
             &mut state,
             &mut drawer_tab,

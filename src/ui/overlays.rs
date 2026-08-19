@@ -128,8 +128,12 @@ pub fn draw_raid_summary(summary: &RaidSummary, area: Rect) -> bool {
 /// Screen-state dressing for an active siege: a pulsing red frame around the
 /// whole screen plus a bold banner, so the siege reads as a distinct, alarming
 /// moment rather than a single line scrolling past in the log.
-pub fn draw_siege_overlay(sw: f32, sh: f32) {
-    let pulse = (get_time() as f32 * 3.0).sin().abs();
+pub fn draw_siege_overlay(sw: f32, sh: f32, reduced_motion: bool) {
+    let pulse = if reduced_motion {
+        0.45
+    } else {
+        (crate::ui::visual_time() * 3.0).sin().abs()
+    };
 
     // Pulsing danger frame — an "alert" border that doesn't obscure content.
     let thickness = 7.0 + pulse * 5.0;
@@ -146,7 +150,7 @@ pub fn draw_siege_overlay(sw: f32, sh: f32) {
     let bw = 460.0_f32.min(sw - 40.0);
     let bh = 40.0;
     let bx = (sw - bw) * 0.5;
-    let by = 98.0;
+    let by = if sw < 760.0 { 232.0 } else { 98.0 };
     let banner = Rect::new(bx, by, bw, bh);
     draw_card(
         banner,
@@ -422,7 +426,11 @@ pub fn draw_controls_reference(
 /// Full-screen "the core has fallen" overlay. Returns true when the player
 /// clicks to begin a new dungeon.
 pub fn draw_game_over_overlay(state: &GameState, sw: f32, sh: f32) -> bool {
-    let pulse = (get_time() as f32 * 1.25).sin() * 0.5 + 0.5;
+    let pulse = if state.reduced_motion {
+        0.5
+    } else {
+        (crate::ui::visual_time() * 1.25).sin() * 0.5 + 0.5
+    };
     draw_circle(
         sw * 0.5,
         sh * 0.5,
@@ -442,7 +450,7 @@ pub fn draw_game_over_overlay(state: &GameState, sw: f32, sh: f32) -> bool {
     let y = (sh - h) / 2.0;
     let panel = Rect::new(x, y, w, h);
     draw_panel(panel, None, DANGER);
-    draw_shattered_core(vec2(x + w - 92.0, y + 108.0), 48.0);
+    draw_shattered_core(vec2(x + w - 92.0, y + 108.0), 48.0, state.reduced_motion);
 
     draw_text_fit(
         "THE CORE HAS FALLEN",
@@ -494,8 +502,12 @@ pub fn draw_game_over_overlay(state: &GameState, sw: f32, sh: f32) -> bool {
 
 /// A fixed, renderer-only loss emblem. The cracked heart and orbiting shards
 /// give the game-over state a focal image without needing a separate asset.
-fn draw_shattered_core(center: Vec2, radius: f32) {
-    let pulse = (get_time() as f32 * 1.7).sin() * 0.04 + 0.20;
+fn draw_shattered_core(center: Vec2, radius: f32, reduced_motion: bool) {
+    let pulse = if reduced_motion {
+        0.20
+    } else {
+        (crate::ui::visual_time() * 1.7).sin() * 0.04 + 0.20
+    };
     draw_circle(center.x, center.y, radius * 1.32, with_alpha(DANGER, pulse));
     draw_circle_lines(
         center.x,

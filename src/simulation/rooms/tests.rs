@@ -32,3 +32,22 @@ fn building_after_a_branch_keeps_both_routes_connected() {
     assert_eq!(floor.room_at(0).unwrap().exits.len(), 2);
     assert!(floor.validate_graph().is_ok());
 }
+
+#[test]
+fn moving_the_core_to_a_new_floor_removes_the_old_sink_edge() {
+    let mut state = GameState::new();
+    state.mana = 1_000_000;
+    while state.total_floors < 3 {
+        add_room(&mut state, None).unwrap();
+    }
+
+    for floor in state.floors.iter().filter(|floor| !floor.is_deepest) {
+        assert!(floor.rooms.iter().all(|room| {
+            room.exits
+                .iter()
+                .all(|exit| floor.rooms.iter().any(|target| target.position == *exit))
+        }));
+        let last = floor.rooms.iter().max_by_key(|room| room.position).unwrap();
+        assert!(last.exits.is_empty());
+    }
+}

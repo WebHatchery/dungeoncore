@@ -152,7 +152,11 @@ pub fn draw(state: &GameState, board_rect: Rect, anchor_rect: Rect) -> bool {
     };
 
     // Pulsing highlight around the step's target.
-    let pulse = (get_time() as f32 * 4.0).sin().abs();
+    let pulse = if state.reduced_motion {
+        0.45
+    } else {
+        (crate::ui::visual_time() * 4.0).sin().abs()
+    };
     let glow = with_alpha(TREASURE, 0.35 + pulse * 0.45);
     draw_rectangle_lines(
         anchor_rect.x - 3.0,

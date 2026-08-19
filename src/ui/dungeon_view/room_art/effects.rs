@@ -37,6 +37,7 @@ pub(super) fn draw_room_effects(
             effect.visual_unit.as_deref(),
             effect.visual_element.as_deref(),
             sprites,
+            state.reduced_motion,
         );
         let rise = (1.0 - life) * 28.0 + stack as f32 * 15.0;
         let color = effect_color(effect.kind);
@@ -80,6 +81,7 @@ fn draw_room_effect_shape(
     visual_unit: Option<&str>,
     visual_element: Option<&str>,
     sprites: &DungeonSprites,
+    reduced_motion: bool,
 ) {
     let (cx, cy) = match anchor {
         EffectAnchor::Defenders => (rect.x + rect.w * 0.34, rect.y + rect.h * 0.48),
@@ -88,7 +90,12 @@ fn draw_room_effect_shape(
     };
     match kind {
         EffectKind::MeleeDust => {
-            let radius = 13.0 + (1.0 - life) * 15.0;
+            let radius = 13.0
+                + if reduced_motion {
+                    0.0
+                } else {
+                    (1.0 - life) * 15.0
+                };
             for (dx, dy, scale) in [(-0.65, 0.35, 0.62), (0.58, 0.28, 0.70), (0.0, -0.18, 1.0)] {
                 draw_circle(
                     cx + dx * radius,
@@ -114,18 +121,33 @@ fn draw_room_effect_shape(
             draw_element_impact(visual_element, cx, cy, radius, life);
         }
         EffectKind::PoisonCloud => {
-            let radius = 9.0 + (1.0 - life) * 13.0;
+            let radius = 9.0
+                + if reduced_motion {
+                    0.0
+                } else {
+                    (1.0 - life) * 13.0
+                };
             for (dx, dy, scale) in [(-0.48, 0.28, 0.56), (0.46, 0.18, 0.68), (0.0, -0.26, 0.80)] {
                 draw_circle(
                     cx + dx * radius,
-                    cy + dy * radius - (1.0 - life) * 9.0,
+                    cy + dy * radius
+                        - if reduced_motion {
+                            0.0
+                        } else {
+                            (1.0 - life) * 9.0
+                        },
                     radius * scale,
                     with_alpha(Color::new(0.40, 0.94, 0.30, 1.0), life * 0.42),
                 );
             }
         }
         EffectKind::SiegeArrival => {
-            let radius = 13.0 + (1.0 - life) * 24.0;
+            let radius = 13.0
+                + if reduced_motion {
+                    0.0
+                } else {
+                    (1.0 - life) * 24.0
+                };
             let color = with_alpha(WARNING, life * 0.76);
             draw_circle_lines(cx, cy, radius, 2.0, color);
             for angle in [0.0_f32, 1.57, 3.14, 4.71] {
@@ -141,7 +163,12 @@ fn draw_room_effect_shape(
             }
         }
         EffectKind::Prestige => {
-            let radius = 10.0 + (1.0 - life) * 27.0;
+            let radius = 10.0
+                + if reduced_motion {
+                    0.0
+                } else {
+                    (1.0 - life) * 27.0
+                };
             let color = with_alpha(SOUL, life * 0.84);
             draw_circle_lines(cx, cy, radius * 0.64, 1.8, color);
             for angle in [0.25_f32, 1.51, 2.76, 4.02, 5.28] {
