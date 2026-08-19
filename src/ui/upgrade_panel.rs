@@ -28,6 +28,7 @@ pub enum UpgradeAction {
     /// Place the armed monster onto this defender — upgrading its line or
     /// evicting it, whichever the swap plan says.
     SwapMonster(u64),
+    MergeMonster(u64),
     SetBattleOrder(RoomBattleOrder),
     Close,
 }

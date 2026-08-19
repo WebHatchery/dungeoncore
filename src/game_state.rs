@@ -63,6 +63,10 @@ pub struct ActiveTrait {
     pub cooldown_timer: i32,
 }
 
+fn default_fusion_rank() -> u8 {
+    1
+}
+
 /// Monster instance in a room
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Monster {
@@ -72,6 +76,10 @@ pub struct Monster {
     pub max_hp: i32,
     pub alive: bool,
     pub is_boss: bool,
+    /// Rank I-III earned by fusing identical equal-rank defenders. Legacy
+    /// creatures and ordinary summons begin at rank I.
+    #[serde(default = "default_fusion_rank")]
+    pub fusion_rank: u8,
     pub scaled_stats: Stats,
     #[serde(default)]
     pub active_traits: Vec<ActiveTrait>,

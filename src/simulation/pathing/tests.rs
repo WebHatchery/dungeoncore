@@ -19,6 +19,7 @@ fn forked_floor() -> Floor {
         max_hp: 40,
         alive: true,
         is_boss: false,
+        fusion_rank: 1,
         scaled_stats: Stats {
             hp: 40,
             attack: 40,

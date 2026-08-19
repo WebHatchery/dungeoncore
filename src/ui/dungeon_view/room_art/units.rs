@@ -1,6 +1,7 @@
 //! Defender and adventurer composition inside a single dungeon room tile.
 
 use macroquad::prelude::*;
+use macroquad_toolkit::colors::with_alpha;
 
 use crate::game_state::{Adventurer, Monster, Room, RoomType};
 use crate::ui::theme::*;
@@ -65,6 +66,12 @@ pub(super) fn draw_room_units(
                 );
             if !drawn_sprite {
                 draw_icon_disc(vec2(x, cy), radius, color, &initial);
+            }
+            if monster.fusion_rank >= 2 {
+                draw_circle_lines(x, cy, radius + 2.5, 1.5, with_alpha(color, 0.78));
+            }
+            if monster.fusion_rank >= 3 {
+                draw_circle_lines(x, cy, radius + 5.0, 1.2, with_alpha(TREASURE, 0.82));
             }
             if monster.alive && (fighting || monster.hp < monster.max_hp) {
                 draw_unit_hp_bar(vec2(x, cy), radius, monster.hp, monster.max_hp);

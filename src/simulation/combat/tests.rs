@@ -9,6 +9,7 @@ fn sturdy_monster() -> Monster {
         max_hp: 500,
         alive: true,
         is_boss: false,
+        fusion_rank: 1,
         scaled_stats: Stats {
             hp: 500,
             attack: 30,

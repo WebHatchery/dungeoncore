@@ -9,6 +9,7 @@ use crate::simulation;
 
 mod combat_sprites;
 mod deep_board;
+mod merge;
 mod strata;
 mod vfx;
 
@@ -274,6 +275,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
                             max_hp: 22,
                             alive: true,
                             is_boss: false,
+                            fusion_rank: 1,
                             scaled_stats: game_state::Stats {
                                 hp: 22,
                                 attack: 5,
@@ -295,6 +297,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             }
             state.add_type_experience("Goblin", 32);
         }
+        "merge" => merge::seed(state),
         "swap" => {
             // A goblin and a slime sharing a room, with an Orc armed: the goblin
             // row offers an upgrade along its own line, the slime row an

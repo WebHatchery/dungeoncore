@@ -60,6 +60,7 @@ pub(super) fn split_spawn(rng: &mut SeededRng, parent_type: &str, floor: i32) ->
         max_hp: scaled.hp,
         alive: true,
         is_boss: false,
+        fusion_rank: 1,
         scaled_stats: scaled,
         active_traits: template
             .traits

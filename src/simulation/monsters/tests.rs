@@ -9,6 +9,7 @@ fn dead_monster(type_name: &str, max_hp: i32) -> Monster {
         max_hp,
         alive: false,
         is_boss: false,
+        fusion_rank: 1,
         scaled_stats: Stats {
             hp: max_hp,
             attack: 5,

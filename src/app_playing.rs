@@ -386,6 +386,13 @@ pub fn render_playing_frame(
                     state.selected_monster = None;
                 }
             }
+            UpgradeAction::MergeMonster(monster_id) => {
+                if let Some((floor, pos)) = state.selected_room {
+                    if let Err(error) = simulation::merge_monsters(state, floor, pos, monster_id) {
+                        state.add_log(game_state::LogEntry::system(error));
+                    }
+                }
+            }
             UpgradeAction::SetBattleOrder(order) => {
                 if let Some((floor, pos)) = state.selected_room {
                     if let Err(error) = simulation::set_battle_order(state, floor, pos, order) {

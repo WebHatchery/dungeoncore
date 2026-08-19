@@ -3,7 +3,9 @@ use crate::data::monsters::get_monster_template;
 use crate::game_state::{GameState, LogEntry, Monster, RoomType, Stats};
 use std::collections::BTreeMap;
 
+mod fusion;
 mod swap;
+pub use fusion::{fusion_target_rank, merge_monsters};
 pub use swap::{plan_swap, swap_monster, SwapKind};
 
 /// Why an armed monster cannot take a free room slot. Boss rooms reserve their
@@ -147,6 +149,7 @@ pub fn place_monster(
         max_hp: scaled.hp,
         alive: true,
         is_boss,
+        fusion_rank: 1,
         scaled_stats: scaled,
         active_traits,
     };

@@ -240,7 +240,7 @@ fn upgrade_in_place(
         .ok_or("Monster not found")?;
 
     let old_name = monster.type_name.clone();
-    let scaled = get_scaled_stats(
+    let base_scaled = get_scaled_stats(
         Stats {
             hp: template.hp,
             attack: template.attack,
@@ -249,6 +249,7 @@ fn upgrade_in_place(
         floor_num,
         monster.is_boss,
     );
+    let scaled = super::fusion::ranked_stats(base_scaled, monster.fusion_rank);
     monster.type_name = template.name.clone();
     monster.hp = scaled.hp;
     monster.max_hp = scaled.hp;

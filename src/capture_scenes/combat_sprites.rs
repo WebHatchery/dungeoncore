@@ -34,6 +34,7 @@ pub(super) fn seed(state: &mut crate::game_state::GameState) {
                 max_hp: 20,
                 alive: true,
                 is_boss: false,
+                fusion_rank: 1,
                 scaled_stats: Stats {
                     hp: 20,
                     attack: 5,
@@ -48,6 +49,7 @@ pub(super) fn seed(state: &mut crate::game_state::GameState) {
                 max_hp: 28,
                 alive: true,
                 is_boss: false,
+                fusion_rank: 1,
                 scaled_stats: Stats {
                     hp: 28,
                     attack: 8,
@@ -62,6 +64,7 @@ pub(super) fn seed(state: &mut crate::game_state::GameState) {
                 max_hp: 200,
                 alive: true,
                 is_boss: false,
+                fusion_rank: 1,
                 scaled_stats: Stats {
                     hp: 200,
                     attack: 30,
@@ -76,6 +79,7 @@ pub(super) fn seed(state: &mut crate::game_state::GameState) {
                 max_hp: 26,
                 alive: false,
                 is_boss: false,
+                fusion_rank: 1,
                 scaled_stats: Stats {
                     hp: 26,
                     attack: 6,

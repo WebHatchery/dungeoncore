@@ -110,6 +110,30 @@ fn an_upgrade_keeps_the_slot_and_takes_the_new_form() {
 }
 
 #[test]
+fn a_fused_veteran_keeps_its_rank_when_it_evolves() {
+    let mut s = dungeon();
+    place_monster(&mut s, 1, 1, "Goblin").expect("placed");
+    let id = only_monster(&s).id;
+    s.floors[0].rooms[1].monsters[0].fusion_rank = 2;
+
+    swap_monster(&mut s, 1, 1, id, "Orc").expect("upgraded");
+
+    let monster = only_monster(&s);
+    let base_orc_hp = get_scaled_stats(
+        Stats {
+            hp: get_monster_template("Orc").unwrap().hp,
+            attack: get_monster_template("Orc").unwrap().attack,
+            defense: get_monster_template("Orc").unwrap().defense,
+        },
+        1,
+        false,
+    )
+    .hp;
+    assert_eq!(monster.fusion_rank, 2);
+    assert!(monster.max_hp > base_orc_hp);
+}
+
+#[test]
 fn a_replacement_evicts_the_occupant() {
     let mut s = dungeon();
     let slime = get_monster_template("Green Slime").expect("template");
