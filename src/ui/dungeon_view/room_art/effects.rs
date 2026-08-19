@@ -159,7 +159,7 @@ fn draw_room_effect_shape(
         EffectKind::MonsterDown | EffectKind::AdventurerDown => {
             if let Some(unit) = visual_unit {
                 let monster = kind == EffectKind::MonsterDown;
-                if sprites.draw_death(monster, unit, vec2(cx, cy), 30.0 * life, 0.0, !monster) {
+                if sprites.draw_death(monster, unit, vec2(cx, cy), 30.0 * life, 0.0, false) {
                     return;
                 }
             }

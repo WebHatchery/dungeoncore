@@ -514,7 +514,7 @@ pub(super) fn draw_party_transit(
             center,
             22.0,
             get_time() as f32 + member.id as f32 * 0.173,
-            true,
+            false,
             false,
             true,
         ) {

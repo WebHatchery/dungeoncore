@@ -46,7 +46,6 @@ pub(super) fn draw_room_units(
             } else {
                 TEXT_DIM
             };
-            let element = crate::data::monsters::monster_element_id(&monster.type_name);
             let initial = monster
                 .type_name
                 .chars()
@@ -61,16 +60,11 @@ pub(super) fn draw_room_units(
                     vec2(x, cy + bob),
                     UNIT_SPRITE_SIZE,
                     phase,
-                    true,
+                    false,
                     fighting,
                 );
             if !drawn_sprite {
                 draw_icon_disc(vec2(x, cy), radius, color, &initial);
-            }
-            if monster.alive {
-                if let Some(element) = element {
-                    draw_element_badge(vec2(x + radius - 2.0, cy - radius + 2.0), &element);
-                }
             }
             if monster.alive && (fighting || monster.hp < monster.max_hp) {
                 draw_unit_hp_bar(vec2(x, cy), radius, monster.hp, monster.max_hp);
@@ -119,17 +113,6 @@ pub(super) fn draw_room_units(
             }
             if is_rival {
                 draw_circle_lines(x, cy, radius + 2.5, 1.6, TREASURE);
-                let first = adventurer
-                    .name
-                    .split_whitespace()
-                    .next()
-                    .unwrap_or(&adventurer.name);
-                draw_centered_text(
-                    first,
-                    Rect::new(x - 30.0, cy - radius - 15.0, 60.0, 12.0),
-                    10.0,
-                    TREASURE,
-                );
             }
             if fighting || adventurer.hp < adventurer.max_hp {
                 draw_unit_hp_bar(vec2(x, cy), radius, adventurer.hp, adventurer.max_hp);
