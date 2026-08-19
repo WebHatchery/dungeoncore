@@ -70,6 +70,15 @@ pub fn get_monster_template(name: &str) -> Option<MonsterTemplate> {
         .cloned()
 }
 
+/// Stable roster position used to derive deterministic per-creature visual
+/// variants without storing another identity field in saves.
+pub fn get_monster_template_index(name: &str) -> Option<usize> {
+    monsters_data()
+        .monsters
+        .iter()
+        .position(|template| template.name == name)
+}
+
 /// Whether a monster type belongs to the Undead species. Undead have a distinct
 /// identity: they rise again for free but can never heal (see the respawn and
 /// regeneration logic). Cheap cached lookup.

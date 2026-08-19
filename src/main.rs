@@ -78,6 +78,7 @@ async fn main() {
             ANIMATED_MONSTER_SHEET_PATH,
             "animated monster",
         ),
+        (GIANT_RAT_SPRITE_KEY, GIANT_RAT_SPRITE_PATH, "giant rat"),
         (
             ANIMATED_FULL_MONSTER_SHEET_KEY,
             ANIMATED_FULL_MONSTER_SHEET_PATH,
