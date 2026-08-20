@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 
 /// Damage multiplier when the attacker's element beats the defender's.
 pub const STRONG_MULT: f32 = 1.5;
@@ -25,14 +26,27 @@ const ELEMENTS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/e
 
 /// Load all element definitions
 pub fn get_all_elements() -> Vec<ElementDef> {
-    let data: ElementsData =
-        serde_json::from_str(ELEMENTS_JSON).expect("Failed to parse elements.json");
-    data.elements
+    elements_data().elements.clone()
+}
+
+fn elements_data() -> &'static ElementsData {
+    static CACHE: OnceLock<ElementsData> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/elements.json",
+            ELEMENTS_JSON,
+        )
+        .expect("Failed to parse assets/elements.json")
+    })
 }
 
 /// Get one element by id
 pub fn get_element(id: &str) -> Option<ElementDef> {
-    get_all_elements().into_iter().find(|e| e.id == id)
+    elements_data()
+        .elements
+        .iter()
+        .find(|e| e.id == id)
+        .cloned()
 }
 
 /// Attack-damage multiplier for an elemental matchup.

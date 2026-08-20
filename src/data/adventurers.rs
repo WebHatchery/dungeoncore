@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::sync::OnceLock;
 
 /// Adventurer class from JSON
 #[derive(Clone, Debug, Deserialize)]
@@ -44,13 +45,20 @@ struct AdventurersData {
 const ADVENTURERS_JSON: &str =
     macroquad_toolkit::include_json_str!("../../assets/adventurers.json");
 
-fn load_data() -> AdventurersData {
-    serde_json::from_str(ADVENTURERS_JSON).expect("Failed to parse adventurers.json")
+fn data() -> &'static AdventurersData {
+    static CACHE: OnceLock<AdventurersData> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/adventurers.json",
+            ADVENTURERS_JSON,
+        )
+        .expect("Failed to parse assets/adventurers.json")
+    })
 }
 
 /// Get all adventurer classes
 pub fn get_adventurer_classes() -> Vec<AdventurerClass> {
-    load_data().classes
+    data().classes.clone()
 }
 
 /// Get adventurer class by name
@@ -62,7 +70,7 @@ pub fn get_adventurer_class(name: &str) -> Option<AdventurerClass> {
 
 /// Get all adventurer races
 pub fn get_all_races() -> Vec<AdventurerRace> {
-    load_data().races
+    data().races.clone()
 }
 
 /// Get a race's stat modifiers by name.
@@ -77,20 +85,20 @@ pub fn get_race_names() -> Vec<String> {
 
 /// Get all adventurer names
 pub fn get_adventurer_names() -> Vec<String> {
-    load_data().names
+    data().names.clone()
 }
 
 /// Get victory quotes
 pub fn get_victory_quotes() -> Vec<String> {
-    load_data().quotes.victory
+    data().quotes.victory.clone()
 }
 
 /// Get entry quotes
 pub fn get_entry_quotes() -> Vec<String> {
-    load_data().quotes.entry
+    data().quotes.entry.clone()
 }
 
 /// Get exit quotes
 pub fn get_exit_quotes() -> Vec<String> {
-    load_data().quotes.exit
+    data().quotes.exit.clone()
 }

@@ -29,16 +29,16 @@ pub(super) fn draw_room_effects(
         stack_by_anchor[anchor_idx] += 1;
 
         let life = effect.life_fraction();
-        draw_room_effect_shape(
-            effect.kind,
+        draw_room_effect_shape(EffectShape {
+            kind: effect.kind,
             rect,
-            effect.anchor,
+            anchor: effect.anchor,
             life,
-            effect.visual_unit.as_deref(),
-            effect.visual_element.as_deref(),
+            visual_unit: effect.visual_unit.as_deref(),
+            visual_element: effect.visual_element.as_deref(),
             sprites,
-            state.reduced_motion,
-        );
+            reduced_motion: state.reduced_motion,
+        });
         let rise = (1.0 - life) * 28.0 + stack as f32 * 15.0;
         let color = effect_color(effect.kind);
         let cx = anchor_x;
@@ -73,16 +73,28 @@ fn effect_color(kind: EffectKind) -> Color {
     }
 }
 
-fn draw_room_effect_shape(
+struct EffectShape<'a> {
     kind: EffectKind,
     rect: Rect,
     anchor: EffectAnchor,
     life: f32,
-    visual_unit: Option<&str>,
-    visual_element: Option<&str>,
-    sprites: &DungeonSprites,
+    visual_unit: Option<&'a str>,
+    visual_element: Option<&'a str>,
+    sprites: &'a DungeonSprites,
     reduced_motion: bool,
-) {
+}
+
+fn draw_room_effect_shape(shape: EffectShape<'_>) {
+    let EffectShape {
+        kind,
+        rect,
+        anchor,
+        life,
+        visual_unit,
+        visual_element,
+        sprites,
+        reduced_motion,
+    } = shape;
     let (cx, cy) = match anchor {
         EffectAnchor::Defenders => (rect.x + rect.w * 0.34, rect.y + rect.h * 0.48),
         EffectAnchor::Invaders => (rect.x + rect.w * 0.66, rect.y + rect.h * 0.48),
@@ -150,7 +162,12 @@ fn draw_room_effect_shape(
                 };
             let color = with_alpha(WARNING, life * 0.76);
             draw_circle_lines(cx, cy, radius, 2.0, color);
-            for angle in [0.0_f32, 1.57, 3.14, 4.71] {
+            for angle in [
+                0.0_f32,
+                std::f32::consts::FRAC_PI_2,
+                std::f32::consts::PI,
+                3.0 * std::f32::consts::FRAC_PI_2,
+            ] {
                 let direction = vec2(angle.cos(), angle.sin());
                 draw_line(
                     cx + direction.x * radius * 0.72,

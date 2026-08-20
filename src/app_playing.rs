@@ -3,45 +3,28 @@
 use macroquad::prelude::*;
 
 use crate::app_actions::apply_drawer_action;
-use crate::app_support::{
-    create_new_game, reset_timers, responsive_drawer_width, should_pause_after_frame_gap,
-};
+use crate::app_support::{create_new_game, reset_timers, responsive_drawer_width};
 use crate::game_audio::{GameAudio, SoundCue};
 use crate::game_state::{self, GameState};
 use crate::keybindings::{BindingAction, KeyBindings};
 use crate::ui::*;
 use crate::{persistence, simulation, tutorial};
 
+mod runtime;
+mod session;
+
+pub use session::{PlayingFrameSettings, PlayingSession, PlayingTiming};
+
 /// Render (and, when `simulate` is true, step) one frame of the Playing screen.
 /// Shared by the interactive loop and the screenshot capture harness; the
 /// capture path passes `simulate = false` so the seeded scene stays frozen and
 /// the save file is never touched.
-#[allow(clippy::too_many_arguments)]
 pub fn render_playing_frame(
     state: &mut GameState,
-    drawer_tab: &mut DrawerTab,
-    upgrade_section: &mut UpgradeSection,
-    drawer_open: &mut bool,
-    event_log_expanded: &mut bool,
-    species_scroll: &mut f32,
-    defender_scroll: &mut f32,
-    heroes_scroll: &mut f32,
-    show_codex: &mut bool,
-    show_controls: &mut bool,
-    codex_scroll: &mut f32,
-    show_core_tree: &mut bool,
-    show_milestones: &mut bool,
-    milestones_scroll: &mut f32,
-    last_time_advance: &mut f64,
-    last_adventure_tick: &mut f64,
-    last_save: &mut f64,
-    simulate: bool,
-    autosave_interval: f64,
-    save_slot: &str,
+    session: &mut PlayingSession,
+    settings: PlayingFrameSettings<'_>,
     sprites: &DungeonSprites,
     audio: &GameAudio,
-    sfx_volume: f32,
-    music_volume: f32,
     keybindings: &KeyBindings,
 ) {
     clear_tooltips();
@@ -49,73 +32,45 @@ pub fn render_playing_frame(
     let sw = screen_width();
     let sh = screen_height();
     let frame_seconds = get_frame_time();
-    if simulate {
-        state.visual_time = now as f32;
-        crate::ui::set_visual_time(None);
-        if !state.paused && should_pause_after_frame_gap(frame_seconds) {
-            state.paused = true;
-            state.add_log(game_state::LogEntry::system(
-                "Dungeon paused after the browser or window was suspended. Tap Resume Dungeon to continue.",
-            ));
-            reset_timers(last_time_advance, last_adventure_tick, last_save);
-        }
-    } else {
-        state.visual_time += 1.0 / 60.0;
-        crate::ui::set_visual_time(Some(state.visual_time));
-    }
     draw_game_background(sw, sh);
 
-    // A pause is a first-class simulation state: the UI remains available for
-    // inspection, but no time, raids, transient effects, or cooldowns advance.
-    if simulate && keybindings.pressed(BindingAction::Pause) {
-        state.paused = !state.paused;
-        if !state.paused {
-            reset_timers(last_time_advance, last_adventure_tick, last_save);
-        }
-    }
+    runtime::advance(
+        state,
+        session,
+        settings,
+        keybindings,
+        audio,
+        now,
+        frame_seconds,
+    );
 
-    if simulation_active(simulate, state.paused) {
-        // Age transient combat effects and party-travel animations each frame,
-        // and recharge the Core Smite lever in real time.
-        state.decay_effects(get_frame_time());
-        for party in &mut state.adventurer_parties {
-            party.move_anim.tick(get_frame_time());
-        }
-        state.core_smite_cooldown.tick(get_frame_time());
-
-        // === Time-based Updates ===
-
-        // Advance game time based on speed
-        let time_interval = 5.0 / state.speed as f64;
-        if now - *last_time_advance > time_interval {
-            simulation::advance_time(state);
-            *last_time_advance = now;
-        }
-
-        // Process adventurer system
-        if now - *last_adventure_tick > 2.0 {
-            simulation::spawn_party(state);
-            simulation::process_parties(state);
-            *last_adventure_tick = now;
-        }
-
-        // Auto-save every 30 seconds
-        if now - *last_save > autosave_interval {
-            if let Err(e) = persistence::save_game(save_slot, state) {
-                eprintln!("Failed to save: {}", e);
-            }
-            *last_save = now;
-        }
-    }
-
-    // Simulations enqueue semantic effects; only a live interactive frame
-    // consumes them, keeping capture runs silent and deterministic.
-    if simulate {
-        audio.update_music(state, music_volume);
-        for event in state.take_sound_events() {
-            audio.play(event.into(), sfx_volume);
-        }
-    }
+    let PlayingSession {
+        drawer_tab,
+        upgrade_section,
+        drawer_open,
+        event_log_expanded,
+        species_scroll,
+        defender_scroll,
+        heroes_scroll,
+        show_codex,
+        show_controls,
+        codex_scroll,
+        show_core_tree,
+        show_milestones,
+        milestones_scroll,
+        timing:
+            PlayingTiming {
+                last_time_advance,
+                last_adventure_tick,
+                last_save,
+            },
+    } = session;
+    let PlayingFrameSettings {
+        simulate,
+        save_slot,
+        sfx_volume,
+        ..
+    } = settings;
 
     // Game over: the core has fallen. Offer a fresh dungeon.
     if state.game_over {
@@ -315,11 +270,9 @@ pub fn render_playing_frame(
         DungeonAction::None => {}
     }
 
-    if state.paused {
-        if draw_pause_overlay(dungeon_rect) {
-            state.paused = false;
-            reset_timers(last_time_advance, last_adventure_tick, last_save);
-        }
+    if state.paused && draw_pause_overlay(dungeon_rect) {
+        state.paused = false;
+        reset_timers(last_time_advance, last_adventure_tick, last_save);
     }
 
     // Inspector panel (room, monster, and upgrade context)

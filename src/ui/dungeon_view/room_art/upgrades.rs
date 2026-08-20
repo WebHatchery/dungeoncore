@@ -272,7 +272,7 @@ fn draw_stone_walls(wall: Rect) {
             1.2,
             with_alpha(stone, 0.72),
         );
-        if row % 2 == 0 {
+        if row.is_multiple_of(2) {
             draw_line(
                 wall.x + 5.0,
                 y - 13.0,

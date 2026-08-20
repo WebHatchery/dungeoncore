@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 
 use crate::game_state::{Equipment, Stats};
 
@@ -47,9 +48,18 @@ const EQUIPMENT_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/
 
 /// Load all equipment templates from embedded JSON
 pub fn get_all_equipment() -> Vec<EquipmentTemplate> {
-    let data: EquipmentData =
-        serde_json::from_str(EQUIPMENT_JSON).expect("Failed to parse equipment.json");
-    data.equipment
+    equipment_data().equipment.clone()
+}
+
+fn equipment_data() -> &'static EquipmentData {
+    static CACHE: OnceLock<EquipmentData> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/equipment.json",
+            EQUIPMENT_JSON,
+        )
+        .expect("Failed to parse assets/equipment.json")
+    })
 }
 
 /// Find equipment template by ID

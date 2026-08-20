@@ -22,7 +22,7 @@ fn visible_touch_route_covers_the_required_browser_actions() {
 
 #[test]
 fn end_to_end_route_covers_logs_save_pause_overlays_and_resources() {
-    let report = run_touch_route(0xD06E_00u64);
+    let report = run_touch_route(0x00D0_6E00_u64);
     assert_eq!(report.controls_checked, TOUCH_ROUTE_CONTROLS.len());
     assert!(report.log_entries_checked >= 4);
     assert!(report.save_round_trip_preserved_run);
@@ -34,7 +34,7 @@ fn end_to_end_route_covers_logs_save_pause_overlays_and_resources() {
 
 #[test]
 fn full_roster_maximum_dungeon_soak_runs_at_4x_with_bounded_state() {
-    let report = run_maximum_dungeon_soak(0xC04E_4Au64, DEFAULT_SOAK_HOURS);
+    let report = run_maximum_dungeon_soak(0x00C0_4E4A_u64, DEFAULT_SOAK_HOURS);
     assert_eq!(report.speed, 4);
     assert_eq!(report.hours, DEFAULT_SOAK_HOURS);
     assert_eq!(report.floors, MAX_DUNGEON_FLOORS);

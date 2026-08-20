@@ -162,7 +162,12 @@ fn draw_frost_snare(rect: Rect, upgrade: &RoomUpgrade) {
     let center = vec2(rect.x + rect.w * 0.5, rect.y + rect.h * 0.5);
     draw_circle_lines(center.x, center.y, 9.0, 2.0, with_alpha(color, 0.92));
     draw_circle_lines(center.x, center.y, 4.0, 1.0, with_alpha(color, 0.72));
-    for angle in [0.0_f32, 1.57, 3.14, 4.71] {
+    for angle in [
+        0.0_f32,
+        std::f32::consts::FRAC_PI_2,
+        std::f32::consts::PI,
+        3.0 * std::f32::consts::FRAC_PI_2,
+    ] {
         let spoke = vec2(angle.cos(), angle.sin());
         draw_line(
             center.x - spoke.x * 12.0,

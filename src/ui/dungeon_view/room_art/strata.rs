@@ -29,13 +29,12 @@ pub(super) fn draw_depth_layer_art(wall: Rect, floor: i32, time: f32) {
     let layer = crate::game_state::DepthLayer::for_floor(floor);
     let stratum = crate::data::strata::stratum_for_floor(floor);
     let accent = element_color(&stratum.element);
-    let mark = match layer {
+    match layer {
         crate::game_state::DepthLayer::Threshold => draw_threshold_mark(wall, accent),
         crate::game_state::DepthLayer::Hunt => draw_hunt_mark(wall, accent, time),
         crate::game_state::DepthLayer::Gauntlet => draw_gauntlet_mark(wall, accent),
         crate::game_state::DepthLayer::Apex => draw_apex_mark(wall, accent, time),
-    };
-    let _ = mark;
+    }
 }
 
 fn draw_threshold_mark(wall: Rect, accent: Color) {

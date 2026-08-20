@@ -1,5 +1,6 @@
 use crate::game_state::{RoomUpgrade, RoomUpgradeType};
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 
 /// JSON-loadable upgrade template
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -37,21 +38,36 @@ const UPGRADES_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/u
 
 /// Load all upgrade templates from embedded JSON
 pub fn get_all_upgrades() -> Vec<UpgradeTemplate> {
-    let data: UpgradesData =
-        serde_json::from_str(UPGRADES_JSON).expect("Failed to parse upgrades.json");
-    data.upgrades
+    upgrades_data().upgrades.clone()
+}
+
+fn upgrades_data() -> &'static UpgradesData {
+    static CACHE: OnceLock<UpgradesData> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/upgrades.json",
+            UPGRADES_JSON,
+        )
+        .expect("Failed to parse assets/upgrades.json")
+    })
 }
 
 /// Find upgrade template by name
 pub fn get_upgrade_template(name: &str) -> Option<UpgradeTemplate> {
-    get_all_upgrades().into_iter().find(|u| u.name == name)
+    upgrades_data()
+        .upgrades
+        .iter()
+        .find(|u| u.name == name)
+        .cloned()
 }
 
 /// Get upgrades of a specific type
 pub fn get_upgrades_by_type(upgrade_type: &str) -> Vec<UpgradeTemplate> {
-    get_all_upgrades()
-        .into_iter()
+    upgrades_data()
+        .upgrades
+        .iter()
         .filter(|u| u.upgrade_type == upgrade_type)
+        .cloned()
         .collect()
 }
 

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MonsterTrait {
@@ -27,11 +28,21 @@ const TRAITS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/tra
 
 /// Load all traits
 pub fn get_all_traits() -> Vec<MonsterTrait> {
-    let data: TraitsData = serde_json::from_str(TRAITS_JSON).expect("Failed to parse traits.json");
-    data.traits
+    traits_data().traits.clone()
+}
+
+fn traits_data() -> &'static TraitsData {
+    static CACHE: OnceLock<TraitsData> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/traits.json",
+            TRAITS_JSON,
+        )
+        .expect("Failed to parse assets/traits.json")
+    })
 }
 
 /// Get a specific trait by ID
 pub fn get_trait(id: &str) -> Option<MonsterTrait> {
-    get_all_traits().into_iter().find(|t| t.id == id)
+    traits_data().traits.iter().find(|t| t.id == id).cloned()
 }

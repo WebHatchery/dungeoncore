@@ -432,7 +432,7 @@ impl GameAudio {
         };
         if let Some(sound) = sound {
             play_sound(
-                &sound,
+                sound,
                 PlaySoundParams {
                     looped: false,
                     volume: volume.clamp(0.0, 1.0),

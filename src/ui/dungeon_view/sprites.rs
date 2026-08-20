@@ -44,6 +44,39 @@ struct MonsterSpriteStyle {
     scale: f32,
 }
 
+#[derive(Clone, Copy)]
+struct SpriteDraw<'a> {
+    center: Vec2,
+    size: f32,
+    elapsed: f32,
+    flip_x: bool,
+    clip: &'a SpriteClip,
+    tint: Color,
+    scale: f32,
+}
+
+impl<'a> SpriteDraw<'a> {
+    fn new(
+        center: Vec2,
+        size: f32,
+        elapsed: f32,
+        flip_x: bool,
+        clip: &'a SpriteClip,
+        tint: Color,
+        scale: f32,
+    ) -> Self {
+        Self {
+            center,
+            size,
+            elapsed,
+            flip_x,
+            clip,
+            tint,
+            scale,
+        }
+    }
+}
+
 pub struct DungeonSprites {
     atlas: Option<SpriteAtlas>,
     animated_atlas: Option<SpriteAtlas>,
@@ -130,13 +163,7 @@ impl DungeonSprites {
         let Some(style) = monster_sprite_style(name) else {
             return self.draw_frame(
                 monster_frame(name),
-                center,
-                size,
-                elapsed,
-                flip_x,
-                clip,
-                WHITE,
-                1.0,
+                SpriteDraw::new(center, size, elapsed, flip_x, clip, WHITE, 1.0),
             );
         };
         adornments::draw_backdrop(name, center, size);
@@ -150,34 +177,18 @@ impl DungeonSprites {
         let drawn = match style.identity.source {
             MonsterSpriteSource::Animated => self.draw_monster_animated_frame(
                 style.identity.base_frame,
-                center,
-                size,
-                flip_x,
-                clip,
-                style.tint,
-                style.scale,
+                SpriteDraw::new(center, size, elapsed, flip_x, clip, style.tint, style.scale),
             ),
             MonsterSpriteSource::FullAnimated => self.draw_full_monster_frame(
                 style.identity.base_frame,
-                center,
-                size,
-                flip_x,
-                clip,
-                style.tint,
-                style.scale,
+                SpriteDraw::new(center, size, elapsed, flip_x, clip, style.tint, style.scale),
             ),
             MonsterSpriteSource::GiantRat => false,
         };
         let drawn = drawn
             || self.draw_frame(
                 monster_frame(name),
-                center,
-                size,
-                elapsed,
-                flip_x,
-                clip,
-                style.tint,
-                style.scale,
+                SpriteDraw::new(center, size, elapsed, flip_x, clip, style.tint, style.scale),
             );
         if drawn {
             adornments::draw_crest(name, center, size);
@@ -185,6 +196,9 @@ impl DungeonSprites {
         drawn
     }
 
+    // The pose inputs form the renderer's compact call-site contract; grouping
+    // them would obscure the direct mapping from room-art state to sprite pose.
+    #[allow(clippy::too_many_arguments)]
     pub fn draw_adventurer(
         &self,
         class_name: &str,
@@ -210,13 +224,7 @@ impl DungeonSprites {
         }
         self.draw_frame(
             adventurer_frame(class_name),
-            center,
-            size,
-            elapsed,
-            flip_x,
-            clip,
-            WHITE,
-            1.0,
+            SpriteDraw::new(center, size, elapsed, flip_x, clip, WHITE, 1.0),
         )
     }
 
@@ -239,21 +247,27 @@ impl DungeonSprites {
             let drawn = match style.identity.source {
                 MonsterSpriteSource::Animated => self.draw_monster_animated_frame(
                     style.identity.base_frame,
-                    center,
-                    size,
-                    flip_x,
-                    &self.death,
-                    style.tint,
-                    style.scale,
+                    SpriteDraw::new(
+                        center,
+                        size,
+                        elapsed,
+                        flip_x,
+                        &self.death,
+                        style.tint,
+                        style.scale,
+                    ),
                 ),
                 MonsterSpriteSource::FullAnimated => self.draw_full_monster_frame(
                     style.identity.base_frame,
-                    center,
-                    size,
-                    flip_x,
-                    &self.death,
-                    style.tint,
-                    style.scale,
+                    SpriteDraw::new(
+                        center,
+                        size,
+                        elapsed,
+                        flip_x,
+                        &self.death,
+                        style.tint,
+                        style.scale,
+                    ),
                 ),
                 MonsterSpriteSource::GiantRat => false,
             };
@@ -262,13 +276,15 @@ impl DungeonSprites {
             }
             return self.draw_frame(
                 monster_frame(key),
-                center,
-                size,
-                elapsed,
-                flip_x,
-                &self.death,
-                style.tint,
-                style.scale,
+                SpriteDraw::new(
+                    center,
+                    size,
+                    elapsed,
+                    flip_x,
+                    &self.death,
+                    style.tint,
+                    style.scale,
+                ),
             );
         }
         let frame = adventurer_frame(key);
@@ -286,39 +302,27 @@ impl DungeonSprites {
         }
         self.draw_frame(
             frame,
-            center,
-            size,
-            elapsed,
-            flip_x,
-            &self.death,
-            WHITE,
-            1.0,
+            SpriteDraw::new(center, size, elapsed, flip_x, &self.death, WHITE, 1.0),
         )
     }
 
-    fn draw_frame(
-        &self,
-        frame: Option<usize>,
-        center: Vec2,
-        size: f32,
-        elapsed: f32,
-        flip_x: bool,
-        clip: &SpriteClip,
-        tint: Color,
-        scale: f32,
-    ) -> bool {
+    fn draw_frame(&self, frame: Option<usize>, draw: SpriteDraw<'_>) -> bool {
         let (Some(atlas), Some(frame)) = (&self.atlas, frame) else {
             return false;
         };
         // Each definition has a stable base frame. The named clip contributes
         // its local animation phase without changing which identity is drawn.
-        let animated = frame + clip.frame_at(elapsed).saturating_sub(clip.start_frame);
+        let animated = frame
+            + draw
+                .clip
+                .frame_at(draw.elapsed)
+                .saturating_sub(draw.clip.start_frame);
         atlas.draw_frame(
             animated,
-            center,
-            vec2(size * scale, size * scale),
-            flip_x,
-            tint,
+            draw.center,
+            vec2(draw.size * draw.scale, draw.size * draw.scale),
+            draw.flip_x,
+            draw.tint,
         );
         true
     }
@@ -348,20 +352,11 @@ impl DungeonSprites {
         true
     }
 
-    fn draw_monster_animated_frame(
-        &self,
-        base: usize,
-        center: Vec2,
-        size: f32,
-        flip_x: bool,
-        clip: &SpriteClip,
-        tint: Color,
-        scale: f32,
-    ) -> bool {
+    fn draw_monster_animated_frame(&self, base: usize, draw: SpriteDraw<'_>) -> bool {
         let Some(atlas) = &self.animated_monster_atlas else {
             return false;
         };
-        let pose = match clip.name.as_str() {
+        let pose = match draw.clip.name.as_str() {
             "walk" => 1,
             "attack" => 2,
             "death" => 3,
@@ -369,10 +364,10 @@ impl DungeonSprites {
         };
         atlas.draw_frame(
             base + pose,
-            center,
-            vec2(size * scale, size * scale),
-            flip_x,
-            tint,
+            draw.center,
+            vec2(draw.size * draw.scale, draw.size * draw.scale),
+            draw.flip_x,
+            draw.tint,
         );
         true
     }
@@ -423,20 +418,11 @@ impl DungeonSprites {
         true
     }
 
-    fn draw_full_monster_frame(
-        &self,
-        base_frame: usize,
-        center: Vec2,
-        size: f32,
-        flip_x: bool,
-        clip: &SpriteClip,
-        tint: Color,
-        scale: f32,
-    ) -> bool {
+    fn draw_full_monster_frame(&self, base_frame: usize, draw: SpriteDraw<'_>) -> bool {
         let Some(atlas) = &self.animated_full_monster_atlas else {
             return false;
         };
-        let pose = match clip.name.as_str() {
+        let pose = match draw.clip.name.as_str() {
             "walk" => 1,
             "attack" => 2,
             "death" => 3,
@@ -444,10 +430,10 @@ impl DungeonSprites {
         };
         atlas.draw_frame(
             base_frame + pose,
-            center,
-            vec2(size * scale, size * scale),
-            flip_x,
-            tint,
+            draw.center,
+            vec2(draw.size * draw.scale, draw.size * draw.scale),
+            draw.flip_x,
+            draw.tint,
         );
         true
     }

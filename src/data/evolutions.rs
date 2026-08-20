@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 /// Evolution path from one monster to another
 #[derive(Clone, Debug, Deserialize)]
@@ -30,16 +31,23 @@ const EVOLUTION_JSON: &str =
 
 /// Load all evolution trees from embedded JSON
 pub fn get_evolution_trees() -> HashMap<String, Vec<EvolutionPath>> {
-    let data: EvolutionData =
-        serde_json::from_str(EVOLUTION_JSON).expect("Failed to parse evolution_trees.json");
-    data.evolution_trees
+    evolution_data().evolution_trees.clone()
+}
+
+fn evolution_data() -> &'static EvolutionData {
+    static CACHE: OnceLock<EvolutionData> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/evolution_trees.json",
+            EVOLUTION_JSON,
+        )
+        .expect("Failed to parse assets/evolution_trees.json")
+    })
 }
 
 /// Load starting monsters map
 pub fn get_starting_monsters() -> HashMap<String, String> {
-    let data: EvolutionData =
-        serde_json::from_str(EVOLUTION_JSON).expect("Failed to parse evolution_trees.json");
-    data.starting_monsters
+    evolution_data().starting_monsters.clone()
 }
 
 /// Get the first evolution path for a specific monster (if it can evolve).
@@ -50,9 +58,11 @@ pub fn get_evolution_for_monster(monster_name: &str) -> Option<EvolutionPath> {
 
 /// All evolution paths available to a monster (branching supported).
 pub fn get_evolutions_for_monster(monster_name: &str) -> Vec<EvolutionPath> {
-    get_evolution_trees()
-        .into_values()
-        .flatten()
+    evolution_data()
+        .evolution_trees
+        .values()
+        .flat_map(|paths| paths.iter())
         .filter(|p| p.from_monster == monster_name)
+        .cloned()
         .collect()
 }

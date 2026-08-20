@@ -108,26 +108,24 @@ pub fn maximum_dungeon_fixture(seed: u64) -> GameState {
     let normal = state
         .unlocked_monsters
         .iter()
-        .filter(|name| {
+        .find(|name| {
             get_monster_templates()
                 .into_iter()
                 .find(|template| &template.name == *name)
                 .is_some_and(|template| !template.boss_only)
         })
         .cloned()
-        .next()
         .expect("authored roster needs a normal monster");
     let boss = state
         .unlocked_monsters
         .iter()
-        .filter(|name| {
+        .find(|name| {
             get_monster_templates()
                 .into_iter()
                 .find(|template| &template.name == *name)
                 .is_some_and(|template| template.boss_only)
         })
-        .cloned()
-        .next();
+        .cloned();
 
     let room_targets: Vec<_> = state
         .floors

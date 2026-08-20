@@ -1,5 +1,6 @@
 use crate::game_state::{Room, RoomType, Stats};
 use serde::Deserialize;
+use std::sync::OnceLock;
 
 // ===== JSON Data Structures =====
 
@@ -51,7 +52,7 @@ pub struct FloorScaling {
     pub monster_capacity: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct DeepFloorScaling {
     pub mana_cost_multiplier_increase: f32,
     pub monster_boost_increase: i32,
@@ -73,73 +74,83 @@ struct ConstantsData {
 // Embed JSON at compile time
 const CONSTANTS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/constants.json");
 
-fn load_constants() -> ConstantsData {
-    serde_json::from_str(CONSTANTS_JSON).expect("Failed to parse constants.json")
+fn constants() -> &'static ConstantsData {
+    static CACHE: OnceLock<ConstantsData> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/constants.json",
+            CONSTANTS_JSON,
+        )
+        .expect("Failed to parse assets/constants.json")
+    })
 }
 
 // ===== Public Accessors =====
 
 pub fn max_rooms_per_floor() -> usize {
-    load_constants().dungeon.max_rooms_per_floor
+    constants().dungeon.max_rooms_per_floor
 }
 
 pub fn max_log_entries() -> usize {
-    load_constants().dungeon.max_log_entries
+    constants().dungeon.max_log_entries
 }
 
 pub fn base_room_cost() -> i32 {
-    load_constants().dungeon.base_room_cost
+    constants().dungeon.base_room_cost
 }
 
 pub fn boss_room_extra_cost() -> i32 {
-    load_constants().dungeon.boss_room_extra_cost
+    constants().dungeon.boss_room_extra_cost
 }
 
 pub fn core_room_mana_bonus() -> f32 {
-    load_constants().dungeon.core_room_mana_bonus
+    constants().dungeon.core_room_mana_bonus
 }
 
 /// Mana per hour each living intruder feeds the core, before their level.
 pub fn mana_regen_per_adventurer() -> f32 {
-    load_constants().time.mana_regen_per_adventurer
+    constants().time.mana_regen_per_adventurer
 }
 
 /// Extra mana per hour per level of a living intruder.
 pub fn mana_regen_per_adventurer_level() -> f32 {
-    load_constants().time.mana_regen_per_adventurer_level
+    constants().time.mana_regen_per_adventurer_level
 }
 
 pub fn adventurer_spawn_chance() -> f32 {
-    load_constants().adventurers.spawn_chance
+    constants().adventurers.spawn_chance
 }
 
 pub fn max_party_size() -> usize {
-    load_constants().adventurers.max_party_size
+    constants().adventurers.max_party_size
 }
 
 pub fn min_party_size() -> usize {
-    load_constants().adventurers.min_party_size
+    constants().adventurers.min_party_size
 }
 
 pub fn retreat_threshold() -> i32 {
-    load_constants().adventurers.retreat_threshold
+    constants().adventurers.retreat_threshold
 }
 
 pub fn boss_stat_multiplier() -> f32 {
-    load_constants().combat.boss_stat_multiplier
+    constants().combat.boss_stat_multiplier
 }
 
 pub fn level_scaling_formula() -> f32 {
-    load_constants().combat.level_scaling_formula
+    constants().combat.level_scaling_formula
 }
 
 pub fn get_floor_scaling(floor: i32) -> Option<FloorScaling> {
-    let data = load_constants();
-    data.floor_scaling.into_iter().find(|s| s.floor == floor)
+    constants()
+        .floor_scaling
+        .iter()
+        .find(|s| s.floor == floor)
+        .cloned()
 }
 
 pub fn get_deep_floor_scaling() -> DeepFloorScaling {
-    load_constants().deep_floor_scaling
+    constants().deep_floor_scaling.clone()
 }
 
 // ===== Calculation Functions =====
@@ -182,7 +193,7 @@ pub fn get_monster_mana_cost(base_cost: i32, floor_number: i32, is_boss_room: bo
 /// keep growing at `monster_capacity_increase` per floor. Boss rooms apply
 /// `boss_room_capacity_delta` — the throne trades numbers for the boss.
 pub fn room_monster_capacity(floor: i32, is_boss: bool) -> usize {
-    let data = load_constants();
+    let data = constants();
     let table_capacity = data
         .floor_scaling
         .iter()

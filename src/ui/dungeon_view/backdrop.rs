@@ -18,7 +18,7 @@ pub(super) fn draw_board_surface(rect: Rect) {
     let mut row = 0usize;
     let mut y = rect.y;
     while y < rect.y + rect.h {
-        let shade = if row % 2 == 0 {
+        let shade = if row.is_multiple_of(2) {
             Color::new(0.080, 0.063, 0.052, 0.34)
         } else {
             Color::new(0.035, 0.030, 0.028, 0.30)

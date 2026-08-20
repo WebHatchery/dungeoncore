@@ -12,43 +12,45 @@ use crate::game_state::{
 
 /// Build a combat-ready adventurer from a class, level, and identity. `stat_mult`
 /// scales the final HP/attack/defense by the run's difficulty.
-fn build_adventurer(
+struct AdventurerBuildSpec {
     id: u64,
     name: String,
-    class_name: &str,
-    race: &str,
+    class_name: String,
+    race: String,
     drive: HeroDrive,
     resolve: i32,
     ward: HeroWard,
     level: i32,
     stat_mult: f32,
-) -> Adventurer {
-    let class = get_adventurer_class(class_name)
-        .unwrap_or_else(|| get_adventurer_classes().into_iter().next().unwrap());
-    let race_mod = crate::data::adventurers::get_race(race).unwrap_or_default();
+}
 
-    let base_hp = class.hp + (level - 1) * 10 + race_mod.hp;
-    let equipment = crate::data::equipment::recommended_loadout(&class.name, level);
+fn build_adventurer(spec: AdventurerBuildSpec) -> Adventurer {
+    let class = get_adventurer_class(&spec.class_name)
+        .unwrap_or_else(|| get_adventurer_classes().into_iter().next().unwrap());
+    let race_mod = crate::data::adventurers::get_race(&spec.race).unwrap_or_default();
+
+    let base_hp = class.hp + (spec.level - 1) * 10 + race_mod.hp;
+    let equipment = crate::data::equipment::recommended_loadout(&class.name, spec.level);
     let equipment_bonus = crate::data::equipment::equipment_stat_bonus(&equipment, &class.name);
     let raw_hp = (base_hp + equipment_bonus.hp).max(1);
     let raw_attack =
-        (class.attack + (level - 1) * 2 + equipment_bonus.attack + race_mod.attack).max(1);
+        (class.attack + (spec.level - 1) * 2 + equipment_bonus.attack + race_mod.attack).max(1);
     let raw_defense =
-        (class.defense + (level - 1) + equipment_bonus.defense + race_mod.defense).max(0);
+        (class.defense + (spec.level - 1) + equipment_bonus.defense + race_mod.defense).max(0);
 
-    let hp = ((raw_hp as f32 * stat_mult).round() as i32).max(1);
-    let attack = ((raw_attack as f32 * stat_mult).round() as i32).max(1);
-    let defense = ((raw_defense as f32 * stat_mult).round() as i32).max(0);
+    let hp = ((raw_hp as f32 * spec.stat_mult).round() as i32).max(1);
+    let attack = ((raw_attack as f32 * spec.stat_mult).round() as i32).max(1);
+    let defense = ((raw_defense as f32 * spec.stat_mult).round() as i32).max(0);
 
     Adventurer {
-        id,
-        name,
+        id: spec.id,
+        name: spec.name,
         class_name: class.name.clone(),
-        race: race.to_string(),
-        drive,
-        resolve,
-        ward,
-        level,
+        race: spec.race,
+        drive: spec.drive,
+        resolve: spec.resolve,
+        ward: spec.ward,
+        level: spec.level,
         hp,
         max_hp: hp,
         alive: true,
@@ -181,9 +183,17 @@ pub fn spawn_party(state: &mut GameState) {
                     record.prepared_ward(),
                     record.level,
                 );
-                members.push(build_adventurer(
-                    hero_id, name, &class, &race, drive, resolve, ward, level, stat_mult,
-                ));
+                members.push(build_adventurer(AdventurerBuildSpec {
+                    id: hero_id,
+                    name,
+                    class_name: class,
+                    race,
+                    drive,
+                    resolve,
+                    ward,
+                    level,
+                    stat_mult,
+                }));
                 continue;
             }
         }
@@ -227,17 +237,17 @@ pub fn spawn_party(state: &mut GameState) {
                 format!("First delve, driven by {}", drive.label().to_lowercase()),
             );
         }
-        members.push(build_adventurer(
+        members.push(build_adventurer(AdventurerBuildSpec {
             id,
             name,
-            &class.name,
-            &race,
+            class_name: class.name,
+            race,
             drive,
             resolve,
-            HeroWard::default(),
+            ward: HeroWard::default(),
             level,
             stat_mult,
-        ));
+        }));
     }
 
     let target_floor = expedition_target_floor(state, &members);

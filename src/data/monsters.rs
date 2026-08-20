@@ -52,8 +52,13 @@ const MONSTERS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/m
 /// old code did) was pure waste — costly when called per-unit each frame.
 fn monsters_data() -> &'static MonstersData {
     static CACHE: OnceLock<MonstersData> = OnceLock::new();
-    CACHE
-        .get_or_init(|| serde_json::from_str(MONSTERS_JSON).expect("Failed to parse monsters.json"))
+    CACHE.get_or_init(|| {
+        macroquad_toolkit::data_loader::load_embedded_json_labeled(
+            "assets/monsters.json",
+            MONSTERS_JSON,
+        )
+        .expect("Failed to parse assets/monsters.json")
+    })
 }
 
 /// Load all monster templates from embedded JSON

@@ -270,7 +270,7 @@ fn draw_room_chamber_art(
     let mut row = 0usize;
     while by < wall.y + wall.h - 13.0 {
         draw_line(wall.x + 3.0, by, wall.x + wall.w - 3.0, by, 1.0, brick);
-        let offset = if row % 2 == 0 { 10.0 } else { 22.0 };
+        let offset = if row.is_multiple_of(2) { 10.0 } else { 22.0 };
         let mut bx = wall.x + offset;
         while bx < wall.x + wall.w - 4.0 {
             draw_line(bx, by - 14.0, bx, by, 1.0, brick);

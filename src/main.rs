@@ -21,7 +21,7 @@ use macroquad::prelude::*;
 use macroquad_toolkit::assets::AssetManager;
 use macroquad_toolkit::capture;
 
-use app_playing::render_playing_frame;
+use app_playing::{render_playing_frame, PlayingFrameSettings, PlayingSession};
 use app_support::*;
 use game_audio::GameAudio;
 use keybindings::KeyBindings;
@@ -144,7 +144,8 @@ async fn main() {
             capture_scenes::seed_capture_scene(&mut cap_state, &config.scene);
             // Most scenes show the Monsters tab; a couple open the tab they exist
             // to show off.
-            let mut drawer_tab = match scene {
+            let mut playing = PlayingSession::new();
+            playing.drawer_tab = match scene {
                 "build" => DrawerTab::Build,
                 "variants" => DrawerTab::Evolution,
                 "traps" => DrawerTab::Traps,
@@ -152,26 +153,17 @@ async fn main() {
                 "depth" => DrawerTab::Depth,
                 _ => DrawerTab::Monsters,
             };
-            let mut upgrade_section = UpgradeSection::Traps;
-            let mut drawer_open = matches!(
+            playing.drawer_open = matches!(
                 scene,
                 "build" | "variants" | "traps" | "journal" | "depth" | "placement"
             );
-            let mut event_log_expanded = scene == "log";
-            let mut species_scroll = 0.0;
-            let mut defender_scroll = 0.0;
-            let mut heroes_scroll = 0.0;
-            let mut show_codex = scene == "codex";
-            let mut show_controls = scene == "controls";
-            let mut codex_scroll = 0.0;
+            playing.event_log_expanded = scene == "log";
+            playing.show_codex = scene == "codex";
+            playing.show_controls = scene == "controls";
             // The `coretree` scene boots straight into the core-power tree overlay.
-            let mut show_core_tree = scene == "coretree";
+            playing.show_core_tree = scene == "coretree";
             // The `goals` scene boots straight into the milestone overlay.
-            let mut show_milestones = scene == "goals";
-            let mut milestones_scroll = 0.0;
-            let mut t0 = get_time();
-            let mut t1 = t0;
-            let mut t2 = t0;
+            playing.show_milestones = scene == "goals";
             let strip = capture::filmstrip::StripConfig::from_env(CAPTURE_PREFIX);
             if let Some(strip) = strip {
                 capture::filmstrip::run_filmstrip(&config, &strip, |dt| {
@@ -179,29 +171,10 @@ async fn main() {
                     crate::ui::set_visual_time(Some(cap_state.visual_time));
                     render_playing_frame(
                         &mut cap_state,
-                        &mut drawer_tab,
-                        &mut upgrade_section,
-                        &mut drawer_open,
-                        &mut event_log_expanded,
-                        &mut species_scroll,
-                        &mut defender_scroll,
-                        &mut heroes_scroll,
-                        &mut show_codex,
-                        &mut show_controls,
-                        &mut codex_scroll,
-                        &mut show_core_tree,
-                        &mut show_milestones,
-                        &mut milestones_scroll,
-                        &mut t0,
-                        &mut t1,
-                        &mut t2,
-                        true,
-                        30.0,
-                        persistence::DEFAULT_SLOT,
+                        &mut playing,
+                        PlayingFrameSettings::new(true, 30.0, persistence::DEFAULT_SLOT, 0.0, 0.0),
                         &sprites,
                         &audio,
-                        0.0,
-                        0.0,
                         &KeyBindings::default(),
                     );
                 })
@@ -212,29 +185,10 @@ async fn main() {
                     crate::ui::set_visual_time(Some(cap_state.visual_time));
                     render_playing_frame(
                         &mut cap_state,
-                        &mut drawer_tab,
-                        &mut upgrade_section,
-                        &mut drawer_open,
-                        &mut event_log_expanded,
-                        &mut species_scroll,
-                        &mut defender_scroll,
-                        &mut heroes_scroll,
-                        &mut show_codex,
-                        &mut show_controls,
-                        &mut codex_scroll,
-                        &mut show_core_tree,
-                        &mut show_milestones,
-                        &mut milestones_scroll,
-                        &mut t0,
-                        &mut t1,
-                        &mut t2,
-                        false,
-                        30.0,
-                        persistence::DEFAULT_SLOT,
+                        &mut playing,
+                        PlayingFrameSettings::new(false, 30.0, persistence::DEFAULT_SLOT, 0.0, 0.0),
                         &sprites,
                         &audio,
-                        0.0,
-                        0.0,
                         &KeyBindings::default(),
                     );
                 })
@@ -260,23 +214,7 @@ async fn main() {
     let mut keybindings = KeyBindings::load();
     let mut capturing_binding = None;
 
-    // Timing variables
-    let mut last_time_advance = get_time();
-    let mut last_adventure_tick = get_time();
-    let mut last_save = get_time();
-    let mut drawer_tab = DrawerTab::Monsters;
-    let mut upgrade_section = UpgradeSection::Traps;
-    let mut drawer_open = false;
-    let mut event_log_expanded = false;
-    let mut species_scroll = 0.0;
-    let mut defender_scroll = 0.0;
-    let mut heroes_scroll = 0.0;
-    let mut show_codex = false;
-    let mut show_controls = false;
-    let mut codex_scroll = 0.0;
-    let mut show_core_tree = false;
-    let mut show_milestones = false;
-    let mut milestones_scroll = 0.0;
+    let mut playing = PlayingSession::new();
 
     loop {
         if screen != AppScreen::Playing {
@@ -320,7 +258,7 @@ async fn main() {
                         Ok(loaded_state) => {
                             active_slot = slot;
                             state = loaded_state;
-                            reset_timers(&mut last_time_advance, &mut last_adventure_tick, &mut last_save);
+                            playing.timing.reset();
                             title_notice = None;
                             screen = AppScreen::Playing;
                         }
@@ -371,11 +309,7 @@ async fn main() {
                         if let Err(e) = persistence::save_game(active_slot, &state) {
                             eprintln!("Failed to save new game: {}", e);
                         }
-                        reset_timers(
-                            &mut last_time_advance,
-                            &mut last_adventure_tick,
-                            &mut last_save,
-                        );
+                        playing.timing.reset();
                         title_notice = None;
                         screen = AppScreen::Playing;
                     }
@@ -429,29 +363,16 @@ async fn main() {
         state.reduced_motion = !settings.screen_shake;
         render_playing_frame(
             &mut state,
-            &mut drawer_tab,
-            &mut upgrade_section,
-            &mut drawer_open,
-            &mut event_log_expanded,
-            &mut species_scroll,
-            &mut defender_scroll,
-            &mut heroes_scroll,
-            &mut show_codex,
-            &mut show_controls,
-            &mut codex_scroll,
-            &mut show_core_tree,
-            &mut show_milestones,
-            &mut milestones_scroll,
-            &mut last_time_advance,
-            &mut last_adventure_tick,
-            &mut last_save,
-            true,
-            settings.autosave_interval as f64,
-            active_slot,
+            &mut playing,
+            PlayingFrameSettings::new(
+                true,
+                settings.autosave_interval as f64,
+                active_slot,
+                settings.effective_sfx_volume(),
+                settings.effective_music_volume(),
+            ),
             &sprites,
             &audio,
-            settings.effective_sfx_volume(),
-            settings.effective_music_volume(),
             &keybindings,
         );
 

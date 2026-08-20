@@ -1,17 +1,17 @@
 use super::*;
 
 fn expedition_member(id: u64, level: i32) -> Adventurer {
-    build_adventurer(
+    build_adventurer(AdventurerBuildSpec {
         id,
-        format!("Hero {id}"),
-        "Warrior",
-        "Human",
-        HeroDrive::Duty,
-        50,
-        HeroWard::default(),
+        name: format!("Hero {id}"),
+        class_name: "Warrior".to_string(),
+        race: "Human".to_string(),
+        drive: HeroDrive::Duty,
+        resolve: 50,
+        ward: HeroWard::default(),
         level,
-        1.0,
-    )
+        stat_mult: 1.0,
+    })
 }
 
 fn veteran_record(id: u64, level: i32, delves: i32) -> HeroRecord {
