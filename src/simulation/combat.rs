@@ -85,6 +85,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
 
     let room = &state.floors[floor_idx].rooms[room_idx];
     let reinforcement_mult = room.reinforcement_multiplier() * room.defender_attack_multiplier();
+    let depth_pressure = state.depth_pressure(floor_num);
     let defender_damage_taken_mult = room.defender_damage_taken_multiplier();
     let battle_order = room.battle_order;
     let adventurer_room_attack_mult = room.adventurer_attack_multiplier();
@@ -126,6 +127,8 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
             EffectAnchor::Invaders,
         );
     }
+    let doctrine =
+        crate::game_state::doctrine_for_party(state, &state.adventurer_parties[party_idx]);
     let adv_attacks: Vec<(u64, f32, String, crate::game_state::HeroWard)> = if snared {
         Vec::new()
     } else {
@@ -137,6 +140,7 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                 let element = adventurer_element(&a.class_name);
                 let attack_mult = adventurer_attack_mult(a)
                     * adventurer_room_attack_mult
+                    * doctrine.attack_multiplier()
                     * state.floors[floor_idx].rooms[room_idx]
                         .elemental_adventurer_attack_multiplier(&element);
                 (
@@ -291,7 +295,11 @@ pub fn resolve_combat(state: &mut GameState, party_idx: usize, floor_idx: usize,
                         m,
                         alive_count,
                         enemies_alive,
-                        reinforcement_mult * attune_mult * alarm_mult * stratum_mult,
+                        reinforcement_mult
+                            * attune_mult
+                            * alarm_mult
+                            * stratum_mult
+                            * depth_pressure,
                     ),
                     element,
                     pierce: has_passive(m, "ArmorPierce"),
@@ -482,6 +490,8 @@ fn check_retreat(state: &mut GameState, party_idx: usize) {
     // Dread core powers unnerve invaders, breaking them sooner (stacks). Siege
     // parties are fanatics and never break early.
     let dread = crate::simulation::endgame::core_dread_bonus(state);
+    let doctrine =
+        crate::game_state::doctrine_for_party(state, &state.adventurer_parties[party_idx]);
     let party = &mut state.adventurer_parties[party_idx];
     if party.retreating {
         return;
@@ -490,7 +500,12 @@ fn check_retreat(state: &mut GameState, party_idx: usize) {
     let nerve = if party.sieging {
         99
     } else {
-        (party_nerve(party) - dread).max(1)
+        let doctrine_nerve = matches!(
+            doctrine,
+            crate::game_state::ExpeditionDoctrine::Vengeance
+                | crate::game_state::ExpeditionDoctrine::RelicHunt
+        ) as i32;
+        (party_nerve(party) + doctrine_nerve - dread).max(1)
     };
     if no_survivors {
         party.retreating = true;

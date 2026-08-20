@@ -214,7 +214,7 @@ fn draw_selected_room(
         0.0
     };
     let combat_room = room.room_type == RoomType::Normal || room.room_type == RoomType::Boss;
-    let order_extra = if combat_room { 72.0 } else { 0.0 };
+    let order_extra = if combat_room { 100.0 } else { 0.0 };
     let rect = Rect::new(
         bounds.x,
         y,

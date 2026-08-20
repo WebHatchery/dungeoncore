@@ -11,7 +11,7 @@
 //! Floors are still linear today (one exit), so this is dormant until the fork
 //! build op (Phase C) — but it is fully unit-tested against hand-built forks.
 
-use crate::game_state::{AdventurerParty, Floor, GameState, HeroDrive};
+use crate::game_state::{AdventurerParty, ExpeditionDoctrine, Floor, GameState, HeroDrive};
 
 /// Threat tier at which adventurers turn desperate and beeline for the Core.
 const BEELINE_THREAT_TIER: i32 = 3;
@@ -43,7 +43,9 @@ pub fn distance_to_core(floor: &Floor, pos: usize) -> Option<u32> {
 /// Is this party in beeline (rush-the-Core) mode? True during a siege, at high
 /// realm threat, or whenever a future event/quest sets it.
 pub fn is_beelining(state: &GameState, party: &AdventurerParty) -> bool {
-    party.sieging || state.threat_tier() >= BEELINE_THREAT_TIER
+    party.sieging
+        || state.threat_tier() >= BEELINE_THREAT_TIER
+        || crate::game_state::doctrine_for_party(state, party) == ExpeditionDoctrine::RelicHunt
 }
 
 /// Player-facing reason for the party's next fork choice. This stays derived
@@ -58,7 +60,7 @@ pub fn choice_reason(state: &GameState, party: &AdventurerParty, exits: &[usize]
 
 /// How appealing a candidate room is to a *greedy* party: loot pulls them in,
 /// visible defenders push them away, and nearness to the Core gently breaks ties.
-fn appeal(floor: &Floor, party: &AdventurerParty, pos: usize) -> f32 {
+fn appeal(state: &GameState, floor: &Floor, party: &AdventurerParty, pos: usize) -> f32 {
     let Some(room) = floor.room_at(pos) else {
         return f32::MIN;
     };
@@ -82,6 +84,7 @@ fn appeal(floor: &Floor, party: &AdventurerParty, pos: usize) -> f32 {
         .iter()
         .filter(|member| member.alive && member.drive == HeroDrive::Glory)
         .count() as f32;
+    let doctrine = crate::game_state::doctrine_for_party(state, party);
     let discovery = party
         .members
         .iter()
@@ -91,7 +94,13 @@ fn appeal(floor: &Floor, party: &AdventurerParty, pos: usize) -> f32 {
     let loot_pull = loot * (1.0 + fortune * 0.40);
     let danger_pull = threat as f32 * (glory * 1.25 - 1.0);
     let depth_pull = core_bias * (1.0 + discovery);
-    loot_pull + danger_pull + depth_pull
+    let doctrine_pull = match doctrine {
+        ExpeditionDoctrine::Profit => loot * 0.55,
+        ExpeditionDoctrine::Vengeance => threat as f32 * 0.85,
+        ExpeditionDoctrine::RelicHunt => depth_pull.abs() * 0.8,
+        ExpeditionDoctrine::Survey => 0.0,
+    };
+    loot_pull + danger_pull + depth_pull + doctrine_pull
 }
 
 /// Choose which exit a party takes. `exits` must be non-empty (the caller treats
@@ -118,8 +127,8 @@ pub fn choose_exit(
                 *exits
                     .iter()
                     .max_by(|&&a, &&b| {
-                        appeal(floor, party, a)
-                            .partial_cmp(&appeal(floor, party, b))
+                        appeal(state, floor, party, a)
+                            .partial_cmp(&appeal(state, floor, party, b))
                             .unwrap_or(std::cmp::Ordering::Equal)
                     })
                     .unwrap_or(&exits[0])

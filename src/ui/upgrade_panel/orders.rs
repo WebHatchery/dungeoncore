@@ -15,14 +15,14 @@ pub(super) fn draw_battle_orders(
 ) {
     draw_section_rule(rect.x, rect.y + 12.0, rect.w, "BATTLE ORDER");
     let gap = 6.0;
-    let button_w = (rect.w - gap * 2.0) / 3.0;
+    let button_w = (rect.w - gap) / 2.0;
     let can_change = state.adventurer_parties.is_empty();
     for (index, order) in RoomBattleOrder::ALL.into_iter().enumerate() {
         let selected = room.battle_order == order;
         if draw_command_button(
             Rect::new(
-                rect.x + index as f32 * (button_w + gap),
-                rect.y + 20.0,
+                rect.x + (index % 2) as f32 * (button_w + gap),
+                rect.y + 20.0 + (index / 2) as f32 * 33.0,
                 button_w,
                 27.0,
             ),
@@ -40,7 +40,7 @@ pub(super) fn draw_battle_orders(
     draw_text_fit(
         room.battle_order.description(),
         rect.x,
-        rect.y + 64.0,
+        rect.y + 91.0,
         rect.w,
         10.0,
         TEXT_MUTED,

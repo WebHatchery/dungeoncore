@@ -3,11 +3,16 @@ use macroquad_toolkit::timing::Cooldown;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub(crate) mod depth;
 mod effects;
 mod floor;
 pub(crate) mod heroes;
 mod reputation;
 mod rooms;
+pub use depth::{
+    doctrine_for_members, doctrine_for_party, relic_for_floor, DepthLayer, DepthRelic,
+    ExpeditionDoctrine,
+};
 pub use effects::{EffectAnchor, EffectKind, ElementSound, RoomEffect, SoundEvent};
 pub use floor::Floor;
 pub use heroes::{
@@ -276,6 +281,11 @@ pub struct GameState {
     /// Ids of milestones the player has achieved (the goal/achievement track).
     #[serde(default)]
     pub milestones: Vec<String>,
+    /// Permanent relics recovered from the apex boss of each authored stratum.
+    /// Relics are both a long-term reward and a visible record of how deep this
+    /// particular dungeon has been pushed.
+    #[serde(default)]
+    pub depth_relics: Vec<String>,
     /// Chosen difficulty for this run (scales invaders, sieges, income, core HP).
     #[serde(default)]
     pub difficulty: crate::data::difficulty::Difficulty,
@@ -407,6 +417,7 @@ impl GameState {
             prestige: 0,
             core_powers: Vec::new(),
             milestones: Vec::new(),
+            depth_relics: Vec::new(),
             difficulty: crate::data::difficulty::Difficulty::default(),
             core_smite_cooldown: Cooldown::new(0.0),
             game_over: false,
@@ -527,6 +538,47 @@ impl GameState {
     /// Whether a permanent core power has been purchased.
     pub fn has_core_power(&self, id: &str) -> bool {
         self.core_powers.iter().any(|p| p == id)
+    }
+
+    pub fn has_depth_relic(&self, id: &str) -> bool {
+        self.depth_relics.iter().any(|relic| relic == id)
+    }
+
+    /// Claim the first apex relic in a stratum. The boss reward is deliberately
+    /// permanent and immediately useful, so reaching a new ecological band
+    /// changes the next build decisions instead of only changing the backdrop.
+    pub fn claim_depth_relic(&mut self, floor: i32) -> Option<DepthRelic> {
+        let relic = relic_for_floor(floor);
+        if self.has_depth_relic(relic.id) {
+            return None;
+        }
+        self.depth_relics.push(relic.id.to_string());
+        match relic.id {
+            "rootbound_sigil" => self.max_mana += 50,
+            "cinder_crown" => self.mana_regen += 0.2,
+            "tide_lens" => {}
+            "prism_heart" => self.deep_core_bonus += 0.05,
+            "ossuary_key" => {
+                self.core_max_hp += 100;
+                self.core_hp += 100;
+            }
+            _ => {}
+        }
+        Some(relic)
+    }
+
+    pub fn depth_pressure(&self, floor: i32) -> f32 {
+        let layer = DepthLayer::for_floor(floor);
+        let relic_bonus = if self.has_depth_relic("prism_heart") {
+            1.05
+        } else {
+            1.0
+        };
+        layer.defender_pressure() * relic_bonus
+    }
+
+    pub fn depth_loot_multiplier(&self, floor: i32) -> f32 {
+        DepthLayer::for_floor(floor).loot_multiplier()
     }
 
     /// Deaths required to trigger a siege, scaled by difficulty.

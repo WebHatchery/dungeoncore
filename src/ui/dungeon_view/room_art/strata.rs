@@ -22,6 +22,79 @@ pub(super) fn draw_stratum_art(wall: Rect, floor: i32, time: f32) {
     }
 }
 
+/// Four small, repeating depth marks make a long run legible at a glance. They
+/// are deliberately geometric and colour-independent: a player can identify
+/// the chapter from its silhouette even with reduced colour contrast.
+pub(super) fn draw_depth_layer_art(wall: Rect, floor: i32, time: f32) {
+    let layer = crate::game_state::DepthLayer::for_floor(floor);
+    let stratum = crate::data::strata::stratum_for_floor(floor);
+    let accent = element_color(&stratum.element);
+    let mark = match layer {
+        crate::game_state::DepthLayer::Threshold => draw_threshold_mark(wall, accent),
+        crate::game_state::DepthLayer::Hunt => draw_hunt_mark(wall, accent, time),
+        crate::game_state::DepthLayer::Gauntlet => draw_gauntlet_mark(wall, accent),
+        crate::game_state::DepthLayer::Apex => draw_apex_mark(wall, accent, time),
+    };
+    let _ = mark;
+}
+
+fn draw_threshold_mark(wall: Rect, accent: Color) {
+    let center = vec2(wall.x + wall.w * 0.5, wall.y + wall.h * 0.38);
+    draw_circle_lines(center.x, center.y, 18.0, 1.0, with_alpha(accent, 0.16));
+    draw_line(
+        center.x - 26.0,
+        center.y,
+        center.x + 26.0,
+        center.y,
+        1.0,
+        with_alpha(accent, 0.12),
+    );
+}
+
+fn draw_hunt_mark(wall: Rect, accent: Color, time: f32) {
+    for eye in 0..3 {
+        let x = wall.x + wall.w * (0.30 + eye as f32 * 0.20);
+        let y = wall.y + wall.h * 0.32 + (time * 0.4 + eye as f32).sin() * 2.0;
+        draw_circle(x, y, 3.0, with_alpha(accent, 0.16));
+        draw_circle_lines(x, y, 6.0, 1.0, with_alpha(accent, 0.12));
+    }
+}
+
+fn draw_gauntlet_mark(wall: Rect, accent: Color) {
+    let y = wall.y + wall.h * 0.38;
+    for tooth in 0..5 {
+        let x = wall.x + wall.w * (0.16 + tooth as f32 * 0.17);
+        draw_triangle(
+            vec2(x - 7.0, y - 8.0),
+            vec2(x + 7.0, y - 8.0),
+            vec2(x, y + 7.0),
+            with_alpha(accent, 0.10),
+        );
+    }
+}
+
+fn draw_apex_mark(wall: Rect, accent: Color, time: f32) {
+    let center = vec2(wall.x + wall.w * 0.5, wall.y + wall.h * 0.34);
+    let pulse = 1.0 + (time * 0.8).sin().abs() * 2.0;
+    draw_poly_lines(
+        center.x,
+        center.y,
+        4,
+        16.0 + pulse,
+        45.0,
+        1.4,
+        with_alpha(accent, 0.22),
+    );
+    draw_line(
+        center.x - 28.0,
+        center.y + 18.0,
+        center.x + 28.0,
+        center.y + 18.0,
+        1.0,
+        with_alpha(accent, 0.16),
+    );
+}
+
 fn draw_rootways(wall: Rect, accent: Color) {
     for vine in 0..4 {
         let base_x = wall.x + wall.w * (0.12 + vine as f32 * 0.24);

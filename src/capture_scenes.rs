@@ -10,6 +10,7 @@ use crate::simulation;
 mod bestiary;
 mod combat_sprites;
 mod deep_board;
+mod depth;
 mod heroes;
 mod merge;
 mod strata;
@@ -68,6 +69,7 @@ pub fn seed_capture_scene(state: &mut GameState, scene: &str) {
             state.total_deaths = 186;
         }
         "deep_board" => deep_board::seed(state),
+        "depth" => depth::seed(state),
         "strata" => strata::seed(state),
         "combat_sprites" => combat_sprites::seed(state),
         "bestiary" => bestiary::seed(state),

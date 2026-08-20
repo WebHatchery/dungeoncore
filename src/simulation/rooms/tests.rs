@@ -64,6 +64,10 @@ fn battle_orders_are_persistent_room_rules_with_real_tradeoffs() {
     room.battle_order = RoomBattleOrder::CullWounded;
     assert_eq!(room.defender_attack_multiplier(), 1.0);
     assert!(room.defender_damage_taken_multiplier() > 1.0);
+
+    room.battle_order = RoomBattleOrder::BreakFormation;
+    assert!(room.defender_attack_multiplier() > 1.0);
+    assert!(room.defender_damage_taken_multiplier() > 1.0);
 }
 
 #[test]

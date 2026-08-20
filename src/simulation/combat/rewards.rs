@@ -18,7 +18,8 @@ pub(super) fn reward_monster_kills(
     let floor_num = state.floors[floor_idx].number;
     let room_pos = state.floors[floor_idx].rooms[room_idx].position;
     let treasure_mult = state.floors[floor_idx].rooms[room_idx].treasure_multiplier();
-    let depth_loot_mult = crate::data::strata::stratum_for_floor(floor_num).loot_multiplier;
+    let depth_loot_mult = crate::data::strata::stratum_for_floor(floor_num).loot_multiplier
+        * state.depth_loot_multiplier(floor_num);
     let fortune_seekers = state.adventurer_parties[party_idx]
         .members
         .iter()
@@ -36,6 +37,22 @@ pub(super) fn reward_monster_kills(
         if soul_reward > 0 {
             state.souls += soul_reward;
             state.raid_tally().souls_gained += soul_reward;
+        }
+        if *is_boss {
+            if let Some(relic) = state.claim_depth_relic(floor_num) {
+                state.souls += 2;
+                state.raid_tally().souls_gained += 2;
+                if !state
+                    .unlocked_monsters
+                    .contains(&relic.apex_monster.to_string())
+                {
+                    state.unlocked_monsters.push(relic.apex_monster.to_string());
+                }
+                state.add_log(LogEntry::system(format!(
+                    "APEX RELIC — {} recovered on floor {}. {}. New depth defender unlocked: {}.",
+                    relic.name, floor_num, relic.boon, relic.apex_monster
+                )));
+            }
         }
         // This monster was one of the dungeon's own defenders, now fallen.
         state.raid_tally().defenders_lost += 1;

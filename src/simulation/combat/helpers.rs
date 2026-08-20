@@ -193,7 +193,18 @@ pub(super) fn target_adventurer_idx(
     party: &AdventurerParty,
     order: RoomBattleOrder,
 ) -> Option<usize> {
-    if order == RoomBattleOrder::CullWounded {
+    if order == RoomBattleOrder::BreakFormation {
+        party
+            .members
+            .iter()
+            .enumerate()
+            .filter(|(_, hero)| hero.alive)
+            .max_by_key(|(index, hero)| {
+                let backline = matches!(hero.class_name.as_str(), "Mage" | "Ranger" | "Alchemist");
+                (backline, hero.scaled_stats.attack, -(*index as i32))
+            })
+            .map(|(index, _)| index)
+    } else if order == RoomBattleOrder::CullWounded {
         party
             .members
             .iter()

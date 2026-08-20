@@ -8,7 +8,7 @@ use macroquad::prelude::*;
 use macroquad_toolkit::input::is_hovered_rect;
 
 use crate::game_state::GameState;
-use crate::simulation::core_spell::{is_ready, smite_target, CORE_SMITE_MANA_COST};
+use crate::simulation::core_spell::{is_ready, smite_mana_cost, smite_target};
 
 use super::theme::*;
 use macroquad_toolkit::colors::with_alpha;
@@ -28,7 +28,8 @@ pub fn core_spell_visible(state: &GameState) -> bool {
 /// premature click still teaches the cost/cooldown).
 pub fn draw_core_spell_button(state: &GameState, rect: Rect) -> bool {
     let ready = is_ready(state);
-    let affordable = state.mana >= CORE_SMITE_MANA_COST;
+    let mana_cost = smite_mana_cost(state);
+    let affordable = state.mana >= mana_cost;
     let hovered = is_hovered_rect(rect);
     let pressed = hovered && is_mouse_button_down(MouseButton::Left);
     let clicked = hovered && is_mouse_button_released(MouseButton::Left);
@@ -79,9 +80,9 @@ pub fn draw_core_spell_button(state: &GameState, rect: Rect) -> bool {
             state.core_smite_cooldown.remaining().ceil()
         )
     } else if !affordable {
-        format!("Need {} mana", CORE_SMITE_MANA_COST)
+        format!("Need {} mana", mana_cost)
     } else {
-        format!("Cast · {} mana", CORE_SMITE_MANA_COST)
+        format!("Cast · {} mana", mana_cost)
     };
     let sub_color = if !ready {
         with_alpha(SOUL, 0.9)

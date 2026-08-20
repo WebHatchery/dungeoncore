@@ -194,6 +194,32 @@
             "mana_cost": 12,
             "cooldown": 4,
             "value": 30.0
+        },
+        {
+            "id": "resonance_strike",
+            "name": "Resonance Strike",
+            "description": "+6 attack after a same-element resonance merge",
+            "trait_type": "Passive",
+            "target_type": "Self",
+            "applies_to": "OnAttack",
+            "effect_type": "AttackBonus",
+            "scaling_type": "None",
+            "mana_cost": 0,
+            "cooldown": 0,
+            "value": 6.0
+        },
+        {
+            "id": "resonance_guard",
+            "name": "Resonant Shell",
+            "description": "Takes 12% less damage after a same-element resonance merge",
+            "trait_type": "Passive",
+            "target_type": "Self",
+            "applies_to": "OnDefense",
+            "effect_type": "DamageReductionMult",
+            "scaling_type": "None",
+            "mana_cost": 0,
+            "cooldown": 0,
+            "value": 0.12
         }
     ]
 }

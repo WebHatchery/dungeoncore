@@ -10,16 +10,25 @@ pub enum RoomBattleOrder {
     Balanced,
     HoldLine,
     CullWounded,
+    /// Sacrifices some armour to reach the party's back line before it can
+    /// stabilise the room with healing or ranged damage.
+    BreakFormation,
 }
 
 impl RoomBattleOrder {
-    pub const ALL: [Self; 3] = [Self::Balanced, Self::HoldLine, Self::CullWounded];
+    pub const ALL: [Self; 4] = [
+        Self::Balanced,
+        Self::HoldLine,
+        Self::CullWounded,
+        Self::BreakFormation,
+    ];
 
     pub fn label(self) -> &'static str {
         match self {
             Self::Balanced => "Balanced",
             Self::HoldLine => "Hold",
             Self::CullWounded => "Cull",
+            Self::BreakFormation => "Break Line",
         }
     }
 
@@ -28,6 +37,9 @@ impl RoomBattleOrder {
             Self::Balanced => "No modifiers; targets are spread naturally.",
             Self::HoldLine => "-22% damage taken, but -12% defender attack.",
             Self::CullWounded => "Focuses the weakest hero; +12% damage taken.",
+            Self::BreakFormation => {
+                "Focuses ranged/support heroes; +18% attack, +14% damage taken."
+            }
         }
     }
 
@@ -35,6 +47,7 @@ impl RoomBattleOrder {
         match self {
             Self::Balanced | Self::CullWounded => 1.0,
             Self::HoldLine => 0.88,
+            Self::BreakFormation => 1.18,
         }
     }
 
@@ -43,6 +56,7 @@ impl RoomBattleOrder {
             Self::Balanced => 1.0,
             Self::HoldLine => 0.78,
             Self::CullWounded => 1.12,
+            Self::BreakFormation => 1.14,
         }
     }
 }

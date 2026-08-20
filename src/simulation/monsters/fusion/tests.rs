@@ -17,6 +17,32 @@ fn place_pair(state: &mut GameState) {
 }
 
 #[test]
+fn same_element_defenders_can_awaken_a_resonance_instead_of_a_rank() {
+    let mut state = fusion_dungeon();
+    state.unlocked_species.push("Construct".to_string());
+    state.unlocked_monsters.push("Clay Golem".to_string());
+    super::super::place_monster(&mut state, 1, 1, "Goblin").unwrap();
+    super::super::place_monster(&mut state, 1, 1, "Clay Golem").unwrap();
+    let primary = state.floors[0].room_at(1).unwrap().monsters[0].id;
+    assert!(matches!(
+        fusion_plan(state.floors[0].room_at(1).unwrap(), primary),
+        Some(FusionPlan::Resonance(_))
+    ));
+
+    merge_monsters(&mut state, 1, 1, primary).unwrap();
+    let monster = &state.floors[0].room_at(1).unwrap().monsters[0];
+    assert_eq!(monster.fusion_rank, 1);
+    assert!(monster
+        .active_traits
+        .iter()
+        .any(|trait_data| trait_data.id == "resonance_strike"));
+    assert!(state
+        .log
+        .iter()
+        .any(|entry| entry.message.contains("Resonance")));
+}
+
+#[test]
 fn identical_rank_one_defenders_fuse_and_free_a_slot() {
     let mut state = fusion_dungeon();
     place_pair(&mut state);

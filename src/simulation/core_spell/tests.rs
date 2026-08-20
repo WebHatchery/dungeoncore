@@ -58,6 +58,14 @@ fn smite_damages_and_costs_mana_and_sets_cooldown() {
 }
 
 #[test]
+fn tide_lens_makes_the_core_smite_cheaper() {
+    let mut state = GameState::new();
+    assert_eq!(smite_mana_cost(&state), CORE_SMITE_MANA_COST);
+    state.depth_relics.push("tide_lens".to_string());
+    assert_eq!(smite_mana_cost(&state), CORE_SMITE_MANA_COST - 8);
+}
+
+#[test]
 fn smite_wipe_retreats_party_and_pays_mana() {
     let mut s = GameState::new();
     s.mana = 100;

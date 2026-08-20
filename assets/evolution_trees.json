@@ -45,6 +45,15 @@
                     "min_floor": 3,
                     "gold_cost": 150
                 }
+            },
+            {
+                "from_monster": "Goblin King",
+                "to_monster": "Rootbound Warcaller",
+                "experience_required": 900,
+                "conditions": {
+                    "min_floor": 4,
+                    "gold_cost": 280
+                }
             }
         ],
         "Slime": [
@@ -109,6 +118,15 @@
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 160
+                }
+            },
+            {
+                "from_monster": "Slime Empress",
+                "to_monster": "Tide Maw",
+                "experience_required": 920,
+                "conditions": {
+                    "min_floor": 8,
+                    "gold_cost": 300
                 }
             }
         ],
@@ -184,6 +202,15 @@
                     "min_floor": 4,
                     "gold_cost": 200
                 }
+            },
+            {
+                "from_monster": "Grave King",
+                "to_monster": "Ossuary Colossus",
+                "experience_required": 960,
+                "conditions": {
+                    "min_floor": 16,
+                    "gold_cost": 320
+                }
             }
         ],
         "Draconic": [
@@ -230,6 +257,15 @@
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 250
+                }
+            },
+            {
+                "from_monster": "Elder Dragon",
+                "to_monster": "Cinder Titan",
+                "experience_required": 980,
+                "conditions": {
+                    "min_floor": 8,
+                    "gold_cost": 330
                 }
             }
         ],
@@ -407,6 +443,15 @@
                 "conditions": {
                     "min_floor": 4,
                     "gold_cost": 180
+                }
+            },
+            {
+                "from_monster": "Elemental Overlord",
+                "to_monster": "Prism Oracle",
+                "experience_required": 980,
+                "conditions": {
+                    "min_floor": 12,
+                    "gold_cost": 330
                 }
             }
         ],

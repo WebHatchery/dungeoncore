@@ -11,12 +11,14 @@ use crate::game_state::GameState;
 use super::theme::*;
 
 mod build_tab;
+mod depth_tab;
 mod evolution_tab;
 mod heroes_tab;
 mod monster_tab;
 mod traps_tab;
 
 use build_tab::draw_build_tab;
+use depth_tab::draw_depth_tab;
 use evolution_tab::draw_evolution_tab;
 use heroes_tab::draw_heroes_tab;
 use macroquad_toolkit::colors::with_alpha;
@@ -33,6 +35,7 @@ pub enum DrawerTab {
     Traps,
     Evolution,
     Heroes,
+    Depth,
 }
 
 /// Sections within the Traps tab, so each upgrade family gets its own list.
@@ -146,6 +149,7 @@ pub fn draw_side_drawer(
             heroes_tab::HeroesTabAction::Close => action = DrawerAction::CloseHero,
             heroes_tab::HeroesTabAction::None => {}
         },
+        DrawerTab::Depth => draw_depth_tab(state, content),
     }
 
     action
@@ -180,6 +184,7 @@ fn draw_tab_rail(
         (DrawerTab::Build, "B", "BUILD", TREASURE),
         (DrawerTab::Evolution, "V", "VARIANTS", MANA),
         (DrawerTab::Heroes, "H", "HEROES", WARNING),
+        (DrawerTab::Depth, "D", "DEPTH", ARCANE),
     ] {
         let tab_rect = Rect::new(rect.x + 6.0, y, rail_w - 12.0, 60.0);
         if draw_rail_tab(tab_rect, icon, label, color, *active_tab == tab) {
@@ -194,6 +199,9 @@ fn draw_tab_rail(
                 DrawerTab::Evolution => "Track shared monster-line XP and unlocked variants.",
                 DrawerTab::Heroes => {
                     "Review adventurer records, rival bounties, and dungeon reputation."
+                }
+                DrawerTab::Depth => {
+                    "Read the current depth chapter, recovered apex relics, and the party's live doctrine."
                 }
             };
             crate::ui::draw_tooltip(help, vec2(tab_rect.x + tab_rect.w, tab_rect.y));

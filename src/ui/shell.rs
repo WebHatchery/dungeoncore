@@ -385,6 +385,17 @@ pub fn draw_adventurer_status_chip(state: &GameState, rect: Rect) {
         13.0,
         color,
     );
+    if let Some(party) = state.adventurer_parties.first() {
+        let doctrine = crate::game_state::doctrine_for_party(state, party);
+        draw_text_fit_right(
+            doctrine.label(),
+            rect.x + rect.w - 8.0,
+            rect.y + rect.h - 5.0,
+            rect.w - 38.0,
+            8.0,
+            TEXT_MUTED,
+        );
+    }
 }
 
 #[derive(Clone, Copy)]

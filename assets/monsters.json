@@ -891,6 +891,95 @@
                 "stone_skin"
             ],
             "boss_only": true
+        },
+        {
+            "name": "Rootbound Warcaller",
+            "base_cost": 175,
+            "hp": 340,
+            "attack": 34,
+            "defense": 22,
+            "species": "Goblinoid",
+            "tier": 5,
+            "emoji": "🌿",
+            "element": "Nature",
+            "description": "A root-crowned herald whose drumbeat wakes the whole floor.",
+            "traits": [
+                "pack_hunter",
+                "regenerate_major",
+                "taunt"
+            ],
+            "boss_only": true
+        },
+        {
+            "name": "Cinder Titan",
+            "base_cost": 190,
+            "hp": 460,
+            "attack": 42,
+            "defense": 26,
+            "species": "Draconic",
+            "tier": 5,
+            "emoji": "🔥",
+            "element": "Fire",
+            "description": "A furnace given legs, carrying a collapsed volcano in its chest.",
+            "traits": [
+                "fire_breath",
+                "stone_skin"
+            ],
+            "boss_only": true
+        },
+        {
+            "name": "Tide Maw",
+            "base_cost": 185,
+            "hp": 420,
+            "attack": 36,
+            "defense": 24,
+            "species": "Slime",
+            "tier": 5,
+            "emoji": "🌊",
+            "element": "Water",
+            "description": "A pressure wave with teeth; every wound becomes another tide pool.",
+            "traits": [
+                "split_on_death",
+                "regenerate_major",
+                "life_steal"
+            ],
+            "boss_only": true
+        },
+        {
+            "name": "Prism Oracle",
+            "base_cost": 200,
+            "hp": 380,
+            "attack": 48,
+            "defense": 20,
+            "species": "Elemental",
+            "tier": 5,
+            "emoji": "🔮",
+            "element": "Arcane",
+            "description": "A many-faced prophecy that attacks the answer you were about to give.",
+            "traits": [
+                "tempest",
+                "shadow_bolt",
+                "stone_skin"
+            ],
+            "boss_only": true
+        },
+        {
+            "name": "Ossuary Colossus",
+            "base_cost": 210,
+            "hp": 520,
+            "attack": 40,
+            "defense": 32,
+            "species": "Undead",
+            "tier": 5,
+            "emoji": "💀",
+            "element": "Death",
+            "description": "The grave below stands up, piece by piece, and asks who is next.",
+            "traits": [
+                "undead_resilience",
+                "taunt",
+                "shadow_bolt"
+            ],
+            "boss_only": true
         }
     ],
     "species": [

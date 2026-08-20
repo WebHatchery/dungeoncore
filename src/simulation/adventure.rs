@@ -241,6 +241,7 @@ pub fn spawn_party(state: &mut GameState) {
     }
 
     let target_floor = expedition_target_floor(state, &members);
+    let doctrine = crate::game_state::doctrine_for_members(state, &members);
 
     let party = AdventurerParty {
         id: state.run_rng.next_u64(),
@@ -264,12 +265,13 @@ pub fn spawn_party(state: &mut GameState) {
     state.current_raid = Some(Default::default());
 
     state.add_log(LogEntry::adventure(format!(
-        "{} visitors enter: {} members, levels {}–{}, expedition target floor {}.",
+        "{} visitors enter: {} members, levels {}–{}, target floor {}. Doctrine: {}.",
         state.reputation_band().name(),
         party.members.len(),
         level_min,
         level_max,
-        party.target_floor
+        party.target_floor,
+        doctrine.label()
     )));
 
     // Random entry quote
@@ -417,13 +419,19 @@ fn advance_party(state: &mut GameState, party_idx: usize) {
             }
         } else {
             // Completed exploration, retreat with loot
-            let loot = state.adventurer_parties[party_idx].loot;
+            let doctrine =
+                crate::game_state::doctrine_for_party(state, &state.adventurer_parties[party_idx]);
+            let loot = (state.adventurer_parties[party_idx].loot as f32
+                * doctrine.loot_multiplier())
+            .round() as i32;
+            state.adventurer_parties[party_idx].loot = loot;
             state.gold += loot;
             state.raid_tally().gold_gained += loot;
             state.adventurer_parties[party_idx].retreating = true;
             state.add_log(LogEntry::adventure(format!(
-                "Party completed exploration! +{} gold",
-                loot
+                "{} completed exploration! +{} gold",
+                doctrine.label(),
+                loot,
             )));
 
             // Exit quote

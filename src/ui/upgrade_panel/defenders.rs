@@ -124,8 +124,8 @@ fn draw_defender_row(
     let plan = state.selected_monster.as_ref().and_then(|armed| {
         crate::simulation::plan_swap(state, room.floor_number, room.position, monster.id, armed)
     });
-    let fusion_rank = if plan.is_none() && can_dismiss {
-        crate::simulation::fusion_target_rank(room, monster.id)
+    let fusion = if plan.is_none() && can_dismiss {
+        crate::simulation::fusion_plan(room, monster.id)
     } else {
         None
     };
@@ -209,7 +209,7 @@ fn draw_defender_row(
     let affordable = plan.as_ref().is_none_or(|plan| {
         state.mana >= plan.mana && state.gold >= plan.gold && state.souls >= plan.souls
     });
-    match (&plan, fusion_rank) {
+    match (&plan, &fusion) {
         (Some(plan), _) => {
             draw_text_fit_right(
                 &plan.label(),
@@ -239,14 +239,17 @@ fn draw_defender_row(
         }
         (None, Some(_)) => {}
     }
-    if let Some(target_rank) = fusion_rank {
+    if let Some(fusion) = fusion {
         let fuse_rect = Rect::new(row.x + row.w * 0.62, row.y + 23.0, row.w * 0.36 - 8.0, 25.0);
-        if draw_command_button(
-            fuse_rect,
-            &format!("Fuse -> R{target_rank}"),
-            ButtonTone::Primary,
-            true,
-        ) {
+        let (label, tone) = match fusion {
+            crate::simulation::monsters::FusionPlan::RankUp(rank) => {
+                (format!("Fuse -> R{rank}"), ButtonTone::Primary)
+            }
+            crate::simulation::monsters::FusionPlan::Resonance(_) => {
+                ("Resonate".to_string(), ButtonTone::Arcane)
+            }
+        };
+        if draw_command_button(fuse_rect, &label, tone, true) {
             return Some(UpgradeAction::MergeMonster(monster.id));
         }
     } else {

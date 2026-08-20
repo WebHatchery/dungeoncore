@@ -27,6 +27,14 @@ pub fn smite_damage(state: &GameState) -> i32 {
         + crate::simulation::endgame::core_smite_damage_bonus(state)
 }
 
+pub fn smite_mana_cost(state: &GameState) -> i32 {
+    if state.has_depth_relic("tide_lens") {
+        CORE_SMITE_MANA_COST - 8
+    } else {
+        CORE_SMITE_MANA_COST
+    }
+}
+
 /// The Core Smite cooldown after core-power reductions (Quickening,
 /// Worldbreaker), floored so it can never trivialize the lever.
 pub fn smite_cooldown(state: &GameState) -> f32 {
@@ -61,17 +69,15 @@ pub fn cast_core_smite(state: &mut GameState) -> Result<(), String> {
             state.core_smite_cooldown.remaining().ceil()
         ));
     }
-    if state.mana < CORE_SMITE_MANA_COST {
-        return Err(format!(
-            "Not enough mana to smite! Need {}.",
-            CORE_SMITE_MANA_COST
-        ));
+    let mana_cost = smite_mana_cost(state);
+    if state.mana < mana_cost {
+        return Err(format!("Not enough mana to smite! Need {}.", mana_cost));
     }
     let Some(party_idx) = smite_target(state) else {
         return Err("No invaders in the dungeon to smite.".into());
     };
 
-    state.mana -= CORE_SMITE_MANA_COST;
+    state.mana -= mana_cost;
     state.core_smite_cooldown = Cooldown::new_armed(smite_cooldown(state));
 
     let damage = smite_damage(state);

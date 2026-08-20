@@ -149,12 +149,13 @@ async fn main() {
                 "variants" => DrawerTab::Evolution,
                 "traps" => DrawerTab::Traps,
                 "journal" => DrawerTab::Heroes,
+                "depth" => DrawerTab::Depth,
                 _ => DrawerTab::Monsters,
             };
             let mut upgrade_section = UpgradeSection::Traps;
             let mut drawer_open = matches!(
                 scene,
-                "build" | "variants" | "traps" | "journal" | "placement"
+                "build" | "variants" | "traps" | "journal" | "depth" | "placement"
             );
             let mut event_log_expanded = scene == "log";
             let mut species_scroll = 0.0;

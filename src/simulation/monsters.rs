@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 mod fusion;
 mod swap;
-pub use fusion::{fusion_target_rank, merge_monsters};
+pub use fusion::{fusion_plan, merge_monsters, FusionPlan};
 pub use swap::{plan_swap, swap_monster, SwapKind};
 
 /// Why an armed monster cannot take a free room slot. Boss rooms reserve their

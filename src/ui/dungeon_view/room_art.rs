@@ -20,7 +20,7 @@ mod units;
 mod upgrades;
 
 use effects::draw_room_effects;
-use strata::draw_stratum_art;
+use strata::{draw_depth_layer_art, draw_stratum_art};
 use units::draw_room_units;
 use upgrades::draw_room_upgrade_art;
 
@@ -61,10 +61,10 @@ pub(super) fn draw_room_tile(
     if room.battle_order != crate::game_state::RoomBattleOrder::Balanced
         && (room.room_type == RoomType::Normal || room.room_type == RoomType::Boss)
     {
-        let tone = if room.battle_order == crate::game_state::RoomBattleOrder::HoldLine {
-            MANA
-        } else {
-            DANGER
+        let tone = match room.battle_order {
+            crate::game_state::RoomBattleOrder::HoldLine => MANA,
+            crate::game_state::RoomBattleOrder::BreakFormation => SOUL,
+            _ => DANGER,
         };
         draw_pill(
             Rect::new(
@@ -281,6 +281,7 @@ fn draw_room_chamber_art(
     }
 
     draw_stratum_art(wall, room.floor_number, art_time);
+    draw_depth_layer_art(wall, room.floor_number, art_time);
 
     // Shared ceiling beam, load-bearing seams, and a lit floor sell the room as
     // an open cutaway bay rather than a UI tile.
